@@ -16,6 +16,8 @@ Energy is distinct from nutrient matter and does not cycle through the world in 
 
 Every organism has a DNA-defined maximum energy-storage capacity. The capacity begins with a relatively low ceiling and can increase incrementally through storage traits or in larger steps through new metabolic and cellular capabilities. Stored energy relative to this capacity is the primary input to organism health, while stored nutrients, lifecycle state, and environmental stress may adjust the final relative score. Additional capacity therefore provides resilience but does not itself supply energy.
 
+DNA distinguishes resource acquisition, external energy capture, energy storage, nutrient storage, and internal metabolism. Acquisition moves matter into the organism. External capture uses environmental substrates or opportunities to create energy-bearing organic reserve. Energy and nutrient storage independently determine how much each internal compartment can hold. Internal metabolism converts acquired matter, mobilizes reserve to power maintenance and actions, assembles biomass, and routes spent products. Increasing capacity does not fill it, and improving any stage cannot bypass the mass and energy accounting of the reactions it enables.
+
 Reproduction redistributes the parent's stored nutrients and chemical energy into the resulting organisms and never creates matter or stored energy. Any additional reproductive work consumes stored energy, which ultimately dissipates, while the nutrients associated with that energy remain accounted for.
 
 Organisms attempt resource absorption and metabolic transformations on simulation ticks. Success and yield may be probabilistic based on environmental conditions, substrate availability, organism state, and DNA capabilities. The exact resource pools, reactions, and competition rules remain deferred, but every successful transfer or transformation must preserve the internal mass balance described above.
@@ -31,6 +33,8 @@ Found in the air as CO2, carbon must be fixed into a usable form by an organism'
 ## Hydrogen
 
 Hydrogen is released from volcanic sources as H2 and H2S, which can fuel early metabolisms. It also occurs in ammonia (NH3), is plentiful but difficult to access directly in water (H2O), and appears in methane (CH4) from biological or geological sources.
+
+One v1 founding path uses hydrogen acetogenesis as an abstraction for converting H2 and CO2 into stored organic matter and energy. It is deliberately less productive in the opening than the sulfide alternative, but it functions without light and has a shorter evolutionary bridge through organic uptake and fermentation toward a less volcanism-dependent metabolism.
 
 ## Oxygen
 
@@ -50,6 +54,8 @@ Bioavailable phosphorus was fairly rare in the early Earth environment but was g
 
 Volcanic vents producing hydrogen sulfide (H2S) and sulfur dioxide (SO2) provided an important fuel for early metabolisms. Once oxygen became more plentiful, many sulfur-based metabolisms became increasingly confined to specialized ecological niches.
 
+The other v1 founding path uses H2S, CO2, and light in an anoxygenic-phototrophy abstraction. It receives greater opening productivity and stronger sulfide tolerance in its ideal shallow volcanic niche, but depends on the coincidence of useful light and sulfide. Reaching fermentation requires additional regulatory and generalized-catabolism traits, while the distinct oxygenic-photosynthesis path is a substantially larger leap gated by further traits and micronutrients.
+
 # Micronutrients
 
 While not as plentiful as the macronutrients, various other elements are used by different metabolisms and are required for organisms to live and thrive. Each micronutrient is modeled as a single bioavailable resource rather than being divided into organic and inorganic forms:
@@ -64,6 +70,12 @@ While not as plentiful as the macronutrients, various other elements are used by
 - Iodine
 - Fluoride
 - Selenium
+- Manganese
+- Molybdenum
+- Nickel
+- Cobalt
+
+Micronutrient requirements may gate particular metabolic and cellular capabilities. For the initial abstraction, manganese and calcium can support the canonical oxygenic-photosynthesis path, molybdenum and iron can support canonical nitrogen fixation, and nickel, cobalt, and iron can support primitive hydrogen-processing and acetogenesis-inspired pathways. These are gameplay-relevant canonical paths rather than a claim that biology has no alternative cofactors.
 
 To start, micronutrient quantities are well-mixed within each tile. As a future extension, individual micronutrients may be represented as localized concentration fields within a tile. Organisms would consume and release them at specific coordinates, allowing diffusion and local activity to form gradients that organisms could evolve to sense and follow.
 

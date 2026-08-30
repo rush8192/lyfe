@@ -4,7 +4,7 @@ Organisms and their DNA are essential drivers of the processes at work in LYFE.
 
 The core blueprint of an organism's capabilities, metabolism, and limitations is contained within its DNA.
 
-We organize DNA into separately displayed trait families that define different aspects of the organism's behavior, such as locomotion, sensing, environmental tolerance, cellular structure, predation, reproduction, and metabolism. Trait families make the DNA understandable and allow each area to have a linear or tree-like progression, but they are not mechanically isolated from one another.
+We organize DNA into separately displayed trait families that define different aspects of the organism's biology and behavior. Trait families make the DNA understandable and allow each area to have a linear or tree-like progression, but they are not mechanically isolated from one another.
 
 A trait may require traits or minimum capability levels from its own family or another family. Traits may also be mutually incompatible, and selecting a trait in one family may alter the effectiveness, metabolic requirements, or reproductive overhead of traits in other families. These cross-family relationships are part of the DNA model rather than exceptional cases.
 
@@ -14,7 +14,9 @@ In general, greater capabilities result in ongoing metabolic or reproductive cos
 
 # Initial species
 
-The default single-player world begins with exactly one species. The player selects its DNA from a narrow set of permitted primitive capabilities and places it in an eligible volcanic ocean tile. The founding pool contains no more than one or two metabolism choices, with likely alternatives emphasizing hydrogen gas or sulfur compounds released by volcanic activity. A few other choices trade metabolic efficiency against environmental tolerance. All founding organisms share the resulting DNA, and there are no autonomous or competing species until the first speciation event creates a descendant and leaves the ancestor branch behind.
+V1 has two exact founding-DNA baselines. Sulfide anoxygenic phototrophy is initially more productive in shallow, illuminated, sulfide-rich volcanic water and begins with stronger sulfur tolerance, but depends on its specialized niche. Hydrogen acetogenesis is initially less productive but operates without light and has a shorter trait path through organic uptake and fermentation toward a less volcanism-dependent existence. Additional founding choices may adjust efficiency and environmental tolerance within narrow bounds without reversing these identities.
+
+Free sandbox begins with one player-chosen founding species by default. Survival begins with two independent root species: the player's selected metabolism in the chosen eligible tile and an autonomous species using the other metabolism in an eligible edge-sharing tile. Both use the same mutation-point and simulation rules and begin from equivalent population-scale state. All organisms within either founder share their species' DNA.
 
 # Mutation and Speciation
 
@@ -79,6 +81,30 @@ Each tick updates position from velocity, and behavior may change that velocity 
 
 An organism's DNA encodes a variety of trait families that can be explored and modified separately, subject to their cross-family prerequisites, incompatibilities, effects, and costs.
 
+The canonical displayed families are:
+
+| Trait family | Primary responsibility |
+| --- | --- |
+| Cellular organization and structure | Cell organization, structural scale, membranes or walls, compartments, and eukaryotic organization |
+| Environmental tolerance | Moisture, temperature, and chemical soft/hard limits |
+| Resource acquisition | Absorption, active uptake, ingestion, and transfer of external matter into internal stores |
+| External energy capture | Using light, geothermal conditions, or environmental chemical substrates to create energy-bearing organic reserve |
+| Internal metabolism | Mobilizing stored energy, catabolism, respiration, fermentation, biomass assembly, metabolic regulation, and waste routing |
+| Energy storage | Maximum reserve capacity and the structures used to hold chemical-energy-bearing organic matter |
+| Nutrient storage | Available-store capacities, retention, and stockpiling of non-reserve nutrients and micronutrients |
+| Growth and lifecycle | Mature structure targets, lifecycle phases, dormancy, senescence, and growth scheduling |
+| Reproduction | Split/budding model, allocation, health gate, attempt frequency, and overhead |
+| Locomotion | Movement mechanisms, speed, environmental compatibility, and energy cost |
+| Sensing | Which local organisms, remains, tile conditions, and future resource gradients can be detected |
+| Behavioral regulation | How sensed information and internal state select goals and actions |
+| Predation and scavenging | Target eligibility, capture or kill mechanisms, consumption, and remnant access |
+| Defense | Resistance, avoidance, or structural protection against predation and biological attack |
+| Genetic and evolutionary machinery | DNA exchange, abstract sexual reproduction, mutation-income modifiers, and speciation capacity |
+
+Families are presentation and validation boundaries, not isolated subsystems. For example, predation may require locomotion, sensing, a capture mechanism, suitable ingestion, and internal catabolism; oxygen respiration may require oxygen uptake and tolerance; and compartmentalized energy storage may require advanced cellular organization.
+
+Waste handling, nutrient retention, digestion, and morphology do not require separate top-level families in v1. They are compiled effects of resource acquisition, internal metabolism, cellular structure, predation, or lifecycle traits. Communication, symbiosis, colonial organization, parasitism, disease, and multicellularity are credible future families or branches, but are not required for the initial single-celled simulation.
+
 ## Locomotion
 
 Every organism occupies a specific coordinate within its current tile. Organisms can evolve ways to move through this local space. By default this locomotion is somewhat random in nature, but it can still help an organism find other organisms or dead remnants and reach the boundary of a neighboring environment more frequently than passive movement alone. An organism can migrate to a neighboring tile only when it is sufficiently near the shared edge. Locomotion takes energy!
@@ -105,31 +131,77 @@ Some organisms must live in water and therefore require either an aquatic tile o
 
 Organisms can evolve the ability to withstand hotter and/or colder temperatures at the cost of lower metabolic efficiency.
 
-## Eukaryotic cells
+## Chemical tolerance
 
-Evolving separate compartments for storing DNA and other organelles supports more complex metabolic pathways and many advanced capabilities. Particular advanced traits may use eukaryotic organization as a prerequisite where that relationship serves the biological abstraction and gameplay.
+Environmental compounds may be useful substrates for one metabolism while remaining stressful or toxic to organisms without the appropriate tolerance. Volcanic hydrogen sulfide and sulfur dioxide are important early examples. Exposure above a soft threshold increases energy expenditure; exposure beyond a hard threshold creates an increasingly high chance of death on each tick. Metabolic access to a sulfur compound may provide some tolerance where appropriate, but substrate use and toxin resistance remain separately configurable DNA effects.
+
+## Cellular organization and structure
+
+This family owns the organism's structural organization, including membranes or walls, its DNA-defined viable and mature structural-biomass targets, and any compartments that enable advanced traits. It is also the natural home for organism scale: larger or more elaborate cells can support greater storage, ingestion, defense, and metabolic throughput, but require more matter to reproduce and more energy to maintain.
+
+Evolving separate compartments for storing DNA and other organelles supports more complex metabolic pathways and many advanced capabilities. Particular advanced traits may use eukaryotic organization as a prerequisite where that relationship serves the biological abstraction and gameplay. Eukaryotic organization is therefore an important node in this broader family rather than a complete family by itself.
 
 ## Predation and scavenging
 
 Organisms can evolve the ability to scavenge off the remnants of dead organisms, or to actively kill and consume other organisms. The predator or scavenger must be within the appropriate interaction range of its target.
 
-## DNA exchange
+## Defense
+
+Predation requires an opposing evolutionary pressure. Defense traits may reduce capture probability, increase the energy or capability needed to kill an organism, or provide structural or chemical deterrence. Evasion through sensing, behavior, or locomotion remains an interaction among those families rather than being duplicated as a defense trait. Defensive structures require matter and commonly increase maintenance or reproductive cost.
+
+## Genetic and evolutionary machinery
 
 Simple organisms only reproduce through asexual reproduction, but even single-celled organisms may evolve abstract DNA-exchange capabilities inspired by processes such as conjugation. In the initial simulation, we do not simulate the transfer or recombination of individual genomes. Instead, DNA exchange increases the species' mutation-point generation or speciation capacity and enables larger changes during a later speciation event. Sexual reproduction is treated through the same species-level abstraction.
 
 DNA exchange and sexual reproduction operate only within a species. A newly founded species is immediately incompatible with its ancestor and every other species. Because sexual reproduction is abstract in the initial simulation, it does not require two organisms to be near one another.
 
-## Metabolism
+## Resource acquisition
 
-The metabolism of an organism is one of its most essential and defining traits. Metabolisms consume different substrates, and can evolve to be more or less efficient, with tradeoffs in resiliency or reliance on rarer nutrients. On each tick, an organism attempts its available metabolic processes. The success and yield of an attempt may be probabilistic based on environmental favorability, substrate availability, DNA, and organism state. Successful metabolism converts external energy sources and nutrients into internally stored chemical energy and usable organic compounds. Energy dissipates when used, while the nutrients contained in the compounds remain part of the world's resource cycles.
+Resource acquisition controls how matter crosses from the environment, a remnant, or consumed prey into the organism's available stores. Primitive passive absorption may accept only a narrow set of bioavailable resources. Active transport, broader organic uptake, ingestion, and digestion can expand accessible substrates but impose maintenance, handling, or micronutrient costs.
 
-Basic metabolisms are anaerobic and rely on specific conditions, such as thermal gradients and compounds released by volcanic activity, allowing chemotrophy to be a viable pathway.
+Acquisition does not itself create energy. It transfers matter into an internal account. An organism also needs an external energy-capture or internal catabolic pathway that can transform the acquired material into `ReserveOrganic`, structural biomass, or another usable form. Predation and scavenging determine access to a target; resource-acquisition and internal-metabolism capabilities determine what can actually be taken and processed.
 
-Fermentation provides an option for breaking down organic molecules without oxygen. It becomes a viable evolutionary choice when sufficient organic compounds are available and the species has accumulated the mutation points needed to acquire it; it does not occupy a predetermined place in the world's evolutionary sequence.
+## External energy capture
 
-Anoxygenic photosynthesis provides a limited option for using sunlight to help feed on sulfur compounds. Oxygenic photosynthesis opens dramatic new opportunities by allowing cells to harness the sun's energy to transform carbon dioxide and water into usable organic compounds, producing free oxygen as a waste product.
+External energy capture controls how an organism uses light, geothermal opportunities, or environmental chemical substrates to create internally stored chemical energy and usable organic compounds. Pathways can evolve different reaction inputs, efficiencies, environmental envelopes, throughput, regulation, and micronutrient requirements. On each tick, an organism may attempt its available capture reactions. Success and yield may be probabilistic based on environmental favorability, substrate availability, DNA, organism state, and remaining storage capacity.
 
-When free oxygen becomes abundant, respiration provides a powerful mechanism for generating energy to power cellular processes.
+Basic capture pathways are anaerobic and rely on specific conditions, such as thermal gradients and compounds released by volcanic activity, allowing chemotrophy to be viable. The founding hydrogen-acetogenesis and sulfide-anoxygenic-phototrophy choices are external energy-capture pathways.
+
+Anoxygenic photosynthesis provides a limited option for using sunlight with sulfur compounds. Oxygenic photosynthesis opens dramatic new opportunities by allowing cells to harness sunlight using carbon dioxide and water, producing free oxygen as a waste product.
+
+## Internal metabolism
+
+Internal metabolism controls transformations after matter or chemical energy is inside the organism. It includes reserve mobilization, baseline maintenance, biomass assembly, internal nutrient transformations, regulation among available pathways, and the routing or retention of spent products and waste.
+
+Every founder has a basal internal metabolism capable of consuming `ReserveOrganic` to pay maintenance and reproduction overhead and of combining reserve and required nutrients into structural biomass. Stored reserve is matter with chemical energy, not a second abstract energy-point pool. When the energy is spent, it dissipates while the carrier's constituent matter remains in internal stores or follows an explicit waste reaction.
+
+Fermentation is an internal catabolic path that extracts chemical energy from acquired organic matter without oxygen. It becomes useful only when the organism can acquire suitable organic substrates and the environment supplies them. Respiration is another internal catabolic path: once free oxygen is available and the organism has appropriate uptake and tolerance, it can extract substantially more useful energy from organic matter. Neither pathway occupies a predetermined place in the world's chronology; prerequisites and environmental opportunity determine when it becomes viable.
+
+Internal-metabolism traits may change enabled reactions, reaction throughput, mobilization rate, maintenance efficiency, anabolic throughput, regulation, and waste products. Lower energy expenditure never deletes matter: it changes how much reserve is consumed for useful work or how much input energy dissipates.
+
+## Energy storage
+
+All v1 organisms store chemical energy as `ReserveOrganic` in an `EnergyReserve` compartment. The founding `PrimitiveOrganicReserve` mechanism has the existing baseline capacity of 10,000 reserve units. This is an abstract representation of intracellular organic reserves rather than a claim that every organism stores one exact compound.
+
+Energy-storage evolution has three conceptual axes:
+
+- **Capacity:** incremental `ReserveCapacity` traits raise the maximum quantity that may be stored.
+- **Organization:** a later `CompartmentalizedReserve` trait provides a larger step increase and may serve as a prerequisite for still larger storage, but requires suitable cellular organization.
+- **Handling:** synthesis, retention, and mobilization efficiency may be improved through cross-family internal-metabolism traits rather than creating free stored energy.
+
+Greater capacity does not add reserve matter when a species mutates. Founding members of the descendant retain their existing reserve quantity, so their reserve fraction—and therefore their initial health contribution from energy—may fall until the new capacity is filled. Storage structures may also increase mature structural requirements, maintenance cost, or the resources that must be transferred during reproduction.
+
+V1 does not require multiple energy-bearing reserve compounds. A future dense reserve chemistry, such as a lipid-inspired store, would require its own composition, energy density, synthesis and mobilization reactions, and resource-ledger validation rather than being represented as a capacity multiplier on `ReserveOrganic`.
+
+## Nutrient storage
+
+Nutrient storage remains distinct from energy capacity even though energy-bearing reserves contain matter. This family controls capacities in the organism's `AvailableStore`, including stockpiling of structural macronutrients and micronutrients for later growth, reproduction, metabolic quotas, or migration through a resource-poor environment.
+
+Storage may be defined by resource or by tags such as macronutrient, micronutrient, or digestible organic matter. Retention and waste-routing behavior can depend on internal-metabolism and behavioral-regulation traits, but the capacity belongs here. As with energy storage, greater capacity is initially empty and may require additional structure or maintenance.
+
+## Behavioral regulation
+
+Sensing determines what information an organism can observe; behavioral regulation determines what it does with that information. Regulation traits can add behaviors, improve switching among goals, set resource-conservation or escape responses, and coordinate locomotion, feeding, reproduction, dormancy, and metabolic suppression. Metabolic pathway switching remains an internal-metabolism effect even when behavioral state helps select it.
 
 # Lifecycle
 

@@ -43,9 +43,9 @@ The implementation plan must define a stable action-resolution order so competin
 
 # State
 
-We want to store the state of the world in a way where we can easily serialize the state, save it as a file, load it, and checkpoint it. World state includes the game mode, root seed, simulation configuration and rules version, tick duration, current tick, calendar time and final date, seeded random-state progression, each tile's fixed geography and climate baselines, its current environmental conditions, nutrient pools and atmospheric-gas reservoirs, each organism and dead remnant with its current tile, within-tile coordinates, and remaining contents, player-to-species control assignments, and sandbox species locks.
+We want to store the state of the world in a way where we can easily serialize the state, save it as a file, load it, and checkpoint it. World state includes the game mode, root seed, simulation configuration and rules version, tick duration, current tick, calendar time and final date, seeded random-state progression, each tile's fixed geography and climate baselines, its current environmental conditions, nutrient pools and atmospheric-gas reservoirs, each organism and dead remnant with its current tile, within-tile coordinates, and remaining contents, player-to-species control assignments, sandbox species locks, and each actor's discovered tiles and timestamped last observations.
 
-Each species has its own mutation-point balance and a persistent lineage record. A speciation event records the ancestor, descendant, time, selected founding tiles, founding populations, and DNA changes. Extinct species and their lineage records remain available for the tree-of-life history. Because inter-species breeding is excluded from the initial simulation, every non-root species has exactly one parent species.
+Each species has its own mutation-point balance and a persistent lineage record. An abiogenesis event records the mode's independent root species and founding transactions. A speciation event records the ancestor, descendant, time, selected founding tiles, founding populations, and DNA changes. Extinct species and their lineage records remain available for the tree-of-life history. Because inter-species breeding is excluded from the initial simulation, every non-root species has exactly one parent species.
 
 The simulation maintains or derives each species' total living population and average relative health across all tiles. Mutation-point generation is calculated from those two values and the mutation modifiers encoded in the species' DNA. Controlled and uncontrolled species use the same calculation.
 
@@ -55,7 +55,9 @@ When an organism dies, the death event records every death trigger satisfied dur
 
 # Initialization
 
-The default single-player simulation initializes one founding species in the eligible volcanic ocean tile selected by the player. Its shared DNA is built from no more than one or two available primitive metabolisms, likely emphasizing hydrogen gas or sulfur compounds, and a small number of efficiency-versus-tolerance choices. No other species or organisms exist at initialization, and the founding species is the root of the tree of life.
+V1 provides two founding metabolisms: sulfide anoxygenic phototrophy and hydrogen acetogenesis. Free sandbox initializes one player-chosen founding species in an eligible volcanic ocean tile by default. Survival initializes the player-selected founder in the chosen tile and an autonomous founder using the other metabolism in a deterministically reserved edge-sharing tile suited to it. Both begin with equivalent population-scale state and ordinary simulation rules, but their DNA-specific quotas, efficiencies, tolerances, and environmental dependencies differ.
+
+The founders are independent root species grouped by a non-species abiogenesis origin event. Neither is recorded as the other's parent; every species created by later speciation has exactly one parent species.
 
 Abiogenesis is narrative framing rather than a simulated system. The engine starts from the established founding population after the lightning introduction.
 
@@ -83,7 +85,7 @@ Presentation-only randomness, such as choosing an organism for the camera to fol
 
 # Structure
 
-The authoritative simulation runs on a centralized server. The server owns world state, tick processing, seeded randomness, gameplay-command validation, saving, and replay. Thin clients send player decisions and receive the snapshots, events, and aggregates required to render and inspect the world; they do not independently advance or resolve simulation state.
+The authoritative simulation runs on a centralized server. The server owns world state, tick processing, seeded randomness, gameplay-command validation, saving, replay, and player-knowledge state. Thin clients send player decisions and receive only the snapshots, events, and aggregates the actor is permitted to observe; they do not independently advance or resolve simulation state or receive hidden current tile state for client-side masking.
 
 The server-client boundary is a v1 architectural requirement even when both processes run on the same machine. It allows different clients to share one simulation and lets larger worlds scale by allocating stronger server hardware. V1 does not require a distributed simulation cluster, but its thin-client protocol should avoid tying the authoritative engine to one presentation technology.
 

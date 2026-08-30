@@ -51,6 +51,18 @@ As a future extension, micronutrients may be represented as localized concentrat
 
 To model the inherent randomness of the living world, each year may have some additional random global deviation from the 'normal' parameters of its tiles. Some years may be hotter than average; some may be wetter. In some years, volcanic activity might wipe out almost all life in a particular tile. These deviations and events are generated deterministically from the world's root seed and current simulation state.
 
+# Exploration and tile knowledge
+
+The world is not fully revealed at the start. In every game mode, the player's starting tile and its edge-sharing neighbors are visible initially. Visibility has three meaningful states:
+
+- **Live:** any tile currently inhabited by the player's controlled species. The player can inspect living organisms and remains, exact current environmental conditions, current resource stocks and flows, and the full recorded history from periods when the tile was live.
+- **Reduced:** an edge-sharing neighbor of a live tile, or a discovered tile the controlled species previously inhabited. The player retains fixed geography, climate and geological baselines, basic or coarse resource composition, and timestamped last-known information. Living organisms and remains are hidden, and variable state such as exact current temperature, weather, gas quantities, and resource stocks is neither shown nor updated.
+- **Unknown:** a tile that has never been the starting tile, adjacent to a live tile, or occupied by the controlled species. It exposes no inspectable composition or current state.
+
+Moving into a tile promotes it to live and reveals its neighbors at reduced detail. Leaving a tile demotes it to reduced unless another organism of the controlled species remains. Discoveries persist as player knowledge, but stale information must be labeled with when it was observed. In free sandbox, accumulated player knowledge persists when control changes species, while live visibility is recalculated from the newly controlled species' occupied tiles.
+
+Visibility affects information only and must never change simulation behavior, randomness, or environmental resolution. The authoritative server enforces it; hidden state is not sent to a client merely to be covered by presentation fog.
+
 # Generating the world
 
 The world is generated randomly, but in a manner that roughly resembles the structure of our own world. Every generated tile receives a world `(x, y)` coordinate and an elevation. Elevation determines whether it is terrestrial or aquatic and, for aquatic tiles, its water depth. The tile's `y` coordinate directly informs its insolation pattern and constrains plausible temperature ranges, while elevation and neighboring geography provide additional climate correlations.
@@ -63,8 +75,10 @@ We should support top-level grid dimensions that determine the number of tiles i
 
 # Starting conditions
 
-For the default single-player start, world generation must produce volcanic ocean tiles capable of supporting the permitted founding-species configurations. After choosing a narrow set of primitive DNA capabilities, the player selects a starting location from the tiles eligible for that resulting DNA. The precise volcanism, depth, temperature, and nutrient thresholds that determine eligibility belong in the balance plan, but the player must always have at least one viable choice.
+World generation must produce volcanic ocean tiles capable of supporting both permitted founding-species configurations. Free sandbox requires at least one eligible tile for either player-selected metabolism. Survival requires paired starting regions: when the player selects an eligible tile for one metabolism, an edge-sharing volcanic ocean tile must be reserved and eligible for the other. The precise volcanism, depth, temperature, light, gas, and nutrient thresholds belong in the balance plan, but setup must always have a viable deterministic choice.
 
-The default single-player world begins with one living species located in the selected tile and no other life. Its first speciation event creates the first branch in the tree of life.
+Starting volcanic tiles are productive but deliberately harsh environments rather than universally desirable habitats. Their gases and geological processes provide substrates for primitive metabolisms, but high hydrogen-sulfide and sulfur-dioxide exposure imposes additional energy costs and may kill organisms without suitable chemical tolerance. A starting tile may also lack micronutrients required by later capabilities, encouraging descendants to migrate, import or scavenge scarce matter, or specialize for other environments rather than remaining indefinitely in the original refuge.
+
+Free sandbox begins with one living species in the selected tile by default. Survival begins with the player-controlled species in the selected tile and an autonomous competing species using the other founding metabolism in its paired tile. The two are independent roots rather than ancestor and descendant.
 
 Future competitive setup begins with an empty world and lets players take turns selecting eligible starting tiles and making basic DNA choices for their founding species. Each player therefore creates a root lineage before the shared simulation begins. Turn order, tile-reservation rules, and competitive balancing remain future design questions.
