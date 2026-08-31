@@ -54,17 +54,7 @@ The server host owns networking, connected-client sessions, command validation, 
 
 ## Explicit tick pipeline
 
-The core engine will use explicit ordered phases rather than allowing organisms or asynchronous tasks to mutate shared state arbitrarily. The exact phases remain part of the simulation plan, but the intended shape is:
-
-1. Update environmental conditions and credit external sources.
-2. Apply environmental sinks and pre-biological atmospheric-gas exchange.
-3. Evaluate organisms against the resulting stable view.
-4. Produce action intents, resource claims, and transfers.
-5. Resolve competing interactions in a stable order.
-6. Apply metabolism, reproduction, predation, scavenging, death, and movement.
-7. Resolve organism migration and any other explicitly post-biological cross-tile transfers.
-8. Update species aggregates, mortality history, and mutation-point income.
-9. Emit events, resource-flow aggregates, state deltas, and replay diagnostics.
+The core engine uses explicit ordered phases rather than allowing organisms or asynchronous tasks to mutate shared state arbitrarily. The authoritative order and dependency table are defined in [SIMULATION_LOOP.md](SIMULATION_LOOP.md). In summary, a tick resolves commands; environment and non-biological resources; intrinsic death; movement; external acquisition/capture/interactions; internal metabolism and maintenance; lifecycle and reproduction; next-tick behavior; species systems; and final publication. Each phase commits before a dependent phase takes its fresh snapshot.
 
 Parallel execution may accelerate work inside a phase, particularly across tiles, but worker completion order must not affect results. Parallel work should produce isolated outputs that are merged through a deterministic reduction step.
 
@@ -81,7 +71,7 @@ Deterministic replay and internal mass balance are architectural properties, not
 - Saving and restoring the random and rules state required for continuation.
 - A simulation-rules version stored with every world.
 
-The [resource deep dive](RESOURCE_MODEL.md) and [range proof](RESOURCE_CALIBRATION.md) select signed 64-bit game-native integer quanta for authoritative matter and energy quantities, with checked 128-bit intermediates. The numeric representation for positions, probabilities, rates, and environmental values remains to be decided. Those decisions must explicitly consider cross-platform behavior, overflow, precision, mass-balance auditing, and serialization stability.
+The [resource deep dive](RESOURCE_MODEL.md) and [range proof](RESOURCE_CALIBRATION.md) select signed 64-bit game-native integer quanta for authoritative matter and energy quantities, with checked 128-bit intermediates. [Organism health calibration](ORGANISM_HEALTH_CALIBRATION.md) provisionally selects a parts-per-million fixed-point ratio for health, normalized factors, and probabilities. Numeric representations for positions, rates, and non-normalized environmental values remain to be decided. Those decisions must explicitly consider cross-platform behavior, overflow, precision, mass-balance auditing, and serialization stability.
 
 # Server communication
 

@@ -22,7 +22,11 @@ The plans remain downstream from the vision. If a plan intentionally contradicts
 | [SULFUR_TILE_STARTING_CONFIGURATION.md](SULFUR_TILE_STARTING_CONFIGURATION.md) | Does the fast sulfide specialist reach its opening target while remaining light-, substrate-, and micronutrient-constrained? | Founding metabolisms, resource calibration, hydrogen fixture |
 | [SIMULATION_LOOP.md](SIMULATION_LOOP.md) | In what deterministic order does a tick resolve? | World, resources, organisms |
 | [ORGANISMS.md](ORGANISMS.md) | How do individual organisms evaluate behavior, actions, lifecycle, and interactions? | Resources, simulation loop |
+| [ORGANISM_STATE_AND_HEALTH.md](ORGANISM_STATE_AND_HEALTH.md) | Which organism fields are authoritative, and how is explainable health derived and cached? | Organisms, resources, data model |
+| [ORGANISM_HEALTH_CALIBRATION.md](ORGANISM_HEALTH_CALIBRATION.md) | What first numeric values govern health, structure, nutrient sufficiency, senescence, environmental condition, and presentation? | Organism state and health, founder fixtures, configuration |
+| [INTERNAL_STORAGE_AND_ALLOCATION.md](INTERNAL_STORAGE_AND_ALLOCATION.md) | How are stored resources acquired, capacity-limited, consumed, temporarily bound by active processes, or protected through evolved priority and holdback policies? | Organisms, resource model, simulation loop, traits |
 | [TRAIT_SYSTEM.md](TRAIT_SYSTEM.md) | How are linear and branching trait families authored, validated, compiled, activated, priced, and explained? | Evolution, organisms, resources, configuration |
+| [TRAIT_CATALOGUE.md](TRAIT_CATALOGUE.md) | What are the initial v1 trait trees, cross-family milestones, niches, and complexity tradeoffs? | Trait system, founding metabolisms, organisms, balance |
 | [EVOLUTION.md](EVOLUTION.md) | How do DNA, mutation points, speciation, autonomy, and lineage work? | Organisms, configuration |
 | [GAMEPLAY.md](GAMEPLAY.md) | How do setup, sandbox, survival, pacing, and endings become playable flows? | Evolution, simulation loop |
 | [SERVER_AND_PROTOCOL.md](SERVER_AND_PROTOCOL.md) | How do clients command and observe the authoritative server? | Architecture, data model, gameplay |
@@ -72,7 +76,7 @@ A planning document is ready for implementation when it includes, as applicable:
 
 # Major decisions still to make
 
-- Numeric representations for coordinates, rates, probabilities, and non-resource environmental values.
+- Numeric representations for coordinates, rates, and non-resource environmental values; health ratios and probabilities have a provisional parts-per-million encoding.
 - Random-stream derivation and deterministic parallel reduction.
 - Exact resource reservoirs, reaction recipes, and uptake contention.
 - Environmental time-series generation and atmospheric transport.

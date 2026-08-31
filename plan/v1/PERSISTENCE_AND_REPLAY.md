@@ -16,7 +16,7 @@ A complete save must account for:
 - Tick duration, current tick/calendar, final date, pause, and speed state as applicable.
 - Random-stream or counter state.
 - Fixed geography, baselines, current conditions, integer resource accounts, and named gases.
-- Every living organism and dead remnant, including structural matter, available stores, and energy-bearing reserves.
+- Every living organism and dead remnant, including structural matter, available stores, energy-bearing reserves, and active metabolic binding cohorts with release ticks.
 - Persisted fractional remainders used by sources, sinks, exchange, rates, and energy costs.
 - Species DNA, mutation balances, aggregates needed for exact continuation, and locks.
 - Complete lineage and controller state.
@@ -26,7 +26,7 @@ A complete save must account for:
 
 The save contains the complete authoritative world even where a player lacks visibility. Loading or reconnecting must rebuild only that actor's authorized unknown/reduced/live projection. Replays restore knowledge state at checkpoints and reproduce visibility transitions from controlled-species occupancy; watching a replay must not retroactively fill hidden historical intervals unless a separate omniscient presentation mode is explicitly selected after the run.
 
-Derived stored-energy and elemental totals need not be duplicated in the save when they can be recomputed exactly from resource definitions and account quantities.
+Derived stored-energy, elemental totals, and organism health need not be duplicated in the save when they can be recomputed exactly from resource definitions, account quantities, DNA, and environment. If health is retained as diagnostic snapshot data, load must recompute and verify or discard it according to [ORGANISM_STATE_AND_HEALTH.md](ORGANISM_STATE_AND_HEALTH.md).
 
 # Snapshot consistency
 

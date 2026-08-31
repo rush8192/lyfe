@@ -1,6 +1,6 @@
 # DNA Trait Graph and Compilation
 
-Status: first implementation proposal; policy questions identified
+Status: v1 implementation policies decided; concrete schema and catalogue pending
 
 Sources: [ORGANISMS vision](../../vision/ORGANISMS.md), [evolution plan](EVOLUTION.md), [organism plan](ORGANISMS.md), [configuration plan](CONFIGURATION_AND_BALANCE.md), and [resource model](RESOURCE_MODEL.md).
 
@@ -8,7 +8,7 @@ Sources: [ORGANISMS vision](../../vision/ORGANISMS.md), [evolution plan](EVOLUTI
 
 Define how LYFE authors, validates, prices, unlocks, compiles, applies, and explains DNA traits. The trait system must support linear progressions, branching family trees, hard cross-family prerequisites, incompatibilities, direct and indirect attribute effects, and energy/resource costs without placing arbitrary scripts in the simulation hot loop.
 
-This document fixes the proposed data and compilation shape. The policy choices in [Questions to confirm](#questions-to-confirm) should be decided before the concrete configuration schema and initial trait catalogue are finalized.
+This document fixes the v1 data, policy, and compilation shape. The initial tree topology, ecological roles, and complexity tradeoffs are proposed in [TRAIT_CATALOGUE.md](TRAIT_CATALOGUE.md). Concrete file encodings and numerical values remain to be designed and calibrated.
 
 # Core model
 
@@ -46,9 +46,10 @@ TraitDefinition:
     displayParentTraitId: TraitId?
     prerequisites: TraitPredicate
     incompatibleTraitIds[]
+    supersededEffects: EffectSelector[]
     mutationPointCost
     changeComplexity
-    effects: TraitEffect[]
+    effects: TraitEffectDefinition[]
     activationRequirements: ActivationRequirement[]
     pressureTags[]
     visualEffects[]
@@ -58,11 +59,22 @@ TraitPredicate:
     HasTrait(TraitId)
     AllOf(TraitPredicate[])
     AnyOf(TraitPredicate[])
+
+TraitEffectDefinition:
+    key: EffectKey
+    supersedable: bool
+    effect: TraitEffect
+
+EffectSelector:
+    sourceTraitId: TraitId
+    effectKey: EffectKey
 ```
 
 The optional within-family display parent is also a hard prerequisite and is compiled into the exact predicate model when the rule pack loads. A node that conceptually reconverges after two branches chooses one display parent and names both branches in `prerequisites`; the family remains drawable as a tree while the global dependency structure remains a DAG. Linear levels such as `HeatToleranceI`, `HeatToleranceII`, and `HeatToleranceIII` are separate stable nodes rather than a mutable integer level. This keeps pricing, historical attribution, save compatibility, and UI paths explicit.
 
 The first implementation should not support negated predicates, arbitrary expressions, world-state queries, or author-written code. Incompatibility has its own field, and material/environmental feasibility is evaluated separately from genetic prerequisites.
+
+Effect keys are stable within their source trait. `supersededEffects` allows an advanced node to retire selected numeric effects or upkeep contributions from an acquired ancestor without removing that ancestor from DNA or lineage history. Each selector must identify an exact source trait and an effect marked `supersedable`. Family-wide, attribute-wide, and wildcard suppression are invalid. This mechanism is reserved for genuine upgrades or replacements whose old and new contributions must not stack.
 
 # Typed effects
 
@@ -115,8 +127,9 @@ Fundamental organism attributes are compiled once per species. The first catalog
 - Acquisition tags and throughput.
 - External capture and internal reaction availability, throughput, probability, and yield.
 - Reserve-mobilization and biomass-assembly throughput.
+- Metabolic-process binding durations, allocation tiers, relative weights, and bounded resource holdbacks.
 - Lifecycle, maturity, dormancy, senescence, and reproduction parameters.
-- Predation, scavenging, defense, and interaction radii.
+- Predation attack power, contested-feeding priority, attempt cost, ingestion limits, defense power, scavenging, and interaction radii.
 - Behavior choices and selection weights.
 - Mutation-income and per-speciation complexity modifiers.
 
@@ -150,7 +163,13 @@ compiledValue = clamp(
 
 Fixed-point multiplication uses a canonical sort by `(attributeId, sourceTraitId, effectIndex)`, checked wide intermediates, and a named rounding rule. Multipliers apply once after the additive sum unless an attribute definition explicitly declares another operation model.
 
-`SetExclusiveChoice` is permitted only for attributes such as reproductive allocation mode where exactly one choice must win. Configuration validation rejects two active providers unless the traits are explicitly ordered as replacements. Ordinary scalar traits must use typed additive or multiplicative effects instead of last-writer-wins assignment.
+`SetExclusiveChoice` is permitted only for attributes such as reproductive allocation mode where exactly one choice must win. Configuration validation rejects two unsuperseded providers unless the traits are explicitly ordered as replacements. Before numeric composition or exclusive-choice resolution, compilation removes only the exact ancestor contributions named by `supersededEffects`; provenance retains both the retired contribution and its replacement. Ordinary scalar traits must use typed additive or multiplicative effects instead of last-writer-wins assignment.
+
+## Derived envelope liabilities
+
+Some liabilities depend on the final combination of independently compiled attributes rather than on one trait alone. V1 needs a closed, versioned `ThermalToleranceBurden` rule that reads the final hot and cold extensions and contributes to a named upkeep channel through convex per-axis curves plus a multiplicative breadth-coupling term. This permits heat and cold resilience to evolve independently while making simultaneous extremes increasingly costly.
+
+Derived-liability rules are engine-defined typed operations, not author scripts. They execute after ordinary numeric composition and before final cost-channel totals. Their configuration, inputs, result, and contributing trait provenance are included in the compiled DNA and client explanation. Adding another derived rule requires a rules/engine version decision.
 
 # Prerequisites, incompatibility, and feasibility
 
@@ -166,14 +185,14 @@ Scenario rules may separately restrict which traits can appear in a mode or foun
 
 # Acquired DNA versus active phenotype
 
-Speciation changes the selected founders' species/DNA reference but does not create matter, fill storage, or rewrite their authoritative resource balances. The recommended v1 policy is:
+Speciation changes the selected founders' species/DNA reference but does not create matter, fill storage, or rewrite their authoritative resource balances. The v1 policy is:
 
 - Scalar DNA parameters apply beginning with the next organism-evaluation phase.
 - Storage-capacity changes preserve current contents.
 - A capability with activation requirements is present genetically but inactive for an organism until its current structure, resource quotas, lifecycle, and environment satisfy those requirements.
 - Activation is derived from current state rather than stored as a second genetic flag.
 - Reproduction must provide an offspring with the descendant DNA's minimum viable structure and quotas; otherwise the reproduction transaction is invalid.
-- An organism below a new mature target may grow toward it. Falling below a hard minimum-viable target contributes stress or death according to organism rules rather than creating free structure.
+- An organism below a new mature target may grow toward it. Falling below the hard minimum-viable target produces deterministic `StructuralFailure` under the first organism-health calibration rather than creating free structure; see [ORGANISM_HEALTH_CALIBRATION.md](ORGANISM_HEALTH_CALIBRATION.md).
 
 This avoids per-trait expression state and prevents physical machinery from appearing without matter. It also permits members of one species to differ temporarily in active phenotype because their resources and lifecycle state differ, while their DNA remains identical.
 
@@ -198,7 +217,7 @@ Mutation points and evolutionary change breadth solve different problems:
 - `changeComplexity` measures how much genetic change one speciation event can express.
 - `EvolutionaryMachinery` compiles `maxChangeComplexityPerSpeciation` and the mutation-income modifier independently.
 
-The recommended v1 rule permits multiple nodes in one speciation when:
+V1 permits multiple nodes in one speciation when:
 
 - The command explicitly names every new node.
 - The final DNA satisfies every prerequisite and incompatibility.
@@ -214,8 +233,10 @@ CompileDNA(baseGenome, acquiredTraitIds, compiledTraitGraph):
     reject unknown or duplicate trait IDs
     validate all predicates against final acquired set
     reject every acquired incompatibility pair
+    remove explicitly superseded ancestor effects while retaining provenance
     group typed effects by target attribute/capability
     compose numeric attributes in canonical operation order
+    evaluate typed derived-liability rules from composed attributes
     resolve exclusive choices and enabled capabilities/reactions
     compile activation requirements and named cost channels
     validate ranges, quotas, reaction references, and capacity limits
@@ -267,6 +288,7 @@ Rule-pack loading rejects:
 - Duplicate stable IDs.
 - Cycles in family-parent or cross-family prerequisites.
 - A trait incompatible with itself or a required ancestor.
+- A supersession selector targeting an unknown trait, a non-ancestor, or an effect that is not declared supersedable.
 - Unreachable nodes unless explicitly marked scenario/future-only.
 - Invalid effect operations for an attribute's declared composition model.
 - Multiple possible providers for an exclusive choice without explicit replacement rules.
@@ -280,6 +302,7 @@ Rule-pack loading rejects:
 - Cycle, missing reference, incompatible ancestor, and exclusive-choice rejection tests.
 - Compilation invariant under trait-input ordering and acquisition history.
 - Golden compiled values and provenance for representative cross-family traits.
+- Exact ancestor-effect supersession tests that preserve acquired DNA and provenance and reject broad or invalid selectors.
 - Property tests that capacity traits do not credit matter or energy.
 - Speciation tests preserving founder structure, reserve, stores, and quotas.
 - Activation tests for sufficient/insufficient structure, micronutrients, lifecycle, and environment.
@@ -289,14 +312,14 @@ Rule-pack loading rejects:
 - Player and autonomous candidate-frontier equivalence.
 - Save/load and rule-pack-hash stability tests.
 
-# Questions to confirm
+# Decisions confirmed
 
-The proposal recommends defaults, but these product choices deserve explicit confirmation:
+The following are normative v1 policies:
 
-1. **Exclusive branches:** siblings are compatible unless explicitly incompatible. An exclusive choice is permanent for that descendant lineage. Should any family make exclusivity the default instead?
-2. **Multi-node speciation:** one event may buy a complete multi-node path, constrained by both mutation-point price and a DNA-defined change-complexity limit. Should v1 instead require one node per speciation?
-3. **Trait expression:** DNA applies immediately, but material-dependent capabilities activate only when each organism meets derived structure/quota gates; v1 tracks no per-trait construction progress. Is that abstraction sufficient?
-4. **Environmental gating:** world conditions affect usefulness/activation, not genetic unlock validation. Should any environmental observation be a hard requirement to acquire a trait?
-5. **Effect replacement:** acquired traits normally contribute forever. Should advanced nodes be allowed to explicitly replace an ancestor's numeric effect or upkeep while keeping the ancestor in lineage history?
-6. **Energy efficiency scope:** all efficiency effects target named cost/reaction channels; there is no unrestricted global efficiency multiplier. Is that degree of explicitness desirable for balance and explanation?
-7. **V1 catalogue depth:** should every canonical family have at least one selectable v1 branch, or may defense, advanced behavior, nutrient storage, and other families remain shallow until their corresponding organism mechanics are calibrated?
+1. **Explicit exclusivity:** siblings are compatible unless a rule explicitly marks them incompatible. An exclusive choice is irreversible within that descendant lineage.
+2. **Multi-node speciation:** one event may acquire multiple explicitly selected nodes, subject to mutation-point price, change-complexity limits, prerequisites, and incompatibilities.
+3. **Derived activation:** acquired DNA applies immediately, while material- or environment-dependent capabilities activate from current organism state. V1 does not track per-trait construction progress.
+4. **No environmental genetic unlocks:** current or observed world conditions affect activation and usefulness, but are not hard prerequisites for acquiring a trait.
+5. **Explicit effect supersession:** advanced nodes may retire exact ancestor effects or upkeep contributions while the ancestor remains acquired and visible in lineage history.
+6. **Scoped efficiency:** efficiency effects must identify named reaction or cost channels. V1 has no unrestricted global efficiency multiplier.
+7. **Balance-driven catalogue depth:** families may be linear, branching, shallow, or initially sparse. Tree contents and topology are versioned balance/content data and may evolve to create clearer tradeoffs and more interesting evolutionary outcomes; the schema does not require equal depth or a selectable branch in every family.

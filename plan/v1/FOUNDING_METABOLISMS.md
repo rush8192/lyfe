@@ -29,6 +29,8 @@ An explicit candidate audit found photoferrotrophy to be the strongest future th
 
 Exactly two is a v1 scenario constraint rather than an engine constraint. Setup, world eligibility, protocol values, and compiled metabolism definitions must use stable data-defined IDs rather than assuming a permanent two-value list.
 
+The two founding capture traits are not biologically incompatible. A descendant may eventually acquire the other reaction, but setup is the only context that grants one without paying its ordinary mutation price. Cross-pathway acquisition starts as a major-cost, high-change-complexity proposal, provisionally at least comparable to the 120–220 MP escape paths. Operating both constitutive pathways also retains both upkeep profiles unless `MetabolicRegulation` can suppress the inactive machinery. Exact root prices and any additional tolerance burden remain fixture-driven balance values in [TRAIT_CATALOGUE.md](TRAIT_CATALOGUE.md).
+
 # Reference reactions
 
 The resource ledger uses the already balanced abstractions:

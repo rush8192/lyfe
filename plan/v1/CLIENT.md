@@ -88,10 +88,13 @@ Plan views that can answer:
 - Where did a resource enter, leave, or transform?
 - Which organisms or species consumed and released it?
 - Why did a metabolic, reproductive, or migration attempt fail?
-- Which death causes and stresses are increasing?
+- How did predator attack power, prey defense, and contested-feeding priority affect a predation outcome?
+- Which death risks, realized triggers, and contributing stresses are increasing?
 - Why did an autonomous species favor a particular adaptation?
 
 Views must distinguish authoritative named-compound quantities from elemental totals calculated by expanding their composition vectors. They may show both, but must not add a compound and its constituent elements as if they were separate matter.
+
+The organism inspector presents relative health as an explainable physiological-condition summary rather than unexplained hit points. For live observations it should show stored energy versus capacity, the strongest limiting health factor, significant stress channels, age, and lifecycle phase according to [ORGANISM_STATE_AND_HEALTH.md](ORGANISM_STATE_AND_HEALTH.md). Reduced or historical observations must retain their observation timestamp and must not be recomputed from hidden current state.
 
 # Performance strategy
 

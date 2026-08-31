@@ -1,6 +1,6 @@
 # DNA, Mutation, Speciation, and Lineage
 
-Status: trait-family and metabolic boundaries decided; mutation/speciation scaffold
+Status: trait-family graph policies decided; mutation economy/speciation details pending
 
 Sources: [ORGANISMS vision](../../vision/ORGANISMS.md), [GAMEPLAY vision](../../vision/GAMEPLAY.md), and [INTERFACE vision](../../vision/INTERFACE.md).
 
@@ -22,7 +22,7 @@ Every v1 organism references one immutable DNA definition owned by its species. 
 
 A proposed DNA change must be validated and fully compiled before a speciation command can be accepted.
 
-The detailed graph, typed-effect, stacking, activation, cost-channel, compilation, and candidate-frontier proposal is defined in [TRAIT_SYSTEM.md](TRAIT_SYSTEM.md). This document owns mutation income, speciation transactions, autonomous choice, and lineage; the trait-system plan owns the structure and meaning of the DNA being changed.
+The detailed graph, typed-effect, stacking, activation, cost-channel, compilation, and candidate-frontier proposal is defined in [TRAIT_SYSTEM.md](TRAIT_SYSTEM.md). The first concrete family forests, milestone paths, and ecological tradeoffs are proposed in [TRAIT_CATALOGUE.md](TRAIT_CATALOGUE.md). This document owns mutation income, speciation transactions, autonomous choice, and lineage; the trait plans own the structure and meaning of the DNA being changed.
 
 ## Canonical trait families
 
@@ -81,7 +81,7 @@ The first metabolism graph must implement the asymmetric paths in [FOUNDING_META
 
 # Mutation-point economy
 
-Income is a function of total living population, average relative health, and DNA modifiers. The detailed plan must choose:
+Income is a function of total living population, average relative health, and DNA modifiers. Relative health is derived from concrete organism state, and the mutation calculation consumes the end-of-tick species average defined in [ORGANISM_STATE_AND_HEALTH.md](ORGANISM_STATE_AND_HEALTH.md). The detailed plan must choose:
 
 - Formula and units.
 - Scaling and diminishing returns.
@@ -105,7 +105,7 @@ incomePerTick = effectivePopulation
 
 `referencePopulation = 100` and the `750` healthy-effective-organism-hours per point are versioned balance values. Fractional income accumulates deterministically. The logarithm provides diminishing returns without a discontinuous cap, and population zero produces zero income.
 
-Using reserve fraction as the temporary health proxy, this curve gives the hydrogen founder 40 MP near hour 338 and the sulfur founder 60 MP near hour 511. At a provisional fastest speed of two ticks per real second, those are approximately 2.8 and 4.3 minutes. See [SULFUR_TILE_STARTING_CONFIGURATION.md](SULFUR_TILE_STARTING_CONFIGURATION.md) for inputs and sensitivity limits. The final formula remains conditional on the complete health calculation and post-speciation scenario tests.
+Using reserve fraction as the temporary fixture proxy for the full derived-health formula, this curve gives the hydrogen founder 40 MP near hour 338 and the sulfur founder 60 MP near hour 511. At a provisional fastest speed of two ticks per real second, those are approximately 2.8 and 4.3 minutes. See [SULFUR_TILE_STARTING_CONFIGURATION.md](SULFUR_TILE_STARTING_CONFIGURATION.md) for inputs and sensitivity limits. Those timings must be rerun with the structural, nutrient, age, lifecycle, and environmental factors enabled and after post-speciation scenario tests.
 
 # Speciation
 
@@ -138,7 +138,7 @@ Autonomous species accumulate points identically but choose when and how to spec
 
 Define:
 
-- Observation window for death triggers and contributing stresses.
+- Observation window for death-risk profiles, realized triggers, and contributing stresses.
 - Mapping from pressures to relevant trait candidates.
 - Affordability and prerequisite filtering.
 - Weighting between adjacent and large DNA changes.

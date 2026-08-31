@@ -47,6 +47,8 @@ Design a versioned envelope containing message type, request/correlation ID wher
 
 Resource and energy quantities are authoritative signed 64-bit integers. Protocol schemas must preserve their exact values; JavaScript clients must not coerce them into an unsafe IEEE-754 `number`. The protocol/code-generation decision must establish whether these fields arrive as `bigint`, strings, or generated long wrappers.
 
+Health, normalized condition factors, and probabilities use the bounded `0..1,000,000` `RatioQ` encoding and fit in Protocol Buffer `uint32` fields. The selected-organism condition projection and compact delta policy are proposed in [ORGANISM_HEALTH_CALIBRATION.md](ORGANISM_HEALTH_CALIBRATION.md).
+
 # Command semantics
 
 Every gameplay command needs:

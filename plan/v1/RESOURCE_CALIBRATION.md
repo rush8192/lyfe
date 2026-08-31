@@ -25,10 +25,14 @@ V1 uses game-native stoichiometric quantities rather than literal atoms, grams, 
 | Wide arithmetic | Checked signed 128-bit intermediates and reconciliation totals |
 | Structural biomass formula | `C100 H170 O40 N20 P2 S1` |
 | Baseline mature structure | 1,000 `StructuralBiomass` units |
-| Minimum viable structure | Initially 1,000 units; balanceable by DNA/lifecycle rules later |
+| Primitive hard viable-structure floor | Provisional 500 units; `DirectLifecycle` fission still requires 1,000 mature units per result |
 | Reserve carrier | `ReserveOrganic`, composition `CH2O` |
 | Energy unit | One `ReserveOrganic` quantum stores one energy quantum |
 | Baseline reserve capacity | 10,000 energy/reserve quanta |
+| Primitive dissolved-macronutrient store | 512 expanded-matter load units |
+| Primitive free-micronutrient store | 64 expanded-matter load units |
+| Primitive ingested-matter buffer | 0 load units; disabled until unlocked |
+| Primitive micronutrient uptake | One-quantum opportunity with `0.5` probability per organism-hour; shared across quota resources |
 | Micronutrients | Separate DNA-defined quotas, not embedded in structural biomass |
 | Normal tile pool target | Up to approximately `10^12` quanta per resource |
 | Normal account target | Below `10^15` quanta |
@@ -100,7 +104,7 @@ A baseline capacity of 10,000 reserve units contains 40,000 elemental matter qua
 373,000 total tracked matter quanta
 ```
 
-Available nutrient stores and micronutrients add to this total but are excluded from the reference minimum because their balance ranges are not yet selected.
+Available nutrient stores and micronutrients add to this total but are excluded from the reference minimum because founders begin with zero free inventory. Store use is measured in expanded tracked matter rather than raw resource quanta: one unit for each CHNOPS or micronutrient quantum in the resource composition. Thus one `NH3` quantum occupies four load units and one `H2S` quantum occupies three. The exact capacity contract and founder derivation are in [INTERNAL_STORAGE_AND_ALLOCATION.md](INTERNAL_STORAGE_AND_ALLOCATION.md).
 
 # Numeric domains and limits
 
@@ -349,6 +353,10 @@ Before accepting a rule pack, validate:
 - `StructuralBiomass` expands to exactly `[100,170,20,40,2,1]`.
 - Baseline structure expands to exactly 333,000 elemental quanta.
 - Full baseline reserve contains 10,000 energy and 40,000 elemental matter quanta.
+- Composition-derived storage loads are `NH3 = 4`, `H2S = 3`, inorganic phosphorus `= 1`, and one micronutrient `= 1`.
+- The hydrogen and sulfur one-tick assembly bundles occupy exactly `255` and `340` macronutrient-load units and fit under the founder `512` cap.
+- The hydrogen and sulfur additional reproduction quota sets occupy exactly `57` and `55` micronutrient-load units and fit under the founder `64` cap.
+- Under abundant uncontested micronutrients, expected extra-set acquisition takes `114` ticks for hydrogen and `110` for sulfur and is overwhelmingly likely to finish before their structural reproduction deadlines.
 - The worked reproduction scenario has identical before/after CHNOPS totals and exactly 500 dissipated energy.
 - The 25,000-organism and 100,000-organism fixture totals match this document.
 - Composition expansion above `long.MaxValue` succeeds in `Int128` without truncation.
@@ -363,7 +371,7 @@ The numeric architecture and reference scale are sufficient to implement the led
 - Exact starting tile quantities and source/sink rates.
 - Baseline maintenance and action costs within the tested energy band.
 - Reproduction cost and structure-growth rate.
-- Initial micronutrient quotas by DNA capability.
+- Advanced-trait micronutrient quotas beyond the two founder loadouts.
 - Whether DNA changes the minimum structural target in v1.
 - Final simulation deadline and therefore the production tick horizon.
 - History bucket duration and retention.

@@ -186,15 +186,22 @@ All other micronutrient balances are unchanged. Quotas are per organism, not pro
 | Organisms | 1 | 100 |
 | Structural biomass | 1,000 | 100,000 |
 | Reserve organic/energy | 5,000 | 500,000 |
+| Reserve capacity | 10,000 | 1,000,000 |
+| Dissolved-macronutrient store | 0 free / 512 load capacity | 0 free / 51,200 aggregate capacity |
+| Free-micronutrient store | 0 free / 64 load capacity | 0 free / 6,400 aggregate capacity |
+| Ingested-matter buffer | 0 free / 0 capacity | 0 free / 0 aggregate capacity |
 | Lifecycle phase | Mature | — |
 | Initial health before stress adjustment | 50% | 50% average |
 
 Positions are deterministic random samples within the tile, separated enough to avoid immediate overlap. Velocity begins at zero or a small deterministic random value according to the eventual locomotion baseline.
 
+Under the first complete health calibration, the initial SO₂ exposure contributes a `0.966667` environmental factor while all other non-energy factors are neutral. Initial derived health is therefore exactly `0.483334`; see [ORGANISM_HEALTH_CALIBRATION.md](ORGANISM_HEALTH_CALIBRATION.md). The 50% table value remains the pre-stress reserve fraction.
+
 ## Required capabilities
 
 - Hydrogen acetogenesis reference metabolism.
 - Assimilation of ammonia, inorganic phosphate, and sulfide into biomass.
+- `PrimitiveNutrientStore`, using the founder capacities and needs-only retention policy.
 - `VolcanicSulfurTolerance I` with a `10×` H₂S/SO₂ threshold multiplier.
 - Warm-water tolerance centered near `45 °C`.
 - True-split reproduction.
@@ -215,7 +222,7 @@ The sulfur-tolerance capability carries an ongoing efficiency cost. The fixture 
 | Potassium | 10 |
 | Sodium | 10 |
 
-All other founding quotas are zero. These quantities transfer with the organism, must be duplicated through uptake before reproduction, and move to a remnant on death.
+All other founding quotas are zero. The complete committed set has a load of `57` micronutrient units. These quantities transfer with the organism and move to a remnant on death. Reproduction requires a second complete set; the primitive desired-inventory policy therefore attempts to accumulate at most one additional `57`-unit set in the free-micronutrient store, leaving seven units of headroom. Surplus free micronutrients do not raise health.
 
 # Abiogenesis initialization transaction
 
@@ -232,7 +239,7 @@ For 100 founders it consumes generic organic precursor matter:
 | P | 200,000 | 0 | 200,000 |
 | S | 100,000 | 0 | 100,000 |
 
-It also transfers the structural micronutrient quotas from the tile and receives energy from the `LightningAbiogenesis` boundary. At least 500,000 energy units become founding reserves; configured assembly work dissipates separately.
+It also transfers the committed structural/catalytic micronutrient quotas from the tile and receives energy from the `LightningAbiogenesis` boundary. At least 500,000 energy units become founding reserves; configured assembly work dissipates separately. Abiogenesis does not prefill either available-store group: free macronutrients and the additional reproduction-quota set must be acquired during play.
 
 ```text
 InitializeFounders(tile, speciesDNA, count):
@@ -293,7 +300,7 @@ All 100 stored-energy units carried by the consumed reserve are spent on assembl
 - Expected initial sulfur soft-stress cost: 6 energy per tick.
 - Other environmental stress cost: zero under fixture baseline.
 
-Spending reserve converts each CH₂O carrier into generic organic C/H/O stores as defined in the resource model.
+Spending reserve converts each CH₂O carrier into generic organic C/H/O products. Founder organisms release those products directly to the tile organic pool at the end of internal metabolism rather than retaining them in their dissolved-macronutrient store.
 
 # Expected first-tick flows
 
@@ -312,7 +319,15 @@ Assume all 100 organisms receive 200 hydrogen-metabolism extents and three bioma
 | NH₃ | 9,999,998 | 6,000 | 9,993,998 |
 | O₂ | 0 | 0 | 0 |
 
-Inorganic phosphorus changes from 5,000,000 to 4,999,650 after 250 units of weathering input and 600 units of biomass demand. Biomass assembly also produces 4,200 generic organic-oxygen units and sends 13,800 water units to the ocean-water boundary in this expected tick.
+Inorganic phosphorus changes from 5,000,000 to 4,999,650 after 250 units of weathering input and 600 units of biomass demand. The biomass inputs stage through each organism's dissolved-macronutrient store at a peak load of `255` and are fully consumed in the same tick.
+
+Maintenance and stress spending release `5,600` organic carbon, `11,200` organic hydrogen, and `5,600` organic oxygen across the population. Biomass assembly releases another `4,200` organic oxygen and sends `13,800` water units to the ocean-water boundary. The end-of-phase tile organic credits are therefore `C = 5,600`, `H = 11,200`, and `O = 9,800`; founder macronutrient stores return to zero after this exact needs-only flow.
+
+Primitive micronutrient uptake runs alongside these flows. Each organism with an incomplete extra quota set has one `0.5`-probability opportunity to claim one required micronutrient quantum, for `50` expected claims across the founding population on an abundant uncontested tick. The exact first-tick count and resource distribution are seed-keyed rather than forced to their expectation, and all granted quantities enter the free-micronutrient store.
+
+One complete additional set costs `57` units per organism or `5,700` across the founding population. Under uninterrupted full grants, expected completion is `114` ticks, or 4 days 18 hours. The probability that keyed opportunity variance alone leaves a founder incomplete at the 334-tick structural reproduction deadline is approximately `8.1 × 10^-37`. Scarcity and ordinary contention can still delay it. No marginal uptake energy is added to the organism table because primitive passive-uptake cost is included in base maintenance.
+
+Spread over 114 expected ticks, the population's quota demand averages approximately `17.54` iron, `4.39` nickel, `1.75` cobalt, and `8.77` each of magnesium, potassium, and sodium per tick. Their fixture sources are respectively `100`, `25`, `5`, `50`, `25`, and `100` per tick, in addition to large starting pools. Micronutrients therefore should not displace hydrogen or fixed nitrogen as the intended opening constraints on this eligible tile.
 
 ## Organism totals
 
@@ -409,6 +424,11 @@ The approximate H₂ equilibrium with 100 organisms consuming 80,000 per tick is
 
 - Abiogenesis debits exactly the CHNOPS and micronutrients credited to founders.
 - First-tick gas and organism totals match this document.
+- Each founder's three-extent biomass input bundle reaches exactly `255` dissolved-macronutrient load, fits atomically under the `512` cap, and leaves the store empty after consumption.
+- Founder waste credits the tile organic pool by exactly `C 5,600 / H 11,200 / O 9,800`; no spent carrier matter remains internally.
+- Micronutrient stockpiling stops at one additional `57`-unit reproduction set and never treats free surplus as health-bearing committed quota.
+- With abundant uncontested pools, primitive uptake averages `0.5` granted micronutrient quantum per organism-hour, consumes exactly `5,700` units when every founder fills its extra set, and finishes in 114 expected ticks.
+- A pinned seed reproduces the exact per-tick micronutrient opportunity, target selection, claims, grants, and tile debits.
 - The no-organism gas fixture approaches the stated equilibria.
 - The 100-organism fixture grows under adapted sulfur tolerance.
 - The same organisms without tolerance experience the expected stress and rapid mortality.
@@ -426,6 +446,7 @@ The approximate H₂ equilibrium with 100 organisms consuming 80,000 per tick is
 - [ ] Exact tolerance/efficiency choices exposed during initial DNA setup.
 - [ ] Whether SO₂ stress should also modify a future acidity condition rather than remain entirely gas-specific.
 - [ ] Exact micronutrient quotas for advanced traits.
+- [x] Primitive founder micronutrient uptake throughput and targeting; recalibrate when the factors named in [INTERNAL_STORAGE_AND_ALLOCATION.md](INTERNAL_STORAGE_AND_ALLOCATION.md) change.
 - [x] Exact first sulfur fixture and its 250-tick reproduction target; see [SULFUR_TILE_STARTING_CONFIGURATION.md](SULFUR_TILE_STARTING_CONFIGURATION.md).
 - [ ] Remnant decay rates and how quickly fixed nitrogen recycles.
 - [ ] Senescence distribution for the founding species.

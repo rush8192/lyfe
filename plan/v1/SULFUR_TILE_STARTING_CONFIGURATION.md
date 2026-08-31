@@ -135,10 +135,15 @@ Initial organisms match the hydrogen fixture:
 | Structural biomass | 1,000 | 100,000 |
 | Reserve organic/energy | 5,000 | 500,000 |
 | Reserve capacity | 10,000 | 1,000,000 |
+| Dissolved-macronutrient store | 0 free / 512 load capacity | 0 free / 51,200 aggregate capacity |
+| Free-micronutrient store | 0 free / 64 load capacity | 0 free / 6,400 aggregate capacity |
+| Ingested-matter buffer | 0 free / 0 capacity | 0 free / 0 aggregate capacity |
 | Lifecycle phase | Mature | — |
 | Initial health before stress adjustment | 50% | 50% average |
 | Mutation points | 0 | 0 |
 | Initial mutation-income DNA modifier | `1.00` | `1.00` |
+
+Under the first complete health calibration, the initial SO₂ exposure contributes a `0.966667` environmental factor while intrinsic H₂S adaptation makes the other opening factors neutral. Initial derived health is exactly `0.483334`; see [ORGANISM_HEALTH_CALIBRATION.md](ORGANISM_HEALTH_CALIBRATION.md). The 50% table value remains the pre-stress reserve fraction.
 
 Required capabilities:
 
@@ -146,12 +151,15 @@ Required capabilities:
 - Intrinsic `25×` H₂S threshold multiplier without the hydrogen founder's separate tolerance-efficiency penalty.
 - `10×` SO₂ threshold multiplier; SO₂ is not treated as a harmless substitute for H₂S.
 - Assimilation of ammonia, inorganic phosphate, and sulfide into biomass.
+- `PrimitiveNutrientStore`, using the founder capacities and needs-only retention policy.
 - Warm-water tolerance centered near `45 °C`.
 - True-split reproduction with the same provisional 500-energy additional cost.
 - Founding anabolic throughput of four structural-assembly extents per tick when reserve requirements are satisfied.
 - No locomotion, sensing, predation, fermentation, oxygenic photosynthesis, nitrogen fixation, or respiration.
 
 The fourth assembly extent is the concrete expression of greater opening whole-organism efficiency. It is a declared cross-family effect of the metabolism, not free biomass: every extent still consumes 100 `ReserveOrganic`, nitrogen, phosphorus, and sulfur through the common reaction. The hydrogen founder remains capped at three assembly extents under its founding metabolism.
+
+The committed sulfur-founder micronutrient quota has a total load of `55`. Its primitive desired-inventory policy attempts to acquire at most one additional complete reproduction set in the `64`-unit free-micronutrient store. It begins with zero free inventory; the abiogenesis transaction supplies only the committed founding quota.
 
 # Sulfide-phototrophy reaction
 
@@ -202,7 +210,7 @@ At local dawn, all 100 organisms resolve 950 phototrophy extents and four assemb
 | NH₃ | 9,999,998 | 8,000 | 9,991,998 |
 | O₂ | 0 | 0 | 0 |
 
-The H₂S debit contains 190,000 units for phototrophy and 400 for structural sulfur. Phototrophy credits 190,000 units to the tile's generic inorganic-sulfur pool. Inorganic phosphorus moves from 5,000,000 to 4,999,450 after 250 weathering units and 800 assembly units.
+The H₂S debit contains 190,000 units for phototrophy and 400 for structural sulfur. Phototrophy credits 190,000 units to the tile's generic inorganic-sulfur pool. Inorganic phosphorus moves from 5,000,000 to 4,999,450 after 250 weathering units and 800 assembly units. The four-extent biomass input bundle stages at a peak dissolved-macronutrient load of `340` per organism and fits atomically under the shared `512` cap.
 
 ## Organism totals
 
@@ -216,7 +224,13 @@ The H₂S debit contains 190,000 units for phototrophy and 400 for structural su
 | Net stored-energy change before capacity throttling | +494 | +49,400 |
 | Structural growth | +4 | +400 |
 
-Biomass assembly also produces 5,600 generic organic-oxygen units and sends 18,400 water units to the ocean boundary. Phototrophy sends another 95,000 water units to that boundary. Together with the inorganic-sulfur credit, these products complete the first-tick matter reconciliation.
+Maintenance and stress spending release `5,600` organic carbon, `11,200` organic hydrogen, and `5,600` organic oxygen to the tile across the population. Biomass assembly releases another `5,600` organic oxygen and sends `18,400` water units to the ocean boundary. The end-of-phase tile organic credits are therefore `C = 5,600`, `H = 11,200`, and `O = 11,200`; founder macronutrient stores return to zero. Phototrophy sends another `95,000` water units to the boundary and credits `190,000` inorganic sulfur.
+
+Primitive micronutrient uptake runs alongside these flows. Each organism with an incomplete extra quota set has one `0.5`-probability opportunity to claim one required micronutrient quantum, for `50` expected claims across the population on an abundant uncontested tick. The exact first-tick count and resource distribution are seed-keyed, and every grant enters the free-micronutrient store.
+
+One complete additional set costs `55` units per organism or `5,500` across the founding population. Under uninterrupted full grants, expected completion is `110` ticks, or 4 days 14 hours. The probability that opportunity variance alone leaves a founder incomplete at the 250-tick structural reproduction deadline is approximately `2.1 × 10^-20`. Ecological scarcity and contention may still delay it. Primitive passive-uptake cost is already included in base maintenance.
+
+Spread over 110 expected ticks, the population's quota demand averages approximately `22.73` iron and `9.09` each of magnesium, potassium, and sodium per tick. Their fixture sources are `100`, `50`, `25`, and `100`, again before drawing down large starting pools. Sulfide and fixed nitrogen therefore remain the intended opening ecological limits.
 
 # First-reproduction calculation
 
@@ -366,6 +380,11 @@ Item 1 blocks final paired gameplay pacing. Items 2–4 block replacement of thi
 # Validation scenarios
 
 - The first illuminated-tick ledger matches the stated gas, phosphorus, water, oxygen, reserve, and structure totals.
+- Each founder's four-extent biomass input bundle reaches exactly `340` dissolved-macronutrient load, fits atomically under the `512` cap, and leaves the store empty after consumption.
+- Founder waste credits the tile organic pool by exactly `C 5,600 / H 11,200 / O 11,200`; no spent carrier matter remains internally.
+- Micronutrient stockpiling stops at one additional `55`-unit reproduction set and never treats free surplus as health-bearing committed quota.
+- With abundant uncontested pools, primitive uptake averages `0.5` granted micronutrient quantum per organism-hour, consumes exactly `5,500` units when every founder fills its extra set, and finishes in 110 expected ticks.
+- A pinned seed reproduces the exact per-tick micronutrient opportunity, target selection, claims, grants, and tile debits.
 - With 100 founders and full substrate, the first viable split occurs at tick 250 and expected reserve remains positive through every dark period.
 - Disabling light resolves zero phototrophy and causes stored reserve to decline through maintenance and any permitted assembly.
 - Reducing H₂S claims proportionally delays assembly without violating mass balance.

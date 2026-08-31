@@ -1,6 +1,6 @@
 # Organism Model and Mechanics
 
-Status: scaffold
+Status: first tick-integration, predation-resolution, and internal-state pass; detailed behavior and reproduction formulas pending
 
 Sources: [ORGANISMS vision](../../vision/ORGANISMS.md), [NUTRIENTS vision](../../vision/NUTRIENTS.md), and [SIMULATION vision](../../vision/SIMULATION.md).
 
@@ -10,14 +10,15 @@ Translate organism state, derived health, behavior, movement, metabolism, reprod
 
 # Authoritative organism state
 
-Plan the concrete representation of:
+The logical schema and field ownership are defined in [ORGANISM_STATE_AND_HEALTH.md](ORGANISM_STATE_AND_HEALTH.md). In particular, health and current environmental stress are derived condition outputs rather than independently mutable organism fields.
+
+The authoritative state includes:
 
 - Stable organism and species IDs.
 - Tile and within-tile position.
 - Velocity or movement state.
 - Age and lifecycle phase.
 - Structural biomass, stored nutrients, and energy-bearing reserves.
-- Current environmental stresses.
 - Current behavior or behavioral goal.
 - Any cooldowns or accumulated state required by DNA capabilities.
 
@@ -25,13 +26,9 @@ DNA, capacities, tolerances, available behaviors, and action parameters belong t
 
 # Derived health
 
-Stored energy is derived from the organism's energy-bearing resource quantities and their compiled energy densities; it is not an independently mutable resource pool. Health is primarily that derived energy divided by DNA-defined capacity, adjusted by nutrient sufficiency, lifecycle, and environmental stress. The detailed plan must define:
+Health is a normalized deterministic assessment of concrete organism state, compiled DNA, lifecycle state, and current environment. It is not an authoritative resource or independently writable hit-point pool.
 
-- Output range and clamping.
-- Whether health is computed once per tick or per action.
-- Effect of increasing maximum capacity during speciation.
-- Soft-stress energy costs versus direct health adjustment.
-- Which health value reproduction and mutation aggregates observe.
+The first formula, phase-specific snapshots, caching contract, species aggregation, client projection, and remaining calibration questions are defined in [ORGANISM_STATE_AND_HEALTH.md](ORGANISM_STATE_AND_HEALTH.md).
 
 # Behavior and sensing
 
@@ -69,22 +66,26 @@ The organism pipeline must preserve five boundaries:
 4. `EnergyStorage` limits eligible reserve resources and capacity but never credits reserve.
 5. `NutrientStorage` caps non-reserve matter held in `AvailableStore` but never supplies it.
 
+Internal resources may be consumed, temporarily bound by an admitted metabolic process, or protected from lower-priority use by an evolved DNA holdback. These are distinct operations. Default DNA shares free material evenly among same-tier processes, while later regulation traits can add weights, priority tiers, and bounded holdbacks. The complete semantic contract is defined in [INTERNAL_STORAGE_AND_ALLOCATION.md](INTERNAL_STORAGE_AND_ALLOCATION.md).
+
 V1 does not create a transient ATP-like authoritative resource. `ReserveOrganic` is directly debited by `SpendStoredEnergy`; useful work is diagnostic and energy ultimately dissipates. DNA may compile maximum reserve-spend throughput and cost multipliers, but cannot bypass a balanced debit.
 
 ```text
 EvaluateOrganismMetabolism(organism, compiledDNA, environment):
-    emit external resource claims permitted by acquisition effects
-    emit external capture claims/reactions, capped by free reserve capacity
-    select enabled internal catabolic and anabolic reactions
-    reserve mandatory maintenance and stress expenditure
-    emit optional action-energy budgets allowed by remaining mobilization
-    emit biomass assembly and explicit waste/retention intents
+    begin from committed external grants and capture products
+    select and resolve enabled internal energy-producing reactions
+    calculate and pay mandatory maintenance, stress, and passive upkeep
+    if the mandatory payment fails, append a probability-one
+        MaintenanceFailure assessment and die
+    otherwise resolve permitted biomass assembly, growth,
+        and explicit waste/retention transactions
 ```
 
-The detailed pass must resolve fresh-read boundaries and whether maintenance precedes or follows newly captured reserve within the same tick. It must also define capacity behavior, mobilization throughput, internal reaction selection, nutrient-store limits, and waste timing.
+Newly captured reserve and internally produced reserve are available before mandatory maintenance. Movement and targeted external-action costs are admitted and spent in their own phases according to [SIMULATION_LOOP.md](SIMULATION_LOOP.md). Temporary binding, DNA allocation semantics, founder capacity groups and limits, needs-only staging, and founder waste timing are decided. The remaining detailed pass must define reserve-mobilization throughput, advanced capacity increments and retention targets, capacity-reduction overflow, and the bounded multi-resource resolver.
 
 # Reproduction
 
+- Every founder uses the `PrimitiveFission` capability defined in [TRAIT_CATALOGUE.md](TRAIT_CATALOGUE.md), with a near-even allocation. The name avoids projecting a complete modern bacterial divisome onto the first organisms.
 - Reproduction requires a DNA-defined minimum health and resources.
 - Attempt frequency and additional energy cost are DNA-defined.
 - True split allocates reserves relatively evenly.
@@ -92,40 +93,60 @@ The detailed pass must resolve fresh-read boundaries and whether maintenance pre
 - All offspring matter, including its energy-bearing reserves, comes from the parent.
 - Abstract sexual reproduction requires no mate or proximity in v1.
 
+Both allocation modes retain the existing organism as the continuing, aging lineage and create one age-zero offspring. `AsymmetricBudding` changes allocation, offspring maturity, and cost rather than entity identity. V1 selects among discrete authored allocation profiles. A future rules version may expose a broader DNA-defined allocation spectrum, provided every profile remains zero-sum and its parent/offspring consequences are derived consistently.
+
 Define allocation order, rounding, minimum viable offspring state, parent identity, offspring position, lifecycle phase, and failure behavior when conditions change during resolution.
 
 # Predation and scavenging
 
-Plan target eligibility, range, success probability, damage or whole-organism kill semantics, partial consumption, transfer yields, competing predators, and remnant creation. V1 must decide whether cannibalism is permitted and whether predation always kills before consumption.
+V1 permits one targeted external interaction per organism per tick: predation or scavenging. A predation intent targets one post-movement organism of another species within range. Same-species predation, persistent wounds, and nonlethal damage are deferred; an admitted attempt either fails or lethally captures the prey.
+
+The kill probability compares the predator's compiled `predationAttackPower` with the prey's compiled `predationDefensePower`, modified by current health, compatible size/movement, active escape, and chemical deterrence. Each actual attack receives a keyed draw and a death-risk assessment. Traits may independently improve attack power or `feedingPriorityWeight`; the latter affects consumption only after a successful kill.
+
+If multiple attempts against one prey succeed, the prey dies once. All attack draws resolve before consumption, so mutually successful predators may kill one another and a predator killed in the same pass cannot receive food. Successful surviving predators submit resource-specific claims capped by ingestion capability and available storage. Remaining prey contents form one cohesive remnant. Contested contents are divided by feeding-priority weight with deterministic largest remainders; failed or killed predators receive nothing. All predators pay their attempt energy cost regardless of outcome.
+
+Ordinary environmental resource claims remain unweighted and proportional. Full formulas and pseudocode are defined in [SIMULATION_LOOP.md](SIMULATION_LOOP.md), while ledger transfer rules remain in [RESOURCE_MODEL.md](RESOURCE_MODEL.md).
 
 # Aging and death
 
-Death triggers include senescence, insufficient energy, hard environmental exposure, and predation. The final tick records every satisfied trigger and contributing stress. Death atomically removes the organism and creates one remnant containing all untransferred resources.
+Death risks include senescence, insufficient energy, hard environmental exposure, and predation. Intrinsic causes are evaluated after the environment updates but before movement. When an organism dies, its record contains the exact per-tick probability and contributing inputs for every cause with positive probability that was actually evaluated before death, plus which draw or deterministic condition triggered. Death atomically removes the organism and creates one remnant containing all untransferred resources. An intrinsic-death remnant may be scavenged later in that tick, while a remnant created during predation enters the next tick's scavenging snapshot.
 
 Chemical exposure uses the same soft/hard pattern as temperature and moisture: soft excess raises maintenance cost, while hard excess receives a keyed per-tick death draw whose probability rises with overage. H₂S and SO₂ are evaluated separately so they can produce distinct simultaneous death triggers. DNA tolerance scales thresholds and may impose an ongoing efficiency cost.
 
-# Evaluation pseudocode to develop
+Energy acquired through external capture or produced through internal catabolism may pay maintenance in the same tick. Internal energy-producing reactions resolve before mandatory maintenance. If the organism still cannot pay the full obligation, it dies from `MaintenanceFailure` during metabolism; general environmental and senescence death probabilities are not evaluated a second time.
+
+# Organism evaluation contract
+
+The authoritative phase order and full pseudocode live in [SIMULATION_LOOP.md](SIMULATION_LOOP.md). From an organism's perspective:
 
 ```text
-ObserveLocalEnvironment(organism)
-CalculateRelativeHealth(organism, speciesDNA, environment)
-EvaluateMaintenanceAndStress(organism)
-ChooseAndEmitActionIntents(organism)
-ResolveReproduction(parent, allocationModel)
-ResolvePredation(predator, target)
-FinalizeDeath(organism, satisfiedTriggers)
+advance age and evaluate all intrinsic death triggers
+if alive:
+    integrate movement using prior behavior and velocity
+    emit external acquisition, capture, scavenging, and predation intents
+    receive deterministically resolved external transactions
+    resolve internal energy-producing reactions
+    pay maintenance or die from MaintenanceFailure
+    resolve optional internal reactions and growth
+    evaluate lifecycle transition and reproduction
+    observe completed local state and select behavior for next tick
 ```
+
+Interactions use post-movement coordinates. Newly born organisms begin at age zero and take no further action until the next tick. Behavior updates last and cannot retroactively change the current tick.
 
 # Required decisions and tests
 
-- [ ] Concrete organism fields and dense layout.
-- [ ] Health formula and lifecycle phases.
+- [ ] Dense physical organism layout; logical fields are defined in [ORGANISM_STATE_AND_HEALTH.md](ORGANISM_STATE_AND_HEALTH.md).
+- [x] First health formula and numeric calibration; see [ORGANISM_STATE_AND_HEALTH.md](ORGANISM_STATE_AND_HEALTH.md) and [ORGANISM_HEALTH_CALIBRATION.md](ORGANISM_HEALTH_CALIBRATION.md).
 - [ ] Behavior-selection mechanism.
 - [ ] Spatial index and interaction radii.
 - [ ] Movement/migration equations.
 - [ ] Acquisition/capture/internal-metabolism intent interfaces and energy-storage enforcement.
-- [ ] Reproduction and predation resolution.
+- [x] Temporary metabolic-resource binding and DNA priority/holdback semantics; see [INTERNAL_STORAGE_AND_ALLOCATION.md](INTERNAL_STORAGE_AND_ALLOCATION.md).
+- [ ] Detailed reproduction resolution.
+- [x] First v1 predation success, defense, contention, and remnant policy.
 - [ ] Senescence and environmental-death curves.
 - [ ] Tests for zero-sum reproduction and complete remnant transfer.
 - [ ] Tests proving storage capacity changes never credit reserves or nutrients and that newly expanded capacity affects derived reserve fraction as specified.
+- [ ] Tests proving founder dissolved/micronutrient capacities, composition-derived load, needs-only staging, single-quota targeting, and direct founder waste routing.
 - [ ] Tests for multi-cause death and deterministic target contention.

@@ -24,10 +24,10 @@ In the initial simulation, every organism references the single shared DNA of it
 - Its within-tile position and velocity.
 - Its age and lifecycle phase.
 - Its stored energy and stored nutrients.
-- Its current environmental stresses.
 - Its current behavior or behavioral goal.
+- Any small capability state that must persist across ticks.
 
-Maximum energy-storage capacity and available behaviors are derived from the species' DNA. Relative health is a derived score grounded primarily in stored energy relative to capacity, then adjusted by internal state and current environmental conditions. Cosmetic differences between members of a species do not affect simulation state. Heritable individual genetic variation and recombination are possible future extensions rather than initial requirements.
+Maximum energy-storage capacity, current environmental stress, and available behaviors are derived from species DNA together with the organism's state and surroundings. Relative health is a derived score grounded primarily in stored energy relative to capacity, then adjusted by internal state and current environmental conditions. Cosmetic differences between members of a species do not affect simulation state. Heritable individual genetic variation and recombination are possible future extensions rather than initial requirements.
 
 Behavior represents the organism's current response to its condition and surroundings rather than direct player instructions. More advanced DNA may provide additional behaviors or more effective selection among them. For example, an organism low on a required resource might seek a detectable gradient, hunt eligible prey, scavenge, conserve energy, or move toward a more favorable environment depending on its capabilities.
 
@@ -51,7 +51,7 @@ The simulation maintains or derives each species' total living population and av
 
 The simulation also retains time-series data or derivable events for key tile-resource levels and flows. At minimum, it must be possible to explain important inflows, outflows, transformations, biological consumption, and biological release over a selected time window. This causal record supports both player-facing visualization and diagnosis of the simulation.
 
-When an organism dies, the death event records every death trigger satisfied during that tick together with relevant contributing stresses. Initial triggers include senescence, insufficient energy reserves, lethal environmental exposure, and predation. If multiple triggers apply, none are discarded in favor of a single primary cause. Environmental tolerances distinguish soft limits that increase energy expenditure from hard limits that create a per-turn death probability increasing with the severity of exposure.
+When an organism dies, the death event records the per-tick chance from every death cause with positive probability that was actually evaluated before death, together with the inputs and contributing stresses behind those chances. It separately identifies every draw or deterministic condition that triggered the death; if multiple triggers apply, none are discarded in favor of a single primary cause. Initial causes include senescence, insufficient energy reserves, lethal environmental exposure, maintenance failure, and predation. Environmental tolerances distinguish soft limits that increase energy expenditure from hard limits that create a per-turn death probability increasing with the severity of exposure.
 
 # Initialization
 
