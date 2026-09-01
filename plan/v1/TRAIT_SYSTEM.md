@@ -1,6 +1,6 @@
 # DNA Trait Graph and Compilation
 
-Status: v1 implementation policies decided; concrete schema and catalogue pending
+Status: v1 implementation policies decided and initial catalogue proposed; concrete file/runtime schemas and final numeric rule pack pending
 
 Sources: [ORGANISMS vision](../../vision/ORGANISMS.md), [evolution plan](EVOLUTION.md), [organism plan](ORGANISMS.md), [configuration plan](CONFIGURATION_AND_BALANCE.md), and [resource model](RESOURCE_MODEL.md).
 
@@ -8,7 +8,7 @@ Sources: [ORGANISMS vision](../../vision/ORGANISMS.md), [evolution plan](EVOLUTI
 
 Define how LYFE authors, validates, prices, unlocks, compiles, applies, and explains DNA traits. The trait system must support linear progressions, branching family trees, hard cross-family prerequisites, incompatibilities, direct and indirect attribute effects, and energy/resource costs without placing arbitrary scripts in the simulation hot loop.
 
-This document fixes the v1 data, policy, and compilation shape. The initial tree topology, ecological roles, and complexity tradeoffs are proposed in [TRAIT_CATALOGUE.md](TRAIT_CATALOGUE.md). Concrete file encodings and numerical values remain to be designed and calibrated.
+This document fixes the v1 data, policy, and compilation shape. The initial tree topology, ecological roles, and complexity tradeoffs are proposed in [TRAIT_CATALOGUE.md](TRAIT_CATALOGUE.md). Concrete file/runtime encodings and final per-node numerical values remain to be designed and calibrated.
 
 # Core model
 

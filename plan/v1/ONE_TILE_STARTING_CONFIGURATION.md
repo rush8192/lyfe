@@ -341,7 +341,7 @@ Spread over 114 expected ticks, the population's quota demand averages approxima
 | Net stored-energy change | +44 | +4,400 |
 | Structural growth | +3 | +300 |
 
-At this rate, an organism reaches 2,000 structural units in approximately 334 ticks, or 13.9 days. Reserve reaches its 10,000-unit capacity earlier, after which metabolism should reduce extent to the amount needed for assembly, maintenance, and recovery. A provisional 500-energy reproduction cost then permits a viable true split.
+At this rate, an organism reaches 2,000 structural units in approximately 334 ticks, or 13.9 days. Reserve reaches its 10,000-unit capacity earlier, after which metabolism reduces extent to the amount needed for assembly, maintenance, and recovery. The first rule's 500-energy reproduction cost and 4,000-per-result reserve floor then permit a viable true split; exact gates and allocation are defined in [LIFECYCLE_AND_RECYCLING.md](LIFECYCLE_AND_RECYCLING.md).
 
 The calculation is an expected-flow fixture, not a promise that every probabilistic tick has identical results.
 
@@ -448,7 +448,7 @@ The approximate H₂ equilibrium with 100 organisms consuming 80,000 per tick is
 - [ ] Exact micronutrient quotas for advanced traits.
 - [x] Primitive founder micronutrient uptake throughput and targeting; recalibrate when the factors named in [INTERNAL_STORAGE_AND_ALLOCATION.md](INTERNAL_STORAGE_AND_ALLOCATION.md) change.
 - [x] Exact first sulfur fixture and its 250-tick reproduction target; see [SULFUR_TILE_STARTING_CONFIGURATION.md](SULFUR_TILE_STARTING_CONFIGURATION.md).
-- [ ] Remnant decay rates and how quickly fixed nitrogen recycles.
+- [x] First remnant decay rates and slow passive organic-to-inorganic nutrient return; see [LIFECYCLE_AND_RECYCLING.md](LIFECYCLE_AND_RECYCLING.md).
 - [ ] Senescence distribution for the founding species.
 - [ ] Mutation-point income under the resulting population curve.
 

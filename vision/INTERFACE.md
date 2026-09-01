@@ -50,7 +50,7 @@ The evolution view should communicate that a committed speciation event is irrev
 
 When preparing a speciation event, the evolution view should allow the player to select one to four occupied tiles and preview the founding fraction applied in each tile: 50% for one tile, 20% for two, 8% for three, or 3% for four. It should also show the mutation points spent and the unused balance that both the ancestor and descendant species will retain.
 
-Reproduction traits should explain whether the organism uses true splitting or budding, how reserves are allocated between parent and offspring, the minimum health requirement, base attempt frequency, and additional energy cost. The interface should make clear that offspring resources come from the parent rather than being created by reproduction.
+Reproduction traits should explain whether the organism uses true splitting or budding, how reserves are allocated between parent and offspring, the minimum health requirement, base cooldown and jitter range, and additional energy cost. The interface should make clear that reproduction occurs deterministically once its gates pass and that offspring resources come from the parent rather than being created by reproduction.
 
 ## Artistic style
 

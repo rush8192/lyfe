@@ -139,6 +139,7 @@ PrimitiveCell                                            Foundation
 - `CompartmentalizedCell` unlocks compartmentalized storage, higher metabolic throughput, and more precise regulation. It raises mature biomass, reproduction overhead, and micronutrient quotas.
 - `ProtoEukaryoticOrganization` is the proposed late-v1 complexity keystone. It unlocks engulfment, advanced locomotion, larger scale, and high-throughput organelle-like effects, while substantially increasing reserve break-even, structural quotas, generation time, and stress outside preferred conditions.
 - Increased scale improves ingestion, storage, predation, and defense ceilings but costs matter, maintenance, and reproduction time. It should not automatically improve every reaction per unit biomass.
+- The first spatial calibration maps `PrimitiveCell`, `IncreasedCellScaleI`, and `IncreasedCellScaleII` to mature-radius multipliers `1.00×`, `1.50×`, and `2.25×`, with cube-scaled structure targets and lower Brownian displacement for larger bodies; see [SPATIAL_CALIBRATION.md](SPATIAL_CALIBRATION.md).
 - A lineage already remains primitively small and efficient by declining the increased-scale nodes. An explicit miniaturization branch would mean evolving below the founding scale, which is a separate unresolved specialization described near the end of this document.
 
 ## `EnvironmentalTolerance`
@@ -201,7 +202,7 @@ PassiveSmallMoleculeUptake                              Foundation
 - Active transport accesses scarce resources against a gradient at a direct energy cost.
 - High-affinity uptake supports micronutrient-poor niches but adds element-specific quotas and passive upkeep.
 - `OrganicResourceUptake` transfers suitable environmental organic matter into the available store; it does not extract energy by itself.
-- Particulate ingestion requires `CompartmentalizedCell` and appropriate scavenging or predation access. It unlocks nonzero `IngestedMatterBuffer` capacity and supports rich biological-resource niches, but carries high per-use and digestion costs. The initial capacity and digestion throughput remain late-game balance placeholders.
+- Particulate ingestion requires `CompartmentalizedCell` and appropriate scavenging or predation access. It unlocks nonzero `IngestedMatterBuffer` capacity and supports rich biological-resource niches, but carries high per-use and digestion costs. The first buffer, ingestion, digestion, action-cost, upkeep, and exactly balanced structural-food reaction are fixed in [LIFECYCLE_AND_RECYCLING.md](LIFECYCLE_AND_RECYCLING.md); advanced digestive substrates remain later rule-pack work.
 - Mineral extraction is a proposed route toward non-volcanic inorganic-resource niches and later photoferrotrophy, with slow throughput and potentially toxic byproducts.
 
 ## `ExternalEnergyCapture`
@@ -314,7 +315,7 @@ PrimitiveFission                                        Foundation
 ```
 
 - `PrimitiveFission` owns the founding near-even allocation choice. The name deliberately avoids claiming that founders possess a complete modern bacterial divisome.
-- Division timing control improves coordination and permits frequency/threshold specialization, but adds constitutive reproductive machinery.
+- Division timing control improves coordination and permits cooldown/threshold specialization, but adds constitutive reproductive machinery.
 - Lower thresholds increase reproductive opportunity but create frailer parents and offspring and a higher failed-lineage risk.
 - Conservative division raises the health/resource gate and offspring provisioning, trading frequency for survival.
 - Rapid cycling reduces base interval while increasing per-division overhead and senescence pressure.
@@ -322,7 +323,11 @@ PrimitiveFission                                        Foundation
 - `AsymmetricBudding` replaces the allocation choice so the continuing parent retains more resources and the offspring begins smaller. It lets a well-established parent remain productive but adds machinery, lengthens offspring maturation, and increases juvenile mortality risk.
 - Provisioned offspring adds reserve/nutrient allocation and survivability at substantial parent cost.
 
-Threshold/frequency specializations may coexist unless their composed values violate validation bounds. Exact effect supersession, rather than acquisition order, resolves changes to allocation mode.
+The first exact gate, work-cost, cooldown, allocation, upkeep, and aging modifiers for this tree are defined in [LIFECYCLE_AND_RECYCLING.md](LIFECYCLE_AND_RECYCLING.md). Their mutation-point prices remain part of evolution-economy calibration.
+
+Threshold/cooldown specializations may coexist unless their composed values violate validation bounds. Reproduction remains deterministic after eligibility; timing traits modify the base cooldown, bounded jitter window, and gates rather than adding a flat per-tick success chance. Exact effect supersession, rather than acquisition order, resolves changes to allocation mode.
+
+The primitive age curve also reduces metabolic throughput after senescence onset, making young offspring more productive than aging continuing parents. Future lifespan/repair branches may reshape this curve or add explicit maintenance and damage mechanics, but those effects must carry their own costs and may not silently double-charge the same age penalty.
 
 ## Reproduction evidence and v1 interpretation
 
@@ -352,11 +357,12 @@ ActiveMotility                                          Early
 └── AdvancedPropulsion                                  Late
 ```
 
-- Active motility enables DNA-controlled velocity rather than passive drift and carries energy per distance.
+- Active motility enables DNA-controlled velocity layered over the default Brownian random walk and carries energy per active distance.
 - Flagellar propulsion improves speed and tile-edge access but adds construction quota and upkeep.
 - Cruising lowers cost per distance at modest speed; burst propulsion raises acceleration and escape/capture performance at high peak cost.
 - Surface gliding is efficient on suitable mineral or biological surfaces but weak in open water.
 - Advanced propulsion requires complex organization and supports larger cells at correspondingly higher upkeep.
+- The first active displacement ceilings—`4 R₀/hour` for basal active motility through `24 R₀/hour` for burst propulsion—are defined in [SPATIAL_CALIBRATION.md](SPATIAL_CALIBRATION.md); realized speed still depends on behavior, environment, and affordable energy.
 
 ## `Sensing`
 
@@ -374,6 +380,7 @@ ContactDetection                                        Early
 - Greater range and discrimination improve decisions but add passive evaluation cost and catalytic machinery.
 - Chemical sensing initially observes well-mixed tile state and neighboring-tile summaries, not nonexistent within-tile nutrient gradients.
 - Future localized micronutrient fields can add gradient senses without changing the family boundary.
+- The first entity-sensing tiers are `8 R₀` for nearby organisms, `16 R₀` for remnants/threat classification, and an absolute `32 R₀` extended-range ceiling; see [SPATIAL_CALIBRATION.md](SPATIAL_CALIBRATION.md).
 
 ## `BehavioralRegulation`
 
@@ -398,7 +405,7 @@ StochasticActivity                                      Foundation
 
 ```text
 RemnantScavenging                                       Early/Middle
-├── PartialRemnantConsumption                           Middle
+├── HighThroughputRemnantScavenging                     Middle
 └── ParticulateDigestion                                Middle/Late
 
 ContactPredation                                        Middle
@@ -412,12 +419,13 @@ ContactPredation                                        Middle
 └── ImprovedTargetCompatibility                         Late
 ```
 
-- Scavenging grants target access but requires compatible organic acquisition and catabolism to realize value.
+- Scavenging grants target access but requires compatible organic acquisition and catabolism to realize value. Basic scavenging can extract already-simple reserve/dissolved contents through a costed two-hour handling cycle; its throughput child raises caps at higher action cost. Structural biomass requires particulate ingestion and digestion. The first action caps, economics, and structural-food reaction are defined in [LIFECYCLE_AND_RECYCLING.md](LIFECYCLE_AND_RECYCLING.md).
 - Predation requires active proximity, a capture mechanism, suitable processing, and enough size or structural capability for the target.
 - Improved capture success raises `predationAttackPower` and therefore the odds of a lethal attempt against the prey's `predationDefensePower`. It also raises attempt-energy cost and structural/catalytic requirements.
 - Contested feeding priority raises `feedingPriorityWeight`, increasing the share of an already-killed prey allocated to this predator when several attackers succeeded. It does not improve the kill draw and carries handling/rapid-ingestion cost.
 - Engulfment requires `ProtoEukaryoticOrganization`, `IncreasedCellScaleI`, and particulate ingestion. It opens a high-density food niche while imposing large movement, digestion, and reproduction costs.
 - Predation should create density-dependent opportunity and counterpressure rather than dominate autotrophic production in every tile.
+- First contact, capture, feeding, and chance-encounter distances are defined in [SPATIAL_CALIBRATION.md](SPATIAL_CALIBRATION.md); improving reach remains distinct from sensing, attack power, ingestion capacity, and feeding priority.
 
 ## `Defense`
 

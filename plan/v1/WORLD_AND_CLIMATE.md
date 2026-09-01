@@ -1,69 +1,300 @@
 # World, Generation, and Climate
 
-Status: scaffold
+Status: first topology, generation, calendar, climate algorithms, and numerical rule-pack candidate; representative-map validation remains provisional
 
-Sources: [WORLD vision](../../vision/WORLD.md), [SIMULATION vision](../../vision/SIMULATION.md), and [GAMEPLAY vision](../../vision/GAMEPLAY.md).
+Sources: [WORLD vision](../../vision/WORLD.md), [SIMULATION vision](../../vision/SIMULATION.md), [GAMEPLAY vision](../../vision/GAMEPLAY.md), and [numerical calibration](WORLD_CLIMATE_CALIBRATION.md).
 
 # Purpose
 
 Translate fixed geography, climate baselines, current conditions, world generation, and cross-tile exchange into deterministic algorithms and state.
 
-# V1 world topology
+# Decisions fixed by this pass
 
-- The world is a finite rectangular grid.
-- The east-west `x` dimension wraps.
-- The north-south `y` dimension is bounded.
-- Only edge-sharing tiles are neighbors.
-- `y = 0` is the equator; signed distance informs latitude and seasons.
-- Positive elevation is terrestrial; negative elevation is aquatic and determines depth.
-- Tiles are environmentally well mixed in v1.
+- The default v1 world is `32 × 17 = 544` tiles. Width and odd height remain scenario data, but v1 validation requires at least `8 × 5` and an odd height so one row is exactly the equator.
+- `x` wraps and `y` is bounded. Only north, south, east, and west neighbors interact directly.
+- Tile-local positions use normalized fixed-point coordinates rather than a claimed physical kilometer scale.
+- A v1 calendar has 24-hour days, 360-day years, twelve 30-day months, and an Earth-like provisional axial tilt of `23.5°`.
+- A selected starting tile begins at local dawn on the day-zero equinox. This chooses a world time offset; it does not alter generated geography, climate baselines, or resource endowments.
+- Elevation uses deterministic periodic layered fields and a target aquatic fraction rather than a hand-authored map.
+- Current weather comes from spatially correlated, temporally interpolated keyed fields. Tiles never draw independent hourly weather noise.
+- Generated worlds use a hybrid guarantee: generate naturally, deterministically repair the best near-valid starting regions within strict bounds, and retry with a derived sub-seed if bounded repair cannot satisfy the scenario.
+- Fixed geography and climate normals are authoritative generated state. Most current conditions are deterministic functions of those baselines, seed, and time; terrestrial surface moisture remains authoritative state because it integrates prior precipitation and evaporation.
 
-The detailed plan must define coordinate ranges, neighbor lookup, behavior at bounded `y` edges, and within-tile coordinate transfer when crossing an `x` seam.
+The world size, calendar length, axial tilt, aquatic fraction, climate coefficients, and repair-count target are first rule-pack values rather than engine constants.
 
-# Fixed and baseline state
+# Numeric and coordinate contract
 
-Specify the generated representation for:
+| Domain | V1 representation | Notes |
+| --- | --- | --- |
+| Tile `x`, `y` | Signed 32-bit integers | Default `x = 0..31`, `y = -8..8` |
+| Latitude | Derived signed microdegrees or deterministic fixed-point angle | `latitudeDegrees = 180 * y / height`; default extreme centers are approximately `±84.706°` |
+| Elevation | Signed integer meters | Generated tile centers never use exactly zero: `> 0` land, `< 0` aquatic |
+| Water depth | Derived nonnegative integer meters | `max(0, -elevationMeters)` |
+| Tile-local position | Unsigned normalized `LocalCoordQ` in `[0, 2^32)` | No physical-distance claim in v1 |
+| Tile-local velocity | Signed fixed-point tile fractions per hour | Exact encoding belongs to the movement pass |
+| Temperature | Signed milli-degrees Celsius | Environmental curves convert explicitly to `RatioQ` |
+| Precipitation | Nonnegative integer micrometers of water per hour | A rate, distinct from surface moisture |
+| Moisture, cloud, turbidity, volcanism, insolation | `RatioQ`, normally `[0, 1]` | Any domain permitted above one must declare that separately |
 
-- Elevation, terrain classification, and water depth.
-- Monthly temperature normals.
-- Monthly precipitation normals.
-- Terrestrial surface-moisture baseline.
-- Volcanic activity baseline and variation.
-- Nutrient and atmospheric starting reservoirs.
-- Geological, atmospheric, and volcanic source/sink parameters.
-- Latitude-derived insolation.
-
-# Current conditions
-
-Design temporally coherent updates for:
-
-- Temperature.
-- Precipitation.
-- Surface moisture.
-- Cloud cover or another explicit weather term used to attenuate sunlight.
-- Aquatic turbidity if included in v1.
-- Insolation at the surface and at aquatic depth.
-- Volcanic activity and rare destructive events.
-- Global annual deviations.
-
-Independent random sampling every hour would produce implausible noise. The detailed plan should define correlated weather evolution, interpolation between monthly normals, bounds, and how seasonal state survives save/load.
-
-# World generation pipeline
+Coordinate helpers are pure and shared by generation, simulation, protocol projection, and tests:
 
 ```text
-GenerateWorld(seed, dimensions, rulePack):
-    establish coordinate and latitude ranges
-    generate elevation field with x wrapping and bounded y edges
-    derive land, ocean, and water depth
-    assign correlated terrain and volcanic structure
-    derive climate baselines
-    initialize nutrients and atmospheric gases
-    validate sandbox founding tiles and paired survival regions
-    repair or regenerate invalid worlds deterministically
-    return world plus generation diagnostics
+East(x)  = (x + 1) mod width
+West(x)  = floorMod(x - 1, width)
+North(y) = y + 1 when y < maxY, otherwise none
+South(y) = y - 1 when y > minY, otherwise none
+
+latitudeDegrees(y) = 180 * y / height
 ```
 
-The detailed pass must replace each line with algorithms, ordering, random-stream ownership, validation, and performance expectations.
+Crossing the east or west edge of a tile subtracts or adds one normalized tile width and changes `x` through `East` or `West`. Crossing a permitted north/south edge does the analogous `y` transfer. At the bounded north or south world edge, active movement is clamped at the tile boundary and cannot migrate; a later movement trait cannot silently wrap `y`.
+
+# Authoritative state split
+
+```text
+WorldFixedState
+    seed
+    width
+    height
+    generation_version
+    calendar_definition
+    start_hour_offset
+    world_resource_targets
+
+TileFixedState
+    coordinate
+    latitude
+    elevation_meters
+    terrain_tags
+    ocean_distance
+    volcanic_province_id?
+    volcanic_activity_baseline_q
+    volcanic_emission_profile_id?
+    climate_baseline_id
+    resource_initialization_profile_id
+
+TileClimateBaseline
+    monthly_temperature_milli_c[12]
+    monthly_precipitation_micrometers_per_hour[12]
+    surface_moisture_baseline_q
+    cloud_baseline_q[12]
+    aquatic_turbidity_baseline_q
+
+TileDynamicEnvironment
+    surface_moisture_q                 # terrestrial only
+    active_volcanic_pulses[]           # only while a pulse spans ticks
+    environmental_rate_remainders[]
+    resource_accounts[]
+```
+
+Current temperature, precipitation, cloud, insolation, aquatic light, and ordinary slow volcanic modulation are derived for a tick and may be cached with an explicit tick key. They are not independent writable fields. Active volcanic pulses are stored because their start, duration, and decay form an authoritative event history. Resource accounts and source/sink/exchange remainders follow the resource and gas plans.
+
+# Deterministic world-generation pipeline
+
+Every generation stage uses a named key domain and immutable inputs. Adding a random choice to climate generation must not shift elevation or resource results.
+
+```text
+GenerateWorld(seed, scenario, rulePack):
+    validate odd height, dimensions, numeric limits, and rule references
+
+    for generationAttempt in 0 ..< scenario.maxGenerationAttempts:
+        attemptSeed = Key(seed, WorldAttempt, generationAttempt)
+
+        elevationPotential = GeneratePeriodicElevationField(attemptSeed)
+        elevation = ClassifyAndScaleElevation(elevationPotential,
+                                              scenario.targetAquaticFraction)
+        terrain = DeriveTerrainTags(elevation, slopes, coastDistance)
+        volcanism = GenerateVolcanicProvinces(attemptSeed, elevation, terrain)
+        climate = GenerateClimateBaselines(attemptSeed, elevation,
+                                           terrain, volcanism)
+        resources = GenerateNonGasResources(attemptSeed, terrain,
+                                            volcanism, climate)
+        worldCandidate = ComposeCandidate(elevation, terrain, volcanism,
+                                          climate, resources)
+        candidate = worldCandidate
+
+        startReport = EvaluateStartingRegions(candidate, scenario)
+        if startReport is insufficient:
+            candidate = ApplyBoundedDeterministicStartRepair(candidate,
+                                                             startReport)
+            startReport = EvaluateStartingRegions(candidate, scenario)
+
+        if startReport satisfies scenario:
+            initialize atmospheric fields with bounded iteration
+            reconcile every source, sink, and resource account
+            return candidate preview plus generation diagnostics and repair record
+
+    fail generation with a stable diagnostic; never return an invalid world
+
+FinalizeWorldStart(generatedWorld, setupCommand):
+    validate selected eligible tile and reserved competitor tile when required
+    choose start_hour_offset so the selected tile begins at local dawn
+    spin up terrestrial moisture over the configured prehistory ending at tick zero
+    derive and cache tick-zero conditions
+    run the selected one- or two-founder initialization transactions
+    reconcile matter and return the authoritative tick-zero world
+```
+
+Generation and start finalization are separate because the player chooses a tile after previewing generated baselines. Moisture spin-up uses the selected solar-time offset and a keyed negative prehistory interval ending at tick `-1`; displayed simulation time still begins at tick zero. Preview projections may show generated moisture baselines, not a fabricated exact tick-zero moisture value before finalization.
+
+## Elevation and terrain
+
+`GeneratePeriodicElevationField` combines three to five rule-pack-defined octaves of smooth keyed lattice noise plus a small number of broad continental influence fields. Lattice sampling is periodic in `x`; no post-generation seam blending is allowed because it can conceal an incorrect generator. `y` samples use bounded coordinates and may include a polar-shape term, but are not mirrored into a false north/south wrap.
+
+The first scenario targets `70%` aquatic tiles with a permitted seeded variation of `±5` percentage points. The generator selects the corresponding potential-field quantile as sea level, then maps aquatic ranks into `-1..-6,000 m` and terrestrial ranks into `1..4,000 m`. Exact zero is reserved as the conceptual shoreline between tile centers. Terrain tags such as shallow ocean, deep ocean, coast, lowland, highland, and mountain are derived from elevation and neighborhood; `volcanic` remains an independent overlay.
+
+This is a gameplay-normalized planet, not an equal-area spherical grid. Latitude affects climate and insolation, but east-west tile adjacency and capacity do not shrink toward the poles in v1.
+
+## Volcanic provinces
+
+Volcanism combines elongated ridge-like fields, isolated hotspots, and a small elevation/slope correlation. Before the general seeds, up to two and no more than half of province anchors may be selected from separated low-latitude ocean edges with complementary hydrogen/sulfur depth and clear-light geometry. The anchor score uses only elevation and latitude, which are already available before volcanism and climate finalization. This declared origin bias makes paired geography plausible on a 544-tile map without itself granting valid resources or biology; exact bounds are in [WORLD_CLIMATE_CALIBRATION.md](WORLD_CLIMATE_CALIBRATION.md). Each volcanic tile receives a baseline activity and an emission-profile ID; activity alone does not decide whether the tile is hydrogen- or sulfide-favored. Neighboring tiles may share a province while using distinct emission strengths.
+
+Baseline activity is stable generated state. Current activity is:
+
+```text
+currentVolcanism = clamp01(
+    baselineVolcanism * SlowVolcanicField(seed, provinceId, tick)
+    + sum(activePulseContribution)
+)
+```
+
+The slow field is deterministic and varies on multi-day or longer timescales. Optional pulses have keyed start decisions, bounded duration, declared gas/source multipliers, and exponential or table-driven decay. V1 does not require random world-destroying eruptions; the final deadline event is a gameplay result boundary, not ordinary volcanism.
+
+# Calendar and solar opportunity
+
+The first calendar uses:
+
+```text
+hoursPerDay = 24
+daysPerMonth = 30
+monthsPerYear = 12
+daysPerYear = 360
+axialTilt = 23.5 degrees
+```
+
+Day zero is an equinox. The setup transaction selects `startHourOffset` so the chosen player tile begins at local dawn; the adjacent survival competitor is within one tile's longitude and begins at nearly the same local time.
+
+For tile longitude `x`, latitude `lat`, day-of-year `d`, and fractional universal day `t`:
+
+```text
+declination = axialTilt * sin(2π * d / daysPerYear)
+localSolarFraction = frac(t + x / width + startHourOffset)
+hourAngle = 2π * (localSolarFraction - 0.5)
+
+cosZenith = sin(lat) * sin(declination)
+          + cos(lat) * cos(declination) * cos(hourAngle)
+
+rawSurfaceSolarOpportunity = max(0, cosZenith)
+```
+
+Authoritative trigonometry uses versioned lookup tables or another explicitly specified deterministic approximation generated with the rule pack. Runtime platform `sin`, `cos`, and floating-point reassociation may not decide simulation results.
+
+Cloud attenuates current surface opportunity. Aquatic attenuation uses a monotone rule-pack curve with fixture anchors:
+
+| Depth | Clear-water depth factor |
+| ---: | ---: |
+| `0 m` | `1.00` |
+| `20 m` | `0.80` |
+| `200 m` | `0.15` |
+| `1,000 m` | approximately `0` |
+
+Interpolation must be deterministic and monotone; turbidity further reduces the factor. The anchors preserve the relative shallow sulfur and deeper hydrogen founder light environments. [WORLD_CLIMATE_CALIBRATION.md](WORLD_CLIMATE_CALIBRATION.md) fixes the first generated-world scalar and daily curve: the reference sulfur day produces `11,394` phototrophy extents and a first split at tick `263`, while the square fixture remains a reaction/accounting isolation control. The square fixture value must not be mistaken for a literal zenith-angle equation.
+
+# Climate baselines
+
+Climate baselines are twelve monthly normals, not one annual value. The first temperature candidate is:
+
+```text
+annualMeanC = 42
+            - 38 * abs(sin(latitude))
+            - 6.5 * max(elevationMeters, 0) / 1000
+            + seededRegionalAnomalyC
+            + volcanicGeothermalBaselineC
+
+seededRegionalAnomalyC in approximately [-5, +5]
+volcanicGeothermalBaselineC = 5 * baselineVolcanism, normally in [0, +5]
+
+seasonAmplitudeC = (2 + 18 * abs(sin(latitude)))
+                 * terrainSeasonalityFactor
+
+terrainSeasonalityFactor = 0.45 aquatic, 1.0 terrestrial
+```
+
+Monthly normals sample the seasonal curve at month centers with opposite phase in the two hemispheres. These numbers place warm volcanic oceans in the equatorial and adjacent rows while retaining cold high-latitude and mountain niches; they require representative-map validation and are balance data.
+
+Monthly precipitation normals derive from a separate periodic moisture-potential field, distance to ocean, latitude band, terrain height, and a bounded orographic modifier. V1 does not simulate fluid atmospheric circulation or prevailing wind. The generator must nevertheless produce contiguous wet/dry regions rather than per-tile noise and must permit terrestrial tiles whose surface moisture is seasonal.
+
+Cloud normals correlate with precipitation potential but are not identical to current precipitation. Aquatic turbidity has a generated baseline influenced by depth, coastal proximity, and volcanism.
+
+V1 temperature does not respond dynamically to evolving atmospheric CO₂ or CH₄ quantities. Those gases remain fully simulated resource reservoirs with sources, sinks, exchange, biological transformations, and histories, but greenhouse feedback is deferred until the resource and climate systems can be jointly recalibrated. Climate configuration and history schemas must leave room for a later globally or regionally aggregated forcing term without storing such a term in v1 state.
+
+# Current weather and conditions
+
+Weather is deterministic, spatially correlated, and temporally continuous:
+
+1. For each weather channel, generate a coarse periodic-in-`x` spatial anchor field keyed by `(seed, channel, dayIndex)`.
+2. Smoothly interpolate between the current and next daily anchor fields.
+3. Bilinearly interpolate the coarse spatial field to tiles.
+4. Apply bounded channel-specific transforms to monthly temperature, precipitation, and cloud normals.
+5. Add a separately keyed, slowly interpolated global annual anomaly so years differ coherently.
+
+```text
+UpdateCurrentConditions(world, nextTick):
+    calendar = DeriveCalendar(nextTick)
+
+    for tile in canonical order, parallel-safe:
+        monthly = InterpolateMonthlyNormals(tile.baseline, calendar)
+        weather = SampleCorrelatedWeatherFields(tile.coordinate, calendar)
+
+        temperature = ClampClimateTemperature(
+            monthly.temperature
+            + DiurnalTemperatureTerm(tile, calendar)
+            + weather.temperatureAnomaly
+            + GlobalAnnualAnomaly(calendar.year))
+
+        cloud = clamp01(monthly.cloud + weather.cloudAnomaly)
+        precipitation = DerivePrecipitation(monthly.precipitation,
+                                            weather.stormPotential,
+                                            temperature)
+        surfaceSolar = DeriveSolarOpportunity(tile, calendar, cloud)
+        aquaticLight = ApplyDepthAndTurbidity(surfaceSolar, tile)
+        volcanism = DeriveCurrentVolcanism(tile, calendar)
+
+    update terrestrial surface moisture from stable prior moisture
+    publish one immutable current-condition view for phases 2 through 10
+```
+
+Current-condition derivation consumes no mutable global random stream and is independent of worker count. Save/load needs the seed, tick, baselines, rule version, moisture state, and active volcanic pulses—not a serialized copy of every derived temperature or cloud value.
+
+## Surface moisture
+
+Aquatic tiles have full water access and no terrestrial surface-moisture balance. Terrestrial moisture is an authoritative `RatioQ` state:
+
+```text
+nextMoisture = clamp01(
+    priorMoisture
+    + precipitationToMoisture(precipitation, absorptionClass)
+    - evaporation(priorMoisture, temperature, insolation)
+    - drainage(priorMoisture, terrainClass)
+)
+```
+
+Precipitation may raise moisture quickly; evaporation and drainage return it toward a generated baseline more slowly. The response must allow a terrestrial tile to be wet for only part of a year. Initialization runs the recurrence for two no-biology calendar years, or another bounded configured spin-up, over `climateEpochHour = -17,280..-1` for the first calendar. Weather-key derivation accepts this signed prehistory domain while authoritative gameplay tick IDs begin at zero. This prevents tick zero from giving every land tile an arbitrary identical moisture state and keeps the result consistent with the selected local-dawn offset.
+
+# Environmental resources and cross-tile movement
+
+Atmospheric initialization, source, sink, attrition, accessibility, and symmetric exchange are fixed in [GAS_TRANSPORT_AND_ATTRITION.md](GAS_TRANSPORT_AND_ATTRITION.md). Generated worlds use one global N₂ target and one global CO₂ target, then boundedly iterate the normal gas phases after starting-region repair so volcanic excess and neighbor leakage begin near their intended fields.
+
+Non-gas resources use transport classes rather than bespoke engine code:
+
+| Transport class | First v1 behavior |
+| --- | --- |
+| `TileBound` | No passive neighbor exchange; moves only through declared geology, biology, migration, predation, remains, or decay |
+| `DissolvedMobile` | Symmetric neighbor exchange from a stable view with a rule-pack coefficient and edge compatibility |
+| `SurfaceRunoff` | Optional directional downhill transfer on terrestrial edges; defer from the first executable slice unless needed by moisture validation |
+| `BoundaryAvailable` | Water/surface moisture opportunity, never a finite tile debit |
+
+Micronutrients default to `TileBound` in the first slice. This preserves well-mixed access inside a tile without making scarce advanced nutrients rapidly homogenize globally. Exact dissolved macronutrient exchange and remnant-decay coefficients remain part of resource calibration.
 
 # Cross-tile environment exchange
 
@@ -84,9 +315,23 @@ Exchange must be symmetric or explicitly directional, mass-balanced, stable for 
 
 # Starting-world validation
 
-World generation must guarantee at least one volcanic ocean tile viable for each permitted founder and at least one paired survival region. A pair consists of edge-sharing volcanic ocean tiles: one viable for hydrogen acetogenesis and one shallow and sufficiently illuminated for sulfide anoxygenic phototrophy. Pair orientation and which member the player selects may vary, but choosing either metabolism must reserve a deterministic eligible neighbor for the other. Decide whether to construct this guarantee, repair a generated world, or retry with deterministic sub-seeds.
+World generation must guarantee at least one volcanic ocean tile viable for each permitted founder and at least one paired survival region. The default scenario provisionally targets at least four non-identical eligible pairs so tile selection remains a choice; smaller maps may lower this configured target but never below one.
+
+A pair consists of edge-sharing volcanic ocean tiles: one hydrogen-oriented tile near the `-200 m`, dim, H₂-rich fixture and one sulfur-oriented tile near the `-20 m`, illuminated, H₂S-rich fixture. Both target warm conditions near `45 °C`, founding quota availability, and survivable adapted sulfur exposure. Eligibility is expressed as ranges and integrated opportunity tests, not equality with fixture constants.
 
 Eligibility means viable for the selected founding DNA, not broadly favorable. The [hydrogen fixture](ONE_TILE_STARTING_CONFIGURATION.md) combines primitive gas substrates with sulfur toxicity, weak light, and missing advanced-pathway micronutrients. The [sulfur fixture](SULFUR_TILE_STARTING_CONFIGURATION.md) defines the complementary shallow, illuminated, H₂S-driven profile, while [FOUNDING_METABOLISMS.md](FOUNDING_METABOLISMS.md) defines the paired-region rules. World generation should vary the exact pressures while preserving both openings and ensuring neither starting tile is a generally superior refuge.
+
+The deterministic guarantee is generate, score, repair, then retry:
+
+1. Enumerate every east/south undirected edge once and score both possible hydrogen/sulfur orientations.
+2. Accept naturally valid pairs first and retain diagnostics for why other pairs failed.
+3. If too few pairs exist, select highest-scoring non-overlapping near-valid pairs by score and stable coordinate tie-break.
+4. Repair only allowed fields in order: shallow/deep elevation band, volcanic emission-profile strength, regional geothermal anomaly, founding non-gas resource profile, and fixture-blocking advanced micronutrient removal.
+5. Never repair global N₂/CO₂ targets, world topology, latitude, seasonal phase, or biological rules.
+6. Reject a repair whose total normalized change exceeds the scenario budget; retry generation with the next named attempt seed.
+7. Record every repaired tile and delta in generation diagnostics and the save's world-origin metadata.
+
+After repair, atmospheric iteration and a paired biological smoke test must prove both founders survive, acquire quotas, and approach their expected first reproduction within configured tolerance. Repair cannot merely make a static eligibility predicate return true.
 
 # Exploration state
 
@@ -110,16 +355,36 @@ Reduced neighbor summaries should be derived from generated fixed attributes and
 
 # Required decisions and artifacts
 
-- [ ] Coordinate bounds and grid-size defaults.
-- [ ] Elevation/terrain generation algorithm with seam tests.
-- [ ] Climate model and weather correlation.
-- [ ] Surface-moisture response and decay model.
-- [ ] Insolation/calendar equations and units.
-- [ ] Volcanism and global-event model.
+- [x] First coordinate bounds, default `32 × 17` grid, normalized local-coordinate contract, and neighbor rules.
+- [x] First periodic elevation/terrain-generation algorithm and `70% ± 5%` aquatic target.
+- [x] First monthly-baseline and spatially/temporally correlated weather model.
+- [x] First surface-moisture recurrence and deterministic initialization spin-up.
+- [x] First calendar, latitude, solar-angle, cloud, depth, and turbidity contract.
+- [x] First volcanic-province, slow-variation, bounded-pulse model, and numerical pulse-rate candidate; long-run ecological tuning remains open.
 - [x] First atmospheric-gas exchange equations, rates, plateau targets, and stability constraints; see [GAS_TRANSPORT_AND_ATTRITION.md](GAS_TRANSPORT_AND_ATTRITION.md).
 - [x] Initial N₂/CO₂ background targets, deterministic iterative initialization, and first gas-accessibility curve; see [GAS_TRANSPORT_AND_ATTRITION.md](GAS_TRANSPORT_AND_ATTRITION.md).
-- [ ] Starting-tile eligibility and deterministic repair.
-- [ ] Paired-region construction, eligibility, and fairness diagnostics.
+- [x] Generate-score-repair-retry starting-region policy and first paired-region criteria.
+- [x] First exact eligibility ranges, repair weights/budget, four-pair target, fairness diagnostics, and bounded biological smoke test; see [WORLD_CLIMATE_CALIBRATION.md](WORLD_CLIMATE_CALIBRATION.md).
+- [x] First generated-world light calibration: `11,394` reference daily extents, tick-`263` reproduction, and `250..275` acceptance band; see [WORLD_CLIMATE_CALIBRATION.md](WORLD_CLIMATE_CALIBRATION.md).
+- [x] First temperature, precipitation, cloud, moisture, turbidity, and volcanic coefficient set; representative-map validation and revision remain open.
+- [ ] Dissolved non-gas exchange; micronutrients are tile-bound initially. Remnant decay and passive mineralization rates are fixed in [LIFECYCLE_AND_RECYCLING.md](LIFECYCLE_AND_RECYCLING.md).
 - [ ] Reduced tile-summary schema and coarse-band thresholds.
 - [ ] Player-knowledge update algorithm and visibility transition tests.
 - [ ] Maps and plots demonstrating representative generated worlds.
+
+# Required validation
+
+- Every generated `x` seam is continuous for elevation, climate fields, volcanism, and weather; wrapped edges occur exactly once.
+- Default `y = -8..8` maps symmetrically to latitude and never creates north/south neighbors beyond the bounds.
+- The same seed, rule pack, scenario, and selected start produce identical fixed state, repair records, tick-zero moisture, and current conditions.
+- Changing worker count or client visibility does not alter weather, resources, or volcanic events.
+- Monthly interpolation is continuous at month and year boundaries; hemispheres have opposite seasonal phase and equal equinox conditions before regional modifiers.
+- Day/night and day-length behavior are correct at the equator, mid-latitudes, and near the bounded polar rows.
+- The depth-light curve reproduces `0 m = 1.0`, `20 m = 0.80`, and `200 m = 0.15`, remains monotone, and never produces negative light.
+- Generated sulfur starts match the fixture's daily energy/growth opportunity within a configured tolerance; generated hydrogen starts remain meaningfully dimmer.
+- Temperature, precipitation, cloud, moisture, turbidity, and volcanism remain inside configured numeric bounds under long runs.
+- Terrestrial moisture responds to precipitation with lag, can dry seasonally, and reproduces exactly after save/load.
+- Atmospheric initialization and every non-gas exchange conserve matter against declared boundaries.
+- The default scenario produces the required number of eligible paired regions or a deterministic explicit generation failure—never a silently invalid world.
+- Repaired starts pass actual founder smoke simulations, preserve missing advanced-pathway micronutrient gates, and expose their repair deltas in diagnostics.
+- Unknown and reduced client projections cannot infer exact current weather, resources, organisms, remains, or repair-only hidden state.

@@ -32,7 +32,7 @@ The fixture deliberately uses sulfide-powered anoxygenic phototrophy rather than
 - Temperature, turbidity, and volcanism are held at their baselines so the light cycle and resource effects can be isolated.
 - All probabilistic outcomes use deterministic keyed draws. The expected-flow calculation below uses the configured ideal-path outcome.
 
-The dawn start and square light cycle are fixture controls, not final world/climate rules. The climate deep dive must replace them with deterministic insolation at latitude, season, weather, water depth, and simulation time while preserving equivalent daily opportunity in an eligible sulfur start.
+The dawn start and square light cycle are fixture controls, not final world/climate rules. [WORLD_CLIMATE_CALIBRATION.md](WORLD_CLIMATE_CALIBRATION.md) supplies the first deterministic latitude-, season-, weather-, depth-, and time-aware replacement. Its equatorial-equinox reference produces `11,394` daily phototrophy extents rather than the square fixture's `11,400`, reaches first reproduction at tick `263`, and accepts generated sulfur starts in `250..275` ticks.
 
 # Fixed tile configuration
 
@@ -147,13 +147,13 @@ Under the first complete health calibration, the initial SO₂ exposure contribu
 
 Required capabilities:
 
-- `SulfideAnoxygenicPhototrophy` with a maximum 1,000 reaction extents per illuminated tick and `0.95` ideal-path success/yield factor.
+- `SulfideAnoxygenicPhototrophy` with a square-fixture allowance of 1,000 requested reaction extents per illuminated tick and a `0.95` ideal-path success/yield factor. This allowance is not an intrinsic pathway maximum; generated climate uses the light-proportional throughput defined in [WORLD_CLIMATE_CALIBRATION.md](WORLD_CLIMATE_CALIBRATION.md).
 - Intrinsic `25×` H₂S threshold multiplier without the hydrogen founder's separate tolerance-efficiency penalty.
 - `10×` SO₂ threshold multiplier; SO₂ is not treated as a harmless substitute for H₂S.
 - Assimilation of ammonia, inorganic phosphate, and sulfide into biomass.
 - `PrimitiveNutrientStore`, using the founder capacities and needs-only retention policy.
 - Warm-water tolerance centered near `45 °C`.
-- True-split reproduction with the same provisional 500-energy additional cost.
+- True-split reproduction with the common 500-energy additional cost and lifecycle gates.
 - Founding anabolic throughput of four structural-assembly extents per tick when reserve requirements are satisfied.
 - No locomotion, sensing, predation, fermentation, oxygenic photosynthesis, nitrogen fixation, or respiration.
 
@@ -369,13 +369,12 @@ The paired fixture should run both with exchange disabled as an isolation contro
 These inputs remain necessary before the opening can be considered fully balanced:
 
 1. **Final health function and post-speciation mutation trajectory.** The provisional logarithmic formula and two-tick-per-second target produce useful opening times, but must be rerun with environmental health adjustments, founder fractions, resource contention, senescence, and actual speciation choices.
-2. **World insolation function.** The fixture fixes a 12/12 square cycle at `0.80`; eligible generated tiles need a seasonal, latitudinal, weather-, depth-, and turbidity-aware function that delivers a comparable daily opportunity.
-3. **Senescence and death reserve threshold.** The first split remains viable under the 4,000 growth floor, but long-run survival and generation overlap require the actual starvation threshold and age distribution.
-4. **Post-split assembly scheduling.** The internal reserve floor is numerically adequate, but organism action planning must specify how many assembly extents are suppressed as reserve approaches it.
-5. **Organic-resource uptake and fermentation yields.** The hydrogen escape path has a mutation price but cannot be compared economically until its uptake, reaction, maintenance, and substrate values are defined.
-6. **Environmental tolerance options.** The baseline comparison is fixed, but the exact player-selectable efficiency-versus-tolerance packages must be bounded and tested so none reverses the two identities.
+2. **World insolation validation.** The first seasonal, latitudinal, weather-, depth-, and turbidity-aware function is specified; generated maps and biological smoke tests must confirm its `250..275`-tick acceptance band.
+3. **Lifecycle population validation.** The zero terminal reserve, 4,000 growth-protection floor, reproduction gates, and primitive senescence curve are selected, but their long-run generation overlap and age distribution require simulation.
+4. **Organic-resource uptake and fermentation yields.** The hydrogen escape path has a mutation price but cannot be compared economically until its uptake, reaction, maintenance, and substrate values are defined.
+5. **Environmental tolerance options.** The baseline comparison is fixed, but the exact player-selectable efficiency-versus-tolerance packages must be bounded and tested so none reverses the two identities.
 
-Item 1 blocks final paired gameplay pacing. Items 2–4 block replacement of this deterministic fixture with generated-world runs. Items 5–6 block evaluation of later player evolution choices but do not block implementation of the two founding reactions, gas propagation, or the provisional mutation curve.
+Item 1 blocks final paired gameplay pacing. Items 2–3 block freezing the generated-world replacement as balanced, but no longer block its first implementation. Items 4–5 block evaluation of later player evolution choices but do not block implementation of the two founding reactions, gas propagation, or the provisional mutation curve.
 
 # Validation scenarios
 
@@ -386,6 +385,7 @@ Item 1 blocks final paired gameplay pacing. Items 2–4 block replacement of thi
 - With abundant uncontested pools, primitive uptake averages `0.5` granted micronutrient quantum per organism-hour, consumes exactly `5,500` units when every founder fills its extra set, and finishes in 110 expected ticks.
 - A pinned seed reproduces the exact per-tick micronutrient opportunity, target selection, claims, grants, and tile debits.
 - With 100 founders and full substrate, the first viable split occurs at tick 250 and expected reserve remains positive through every dark period.
+- The generated equatorial-equinox reference reaches first split at tick `263`, and every accepted generated sulfur start falls within `250..275` ticks.
 - Disabling light resolves zero phototrophy and causes stored reserve to decline through maintenance and any permitted assembly.
 - Reducing H₂S claims proportionally delays assembly without violating mass balance.
 - Removing intrinsic H₂S adaptation applies the existing hard-stress death curve.

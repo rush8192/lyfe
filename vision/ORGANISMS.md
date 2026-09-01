@@ -93,7 +93,7 @@ The canonical displayed families are:
 | Energy storage | Maximum reserve capacity and the structures used to hold chemical-energy-bearing organic matter |
 | Nutrient storage | Available-store capacities, retention, and stockpiling of non-reserve nutrients and micronutrients |
 | Growth and lifecycle | Mature structure targets, lifecycle phases, dormancy, senescence, and growth scheduling |
-| Reproduction | Split/budding model, allocation, health gate, attempt frequency, and overhead |
+| Reproduction | Split/budding model, allocation, health gate, cooldown/jitter, and overhead |
 | Locomotion | Movement mechanisms, speed, environmental compatibility, and energy cost |
 | Sensing | Which local organisms, remains, tile conditions, and future resource gradients can be detected |
 | Behavioral regulation | How sensed information and internal state select goals and actions |
@@ -211,15 +211,19 @@ Sensing determines what information an organism can observe; behavioral regulati
 
 We attempt to model the full lifecycle of an organism. In the simplest form, organisms begin as fully mature organisms after splitting or budding from their parent. They may later die, leaving behind a cohesive remnant at their final location that can be consumed wholly or partially by nearby organisms and that eventually breaks down into organic tile resources.
 
+Scavenging is limited by handling and processing time as well as proximity and storage. Even simple scavengers cannot repeatedly strip the same remains without delay; more complex particulate matter additionally requires ingestion capacity and digestion.
+
 ## Reproduction
 
 Reproduction is a net-zero transfer of material resources from a parent into a new organism. The offspring's stored nutrients and initial chemical energy must come from the parent; reproduction cannot create either. Performing the split also consumes additional stored energy, while the nutrients associated with that expended energy remain accounted for.
 
-DNA defines the reproductive allocation model. In a true split, the original and new organism divide the parent's remaining reserves relatively evenly. In a budding or offspring model, the new organism receives a smaller share and the parent retains most of its reserves. DNA may further modify the minimum relative health required to attempt reproduction, its base attempt frequency, allocation profile, and its additional energy cost. V1 uses a small number of discrete allocation profiles. A future version may support a broader spectrum of DNA-defined allocation between parent and offspring, with corresponding effects on reproduction cost, maturity, and survival. The exact values and probability curves belong in the balance plan.
+DNA defines the reproductive allocation model. In a true split, the original and new organism divide the parent's remaining reserves relatively evenly. In a budding or offspring model, the new organism receives a smaller share and the parent retains most of its reserves. DNA may further modify the minimum relative health required for reproduction, its base cooldown and bounded cooldown-jitter window, allocation profile, and its additional energy cost. Once the gates and scheduled cooldown are satisfied, reproduction occurs deterministically; there is no independent per-tick reproduction-success roll. V1 uses a small number of discrete allocation profiles. A future version may support a broader spectrum of DNA-defined allocation between parent and offspring, with corresponding effects on reproduction cost, maturity, and survival. The exact gates, cooldowns, jitter windows, and costs belong in the balance plan.
 
 Sexual reproduction remains an abstract species-level evolutionary capability in the initial simulation. It does not require a nearby mate, mate-seeking behavior, or recombination of individual genomes in order for an organism to reproduce.
 
 More advanced organisms may have additional lifecycle phases, such as a dormant or "seed" phase that is relatively metabolically inert but has increased tolerance for environmental parameters outside the norm. An organism might also have an adolescent phase geared toward mobility and finding an optimal environment before settling down for reproduction.
+
+Age may gradually reduce an organism's metabolic throughput before senescence kills it. The initial simulation models this as fewer completed balanced metabolic processes rather than silently changing reaction yields. Young offspring therefore restore full per-organism productivity, providing another species-level benefit to successful reproduction. Explicit age-driven maintenance escalation, accumulated cellular damage, repair, and damage inheritance are possible future extensions.
 
 Lifecycle state is initially evaluated once per one-hour simulation tick, with the tick duration remaining configurable for tuning. Many organisms may complete their entire lifecycle within a day, week, or month. Seasonal survival is therefore primarily an emergent property of the species population rather than the longevity of a particular organism.
 

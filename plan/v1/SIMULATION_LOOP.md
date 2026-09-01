@@ -1,6 +1,6 @@
 # Simulation Loop and Action Resolution
 
-Status: first phase-order and causality decision pass; detailed conflict policies pending
+Status: phase order, causality, and first external-conflict policies decided; intent schemas, RNG keys, parallel merge, and scheduling pending
 
 Sources: [SIMULATION vision](../../vision/SIMULATION.md), [ORGANISMS vision](../../vision/ORGANISMS.md), and [technology decisions](TECHNOLOGY.md).
 
@@ -44,16 +44,18 @@ Behavior selected at the end of tick `T` controls movement and action selection 
 | 1. Calendar and conditions | Prior calendar, fixed tile baselines, weather RNG state | Tick/calendar, temperature, precipitation, surface moisture, insolation, volcanic state | Organisms experience the newly current conditions during this tick's death and metabolism phases |
 | 2. Environmental ledger | Updated conditions, prior completed tile reservoirs and old remnants | Boundary sources, environmental sinks, gas exchange, mobile-resource exchange, old-remnant decay | Gas order remains source → attrition → symmetric exchange; biological claims have not yet occurred |
 | 3. Intrinsic death | Updated environment, organism age/state at tick start | Incremented age, per-tick death-risk assessments, `DeathRecord`, cohesive remnant, organism removal | Every applicable intrinsic cause is evaluated; dead organisms do not move or act; their remains may be found later in this tick |
-| 4. Movement | Surviving organisms, prior behavior, prior velocity, updated environment | Movement-energy spend, position, velocity integration, tile membership | Movement is capped by energy affordable before movement; interactions use post-movement coordinates; edge migration uses wrapped `x` and bounded `y` |
-| 5. External intent evaluation | Post-movement organisms, tile resources, existing remains, prior behavior, compiled allocation policy | Pre-external metabolic allocations, immutable acquisition/capture/scavenging/predation intents | Private allocation precedes the stable external snapshot; intent evaluation does not mutate shared resources or targets |
-| 6. External resolution | Canonically grouped external intents and phase snapshot | Action-energy spend, resource grants, external-capture products, consumed remains, predation deaths/transfers, new predation remnants | Ordinary claims resolve before scavenging and predation; granted reserve and acquired matter are available to phase 7 |
-| 7. Internal metabolism | Post-external organism stores and reserve, compiled DNA, environment | Internal reaction products/waste, reserve expenditure, maintenance, structure/growth, metabolic-failure deaths | Captured energy and newly acquired substrates may pay this tick's maintenance; optional growth occurs only after mandatory maintenance |
+| 4. Movement | Surviving organisms, prior behavior, prior active velocity, updated environment, keyed Brownian displacement | Movement-energy spend for active displacement, position, active-velocity integration, tile membership | Brownian displacement is zero-mean and uncharged; active movement is capped by affordable energy; interactions use post-movement coordinates; edge migration uses wrapped `x` and bounded `y` |
+| 5. External intent evaluation | Post-movement organisms, tile resources, existing remains, prior behavior, compiled allocation policy | Pre-external metabolic allocations, immutable acquisition/capture/scavenging/predation intents | Private allocation precedes the stable external snapshot; energy-capture claims use age-limited extents; intent evaluation does not mutate shared resources or targets |
+| 6. External resolution | Canonically grouped external intents and phase snapshot | Action-energy spend, resource grants, external-capture products, consumed remains, scavenging cooldowns, predation deaths/transfers, new predation remnants | Ordinary claims resolve before scavenging and predation; an admitted scavenging attempt pays and schedules cooldown even if contention yields zero; granted reserve and acquired matter are available to phase 7 |
+| 7. Internal metabolism | Post-external organism stores and reserve, compiled DNA, environment | Internal reaction products/waste, reserve expenditure, maintenance, structure/growth, metabolic-failure deaths | Catabolism, digestion, and growth use the current age-throughput cap; captured energy and newly acquired substrates may pay this tick's maintenance; optional growth occurs only after mandatory maintenance |
 | 8. Lifecycle and reproduction | Post-metabolism survivors and derived health | Lifecycle transition, zero-sum parent allocation, new offspring | A new offspring begins at age zero and cannot move, act, or reproduce until the next tick |
 | 9. Behavior update | End-of-action internal state and end-of-action local observation | Behavior/goal and next-tick movement or action parameters | Only survivors update; choices affect tick `T + 1` |
 | 10. Species systems | Completed organism membership and health | Population/health aggregates, mutation-point income, autonomous speciation | Mutation income observes births and deaths from this tick; autonomous descendants begin acting next tick |
 | 11. Finalization | Completed authoritative world | Histories, knowledge state, events/deltas, optional hash/checkpoint | Only a fully successful tick is visible or saveable |
 
 New remains created by intrinsic death in phase 3 exist before external intent evaluation and may be scavenged during phase 6. Predation deaths occur while phase-6 intents are being resolved; their new remains are not added to the current resolution snapshot and therefore become scavenging targets on the next tick. This avoids order-dependent predation/scavenging cascades.
+
+The post-movement `ExternalInteractionIndex` and end-of-lifecycle `BehaviorObservationIndex` are the two logical spatial snapshots behind these phases. Their contents, same-tile locality, and stable query ordering are defined in [SPATIAL_ORGANISMS_AND_BEHAVIOR.md](SPATIAL_ORGANISMS_AND_BEHAVIOR.md); a physical implementation may rebuild or deterministically update the derived bins.
 
 # Death causality
 
@@ -211,6 +213,8 @@ EvaluateIntrinsicDeath(organism, environment, tickKey):
     return Dies(nextAge, riskAssessments, triggered, contributingStress)
 ```
 
+The primitive founder `terminalReserveThreshold` is zero. This is distinct from the `4,000` optional-growth protection floor: falling below the growth floor suppresses biomass work, while reaching zero at intrinsic-death evaluation is terminal. An organism that cannot pay mandatory maintenance later in the tick instead dies from `MaintenanceFailure` as already defined.
+
 ## Internal-metabolism pseudocode
 
 ```text
@@ -243,7 +247,7 @@ External energy-capture reactions are committed before this function, so their r
 
 # Remaining phase-local decisions
 
-The phase graph and the first external-resolution policies are sufficiently defined for implementation planning. Exact reproduction attempt probability, offspring placement, deterministic ID allocation, and the numerical predation curves remain balance/mechanics work. Reproduction stays after metabolism, observes post-maintenance health, and gives the newborn no action in its birth tick.
+The phase graph and the first external-resolution policies are sufficiently defined for implementation planning. Exact reproduction health/reserve gates, deterministic ID allocation, and the numerical predation curves remain balance/mechanics work. Reproduction has deterministic eligibility plus a keyed bounded cooldown jitter rather than a per-tick success roll; see [LIFECYCLE_AND_RECYCLING.md](LIFECYCLE_AND_RECYCLING.md). Offspring placement is defined in [SPATIAL_CALIBRATION.md](SPATIAL_CALIBRATION.md): it occurs only after an accepted zero-sum reproduction transaction, remains in the parent's tile, and cannot itself cause migration. Reproduction stays after metabolism, observes post-maintenance health, and gives the newborn no action in its birth tick.
 
 # Action-cost admission
 

@@ -1,6 +1,6 @@
 # Configuration and Balance
 
-Status: scaffold
+Status: first configuration inventory and validation pass; authoring format, schemas, compiler layout, and rule hashing pending
 
 Sources: all vision documents and [technology decisions](TECHNOLOGY.md).
 
@@ -38,18 +38,22 @@ Evaluate data schemas for:
 - Stable canonical family IDs and typed effect domains for resource acquisition, external energy capture, internal metabolism, energy storage, cellular organization, behavior, defense, and the other families fixed in [EVOLUTION.md](EVOLUTION.md).
 - Trait-family forests, global prerequisite predicates, incompatibilities, exact ancestor-effect supersession, mutation costs, change complexity, typed effects, activation requirements, pressure tags, and deterministic effect-composition metadata from [TRAIT_SYSTEM.md](TRAIT_SYSTEM.md).
 - The initial founding loadouts, family-tree topology, cross-family milestones, evolutionary niches, and benefit/liability requirements from [TRAIT_CATALOGUE.md](TRAIT_CATALOGUE.md).
-- Reproductive modes and lifecycle parameters.
+- Reproductive modes, deterministic eligibility gates, base cooldowns, bounded jitter windows, allocation profiles, growth-protection policies, lifecycle-phase multipliers and transition costs, evolved lifecycle modifiers, decay cohorts, environmental decay multipliers, mineralization rates, and lifecycle parameters from [LIFECYCLE_AND_RECYCLING.md](LIFECYCLE_AND_RECYCLING.md).
+- Particulate buffer/ingestion/digestion limits and the exactly balanced combined structural-biomass digestion/catabolism reaction from [LIFECYCLE_AND_RECYCLING.md](LIFECYCLE_AND_RECYCLING.md).
 - Environmental tolerances and stress curves.
-- Health-factor targets, structural targets, constitutive nutrient quotas, senescence curves, and lifecycle condition modifiers from [ORGANISM_STATE_AND_HEALTH.md](ORGANISM_STATE_AND_HEALTH.md).
+- Health-factor targets, structural targets, constitutive nutrient quotas, senescence curves, age-throughput curves, and lifecycle condition modifiers from [ORGANISM_STATE_AND_HEALTH.md](ORGANISM_STATE_AND_HEALTH.md).
 - Convex hot/cold tolerance-cost curves and their cross-axis breadth-coupling coefficient from [TRAIT_CATALOGUE.md](TRAIT_CATALOGUE.md).
 - Gas-specific soft/hard chemical-exposure thresholds and DNA tolerance multipliers.
 - Behavior and sensing capabilities.
+- Spatial bin count, body/radius curves, Brownian direction table and magnitude curve, sensing and action reaches, active speed/turning limits, movement-energy costs, reproduction spawn radius, migration hard gates, active/passive edge-compatibility curves, attempt costs, and probability bounds from [SPATIAL_ORGANISMS_AND_BEHAVIOR.md](SPATIAL_ORGANISMS_AND_BEHAVIOR.md).
 - Predation base odds, attack/defense attributes, eligibility bounds, attempt costs, ingestion caps, contested-feeding weights, and minimum/maximum kill probabilities.
+- Simple-scavenging action cost, handling cooldown, per-compartment transfer caps, compatibility rules, and trait modifiers from [LIFECYCLE_AND_RECYCLING.md](LIFECYCLE_AND_RECYCLING.md).
 - The exact hydrogen-acetogenesis and sulfide-anoxygenic-phototrophy founding definitions, trait paths, opening targets, and paired setup constraints from [FOUNDING_METABOLISMS.md](FOUNDING_METABOLISMS.md).
 - Scenario-defined allowed founding-metabolism IDs, tile-eligibility rules, setup-card metadata, and deterministic competitor-pairing policy. The v1 scenario contains exactly two; the engine must not encode that count.
 - Mutation costs and autonomous-evolution weights.
 - Mutation-income effective-population curve, normalization, DNA modifiers, and fractional accumulation scale.
 - World-generation distributions and climate parameters.
+- Scenario world dimensions, odd-height/equator validation, calendar definition, axial tilt, aquatic-fraction target, elevation ranges, terrain thresholds, weather-field scales, moisture coefficients, depth-light curve, phototrophy throughput, volcanic-pulse parameters, starting-region eligibility, repair weights/budget, required pair count, generation-attempt limit, and seed-suite thresholds from [WORLD_AND_CLIMATE.md](WORLD_AND_CLIMATE.md) and [WORLD_CLIMATE_CALIBRATION.md](WORLD_CLIMATE_CALIBRATION.md).
 
 Data-driven does not mean arbitrary scripting. Frequently executed behavior should compile or resolve into efficient runtime structures during world initialization.
 
@@ -79,6 +83,8 @@ Configuration loading should reject:
 - Survival setups without a valid hydrogen/sulfide paired starting region.
 - Founding metabolism or competitor mappings not permitted by the selected scenario.
 - Gas exchange configurations whose maximum degree-weighted outbound rate is unstable, whose sink lacks a valid ledger destination, or whose source-field initialization cannot converge within its configured residual and iteration limits.
+- World dimensions below scenario minima, even heights that cannot represent the equator row, non-periodic `x` generation fields, invalid elevation/aquatic targets, non-monotone depth-light curves, or climate bounds that overflow their fixed-point domains.
+- Generated worlds that exhaust bounded attempts without the configured number of biologically validated starting pairs; repair deltas above budget must trigger retry rather than silent acceptance.
 - Values that exceed numeric or collection limits.
 - Tolerance-cost curves that are non-monotonic, non-convex, overflow-prone, or produce a negative derived upkeep contribution.
 

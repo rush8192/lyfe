@@ -1,6 +1,6 @@
 # Founding Metabolisms and Survival Origins
 
-Status: first decision pass
+Status: founding identities, asymmetry, opening fixtures, and first generated-world light calibration decided; escape-path and representative-world tuning pending
 
 Sources: [GAMEPLAY vision](../../vision/GAMEPLAY.md), [ORGANISMS vision](../../vision/ORGANISMS.md), [WORLD vision](../../vision/WORLD.md), [resource model](RESOURCE_MODEL.md), and [one-tile hydrogen fixture](ONE_TILE_STARTING_CONFIGURATION.md).
 
@@ -51,7 +51,7 @@ Light is an energy opportunity rather than matter. Reaction definitions must sep
 
 Under each metabolism's own favorable starting conditions:
 
-- Sulfide founders should reach their first viable reproduction after 250 ticks, or 10 days 10 hours, in the deterministic ideal fixture.
+- Sulfide founders should reach their first viable reproduction after 250 ticks, or 10 days 10 hours, in the deterministic square fixture. The first generated-world reference reaches tick `263`, with `250..275` as the candidate acceptance band.
 - Hydrogen founders should reach it in approximately 14 simulated days, matching the current bounded hydrogen fixture.
 - Sulfide founders should reach that first split approximately 25% sooner through a 33% higher opening structural-growth rate, not through a larger founding endowment or different reproduction rule.
 - Sulfide output should fall sharply when either useful light or H₂S is scarce. It should have a day/night and depth-sensitive profile.
@@ -177,7 +177,7 @@ The v1 scenario's competitor policy maps each founder to the other of its two al
 - Repeating the paired setup reproduces initialization and simulation hashes.
 - The lineage store contains one origin event, two root species, and no false parent-child edge between the founders.
 
-The calculated sulfur values and ledger expectations are defined in [SULFUR_TILE_STARTING_CONFIGURATION.md](SULFUR_TILE_STARTING_CONFIGURATION.md).
+The calculated square-fixture sulfur values and ledger expectations are defined in [SULFUR_TILE_STARTING_CONFIGURATION.md](SULFUR_TILE_STARTING_CONFIGURATION.md). The corresponding generated-world solar, depth, cloud, and throughput calibration is defined in [WORLD_CLIMATE_CALIBRATION.md](WORLD_CLIMATE_CALIBRATION.md).
 
 # Scientific anchors
 
@@ -187,6 +187,6 @@ The calculated sulfur values and ledger expectations are defined in [SULFUR_TILE
 
 # Remaining tuning questions
 
-- Replacement of the fixed sulfur fixture's light/yield values with generated-world probability and insolation curves that preserve its daily opportunity.
+- Representative-seed and biological validation of the first generated-world light curve and its `250..275`-tick sulfur-start band.
 - How much maintenance `MetabolicRegulation` retains when sulfide machinery is suppressed.
 - Organic-resource concentration at which the hydrogen escape path becomes practically useful.

@@ -38,7 +38,7 @@ The first compiled schema recognizes the following stable family IDs:
 | `EnergyStorage` | Reserve-resource eligibility and maximum energy-storage capacity |
 | `NutrientStorage` | Available-store capacity by resource/tag and stockpiling constraints |
 | `GrowthLifecycle` | Lifecycle phases, growth gates, dormancy, maturity, and senescence |
-| `Reproduction` | Allocation model, health/resource gates, frequency, overhead, and offspring requirements |
+| `Reproduction` | Allocation model, health/resource gates, cooldown and jitter, overhead, and offspring requirements |
 | `Locomotion` | Movement modes, velocity, terrain compatibility, and energy costs |
 | `Sensing` | Observable signal types, ranges, precision, and update cost |
 | `BehavioralRegulation` | Available behaviors, selection parameters, and condition-to-goal mappings |

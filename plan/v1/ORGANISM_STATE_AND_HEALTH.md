@@ -57,6 +57,8 @@ OrganismState
         biological_age
         phase
         phase_entered_tick
+        reproduction_not_before_tick
+        successful_reproduction_count
 
     resources
         structure[resource_id]
@@ -70,6 +72,7 @@ OrganismState
 
     capability_state
         cooldowns[capability_id]
+            scavenge_not_before_tick
         metabolic_binding_cohorts[]
         other small persistent state required by enabled traits
 ```
@@ -86,12 +89,14 @@ OrganismState
 - `tile_id` identifies the well-mixed compartment whose environmental state applies to the organism.
 - Position and velocity are authoritative fixed-point values in tile-local coordinates.
 - Crossing a permitted tile edge updates both tile and position through the deterministic movement phase.
-- Exact coordinate and velocity encodings remain part of the numeric-representation pass.
+- `LocalCoordQ` uses the normalized half-open tile square and velocity is a signed count of local-coordinate units per simulated hour. Direct v1 interactions are same-tile organism/remnant queries; exact geometry and movement semantics are defined in [SPATIAL_ORGANISMS_AND_BEHAVIOR.md](SPATIAL_ORGANISMS_AND_BEHAVIOR.md).
 
 ## Chronological and biological age
 
 - Chronological age is derived from `current_tick - birth_tick`; it does not require an age write on every tick.
 - `biological_age` is authoritative because lifecycle phase, dormancy, or future traits may alter senescence rate relative to simulation time.
+- `reproduction_not_before_tick` is the authoritative cooldown boundary. It incorporates the one keyed bounded jitter draw made when that cooldown was scheduled; reproduction itself has no per-tick success roll.
+- `successful_reproduction_count` supplies a stable cooldown-jitter key and is incremented only by a committed reproduction transaction.
 - In the simplest active lifecycle state, biological age advances by exactly one configured tick duration per tick.
 - Senescence risk and age-related health effects use biological age. User-facing history may display both ages when they differ.
 
@@ -195,6 +200,7 @@ structure_factor = clamp01(
 
 - Reproduction must allocate at least the minimum viable structure required by the offspring's lifecycle phase.
 - A newly budded offspring may be viable but below its mature structural target.
+- An organism that acquires a higher body-scale trait enters the explicit `ScaleMaturation` phase: it retains the previous phase's viability floor, cannot reproduce, and uses the new mature structure as its condition target until growth is complete. No structure or stored matter is granted by the trait transition.
 - Structural material lost to partial predation or a future injury mechanic lowers this factor until concrete resources are restored and rebuilt.
 - Cosmetic size variation does not change authoritative structure.
 
@@ -228,6 +234,8 @@ The recommended v1 limiting-quota function is the minimum quota fraction. This f
 - It declines gradually after the configured onset of senescence.
 - It never reverses solely because the organism survives another tick.
 - Senescence death probability remains a separate risk curve; the age factor does not replace it.
+
+The first lifecycle rule also derives `ageMetabolicThroughput = 0.5 + 0.5 × age_factor`. This is a named consumer of the age factor, not another health component: it caps metabolic extents while leaving balanced reaction recipes and mandatory maintenance unchanged. The exact phase use and first values are defined in [LIFECYCLE_AND_RECYCLING.md](LIFECYCLE_AND_RECYCLING.md).
 
 Keeping condition decline and death risk separate allows old organisms to become less capable before facing a high natural-death probability without turning health itself into a hidden death roll.
 
@@ -358,9 +366,9 @@ The first implementation should enforce:
 
 First values for these areas are proposed in [ORGANISM_HEALTH_CALIBRATION.md](ORGANISM_HEALTH_CALIBRATION.md). They do not block implementation, but fixtures must validate them before balance is stable:
 
-1. Shared fixed-point ratio scale, rounding operation, and stable reduction algorithm.
-2. Starting structural targets and whether partial structural loss is enabled in the first playable slice.
-3. Constitutive nutrient quotas and target quantities for each starting metabolism.
-4. Senescence onset and age-factor curves by lifecycle strategy.
+1. The selected `RatioQ` scale and rounding procedure under a concrete stable species-reduction algorithm.
+2. Whether partial structural loss is enabled in the first playable slice; founder viable and mature targets are already selected provisionally.
+3. Advanced-trait constitutive quotas; both founder quota sets are already selected.
+4. Alternative senescence and age-factor curves for evolved lifecycle strategies; the primitive curve has a first calibration.
 5. Environmental response curves and severity of compounding simultaneous stresses.
 6. Compact client and telemetry encodings for the factor breakdown.

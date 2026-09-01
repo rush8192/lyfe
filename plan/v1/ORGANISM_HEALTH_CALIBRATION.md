@@ -29,9 +29,15 @@ These values are calibration candidates, not engine constants. Every value belon
 | Primitive hard viable-structure floor | `500` structural units |
 | Founder reserve capacity | `10,000` energy units |
 | Founder initial reserve | `5,000`, or `0.5` reserve fraction |
+| Primitive terminal reserve threshold | `0` |
+| Founder growth-protection floor | `4,000`, or `0.4` reserve fraction |
+| Founder reproduction-health gate | `0.60` |
+| Primitive reproductive-work cost | `500` energy units |
+| Minimum reserve per primitive-fission result | `4,000` energy units |
 | Primitive senescence onset | `720 h`, or 30 days of biological age |
 | Age-condition decline span | `720 h` after onset |
 | Minimum age factor | `0.5` |
+| Minimum age-metabolic-throughput multiplier | `0.75` |
 | Senescence risk at onset | `100` per million per hour, or `0.01%` |
 | Senescence risk escalation interval | `168 h`, or 7 days |
 | Senescence risk cap | `500,000` per million per hour |
@@ -105,6 +111,20 @@ else:
 ```
 
 Primitive fission still produces two structurally mature 1,000-unit organisms, so lowering the hard floor from the earlier placeholder does not change either founding fixture. It creates a meaningful condition range for later partial structural loss and for an asymmetric juvenile without allowing a half-built organism to reproduce through `DirectLifecycle`.
+
+## Increased-scale direct lifecycle
+
+The first spatial calibration makes mature structure scale with the cube of mature radius:
+
+| Organization | Mature target | Hard floor | Symmetric-fission parent requirement |
+| --- | ---: | ---: | ---: |
+| `PrimitiveCell` | `1,000` | `500` | `2,000` |
+| `IncreasedCellScaleI` | `3,375` | `1,688` | `6,750` |
+| `IncreasedCellScaleII` | `11,391` | `5,696` | `22,782` |
+
+The table's mature hard floor is `ceil(0.5 × mature target)`. An organism acquiring a higher scale enters an explicit `ScaleMaturation` lifecycle phase: it retains its ancestor phase's hard floor, cannot reproduce, and receives higher-scale benefits only in proportion to built structure or after their declared activation threshold. Its condition target is the new mature structure target, so the transition is costly without becoming an immediate deterministic death. Reaching the target enters the ordinary mature phase and activates the new mature hard floor.
+
+The condition formula remains `viableStructure / currentPhaseStructureTarget`; only the DNA-compiled target and lifecycle gates change. Speciation grants no structure: an organism retains its concrete matter and initially remains physically near its prior radius. Growth, storage, ingestion, maintenance, and reproductive throughput for these tiers require dedicated balance fixtures before the traits become selectable. Radius derivation and encounter implications are defined in [SPATIAL_CALIBRATION.md](SPATIAL_CALIBRATION.md).
 
 V1 predation remains all-or-nothing and does not inflict persistent wounds. Until asymmetric budding or another structure-changing mechanic is enabled, a living primitive founder will therefore normally have `structureFactor = 1`.
 
@@ -203,6 +223,8 @@ Representative points are:
 | 58 days | `672 h` | `0.5644` | `0.2500%` |
 | 60 days | `720 h` | `0.5000` | approximately `0.2794%` |
 
+The first lifecycle rule derives a separate metabolic-throughput multiplier as `0.5 + 0.5 × ageFactor`. It is `1.0` through senescence onset and declines to `0.75` at the age-factor floor. It caps completed reaction extents without changing their mass/energy recipes or increasing baseline maintenance; see [LIFECYCLE_AND_RECYCLING.md](LIFECYCLE_AND_RECYCLING.md).
+
 In an otherwise safe environment, this hourly risk curve gives approximate survival landmarks from birth:
 
 | Fraction still alive | Approximate age |
@@ -299,7 +321,14 @@ For later terrestrial-capable traits, assume the world's normalized surface-mois
 | `ShallowWaterTolerance` | `0.70` | `0.30` |
 | `IntermittentDesiccationTolerance` | `0.40` | `0.10` |
 
-Below the preferred minimum, the common water/moisture curve applies. `DormantPhase` and `ResistantDormantPhase` should compile separate dormant thresholds rather than letting an active-cell tolerance imply dry survival. A first resistant-dormancy fixture may test a hard minimum of `0.01`, but that value remains intentionally unfixed until surface-moisture seasonality is calibrated.
+Below the preferred minimum, the common water/moisture curve applies. Dormancy compiles separate phase thresholds rather than letting an active-cell tolerance imply dry survival:
+
+| Dormant phase | Preferred minimum | Hard minimum |
+| --- | ---: | ---: |
+| `DormantPhase` | `0.20` | `0.05` |
+| `ResistantDormantPhase` | `0.05` | `0.01` |
+
+These thresholds apply only to organisms that already possess the terrestrial or surface-associated capability needed to occupy the tile. Dormancy does not by itself confer terrestrial access, change temperature or toxin curves, or permit survival at zero surface moisture.
 
 ## Founder sulfur example
 
@@ -409,7 +438,7 @@ The values most likely to move after simulation are:
 
 - The 500-unit viability floor and 600-unit budding allocation.
 - Which cellular ions are genuinely constitutive health quotas.
-- Senescence onset and escalation relative to reproduction frequency.
+- Senescence onset and escalation relative to realized reproduction cadence.
 - Direct environmental penalty coefficients versus maintenance costs.
 - Product composition if several mild simultaneous stresses become too punitive.
 - Condition-delta thresholds and how much factor detail is affordable for large live tiles.

@@ -1,6 +1,6 @@
 # Authoritative Data Model
 
-Status: scaffold
+Status: first ownership and numeric-contract pass; identifiers, dense layout, knowledge schemas, and event retention pending
 
 Sources: [SIMULATION vision](../../vision/SIMULATION.md), [WORLD vision](../../vision/WORLD.md), [ORGANISMS vision](../../vision/ORGANISMS.md), and [NUTRIENTS vision](../../vision/NUTRIENTS.md).
 
@@ -34,8 +34,8 @@ Identifiers must survive array compaction, save/load, and client resynchronizati
 | Gas-source and sink remainders | Tile state |
 | Signed gas-exchange remainders | Canonical undirected tile-edge state |
 | DNA and mutation balance | Species state |
-| Position, structural matter, reserves, available-store resource balances, metabolic binding cohorts, age, and behavior | Organism state |
-| Remaining consumable contents | Dead-remnant state |
+| Position, structural matter, reserves, available-store resource balances, metabolic binding cohorts, age, reproduction cooldown/ordinal, and behavior | Organism state |
+| Tile, position, original packing profile, and remaining consumable contents | Dead-remnant state |
 | Parent-child relationships | Lineage store |
 | Controller and sandbox lock | Gameplay state |
 | Discovered tiles, last observations, and observation timestamps | Per-actor knowledge state |
@@ -67,11 +67,14 @@ The [resource model](RESOURCE_MODEL.md) and [range proof](RESOURCE_CALIBRATION.m
 
 The shared `RatioQ` encoding for health, normalized factors, and probabilities is provisionally fixed at one million units per `1.0`, with checked integer arithmetic and named rounding; see [ORGANISM_HEALTH_CALIBRATION.md](ORGANISM_HEALTH_CALIBRATION.md).
 
+The first world contract selects signed integer tile coordinates, normalized unsigned tile-local `LocalCoordQ`, integer-meter elevation/depth, milli-degree Celsius temperature, integer micrometers-per-hour precipitation, and `RatioQ` moisture/cloud/turbidity/volcanism/insolation. The default grid is `32 × 17`, with wrapped `x` and bounded signed `y`; see [WORLD_AND_CLIMATE.md](WORLD_AND_CLIMATE.md).
+
+Organism and remnant radius are derived from structure/body-equivalent matter, compiled organization, and the pinned spatial rule pack rather than stored as freely mutable geometry. The first founder radius, structure targets, Brownian scale, and range encodings are defined in [SPATIAL_CALIBRATION.md](SPATIAL_CALIBRATION.md).
+
 The detailed pass must still decide and document:
 
 - Concentration versus absolute quantity for tile pools.
-- Within-tile coordinate, velocity, and interaction-distance units.
-- Temperature, elevation, water depth, moisture, and insolation units.
+- Final configured bounds for the signed per-hour velocity and interaction-distance encodings built over normalized `LocalCoordQ`; the first logical encoding and geometry contract are defined in [SPATIAL_ORGANISMS_AND_BEHAVIOR.md](SPATIAL_ORGANISMS_AND_BEHAVIOR.md).
 - Exact fixed-point encodings for rates and non-health normalized domains that cannot use `RatioQ`.
 - Remainder accumulation and named rounding rules.
 - Numeric choices for non-resource domains.
@@ -118,5 +121,5 @@ BuildImmutableReadSnapshot(completedTick)
 - [ ] Event retention categories.
 - [ ] Actor knowledge, observation snapshot, and visibility-state schemas.
 - [ ] Abiogenesis-origin representation and root-species invariants.
-- [ ] Spatial indexing required within a tile for v1.
+- [x] First logical within-tile spatial index: derived `16 × 16` bins for organisms and remains with exact-distance filtering and stable ordering; see [SPATIAL_ORGANISMS_AND_BEHAVIOR.md](SPATIAL_ORGANISMS_AND_BEHAVIOR.md). Dense physical layout remains open.
 - [ ] Maximum expected counts used to size and benchmark structures.

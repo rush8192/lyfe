@@ -121,12 +121,13 @@ The initial micronutrient catalogue is calcium, iron, potassium, sodium, magnesi
 
 ## Abstract biological compounds
 
-Two compiled resource definitions make biological accounting practical without modeling every molecule:
+Three compiled resource definitions make biological accounting practical without modeling every molecule:
 
 - `StructuralBiomass`: living cellular material with the v1 composition `C100 H170 O40 N20 P2 S1`.
 - `ReserveOrganic`: a generic energy-bearing reserve abstracted initially as CH₂O, with one usable energy quantum per resource quantum.
+- `SpentStructuralResidue`: zero-energy digestive waste with composition `C68 H106 O8 N20 P2 S1`. It cannot fuel v1 catabolism and mineralizes directly into matching inorganic elemental pools on the ordinary 90-day tile half-life.
 
-Micronutrients use separate DNA-defined quotas rather than being embedded in every structural unit. The initial rule pack uses 1,000 structural units as the baseline mature target, a provisional 500-unit hard viability floor, and 10,000 reserve units as baseline energy capacity. See [RESOURCE_CALIBRATION.md](RESOURCE_CALIBRATION.md) and [ORGANISM_HEALTH_CALIBRATION.md](ORGANISM_HEALTH_CALIBRATION.md) for the range proof and health calibration.
+Micronutrients use separate DNA-defined quotas rather than being embedded in every structural unit. The initial rule pack uses 1,000 structural units as the baseline mature target, a 500-unit hard viability floor, and 10,000 reserve units as baseline energy capacity. See [RESOURCE_CALIBRATION.md](RESOURCE_CALIBRATION.md) and [ORGANISM_HEALTH_CALIBRATION.md](ORGANISM_HEALTH_CALIBRATION.md) for the range proof and health calibration.
 
 Any resource definition may eventually carry chemical-energy metadata, but `ReserveOrganic` is the only general-purpose internal energy carrier required by the initial implementation.
 
@@ -443,6 +444,10 @@ True split aims for an even division after reproductive work. Budding uses a sma
 
 Predation first resolves whether the target dies. Consumption is then a transfer from the target or newly created remnant to the predator. Scavenging transfers a deterministically bounded fraction from a remnant. Neither mechanic converts matter automatically; digestion and metabolism are separate reactions with explicit waste products and energy yield.
 
+Basic remnant scavenging may directly transfer only compatible simple reserve compounds, dissolved stores, and micronutrients. Its first profile costs 25 energy, schedules a two-hour organism-local handling cooldown, and caps one action at 200 compatible reserve quanta, 256 dissolved-matter load, and eight micronutrient units. Structural biomass requires particulate ingestion and digestion. Full cooldown, admission, contention, and destination-compartment semantics are defined in [LIFECYCLE_AND_RECYCLING.md](LIFECYCLE_AND_RECYCLING.md).
+
+The first structural-food rule is one combined digestion-and-catabolism reaction. One `StructuralBiomass(C100 H170 O40 N20 P2 S1)` yields `32 ReserveOrganic(CH2O)` plus one zero-energy `SpentStructuralResidue(C68 H106 O8 N20 P2 S1)`; it declares 40 gross recoverable energy units, dissipates eight as processing overhead, and stores 32 in the reserve output. The equation conserves every CHNOPS element. Keeping the residue distinct prevents it from being treated as fresh fuel and yielding energy twice. Buffer, throughput, output routing, upkeep, action-cost, and mineralization rules are normative in [LIFECYCLE_AND_RECYCLING.md](LIFECYCLE_AND_RECYCLING.md). It does not define general dissolved-organic fermentation or respiration.
+
 When multiple ordinary scavengers target the same contents, the action resolver uses the same unweighted proportional-plus-stable-remainder allocation principle as tile uptake. When multiple predators successfully kill the same prey, each eligible claim from a predator that survives the complete predation pass is capped by ingestion and storage limits and weighted by its compiled `feedingPriorityWeight`:
 
 ```text
@@ -492,6 +497,8 @@ Decay operates on remaining remnant contents:
 - Later rules may transform some outputs into gases or inorganic forms through separate balanced reactions.
 
 No resource may remain simultaneously on the remnant and in the tile after a decay transaction.
+
+The first decay cohorts, hourly coefficients, environmental multiplier, and slow 90-day organic-to-inorganic mineralization rule are fixed in [LIFECYCLE_AND_RECYCLING.md](LIFECYCLE_AND_RECYCLING.md). Generic organic-to-inorganic mineralization is a one-to-one elemental-form transformation and never implicitly creates a named gas.
 
 # Environmental sources, sinks, and exchange
 
@@ -619,6 +626,7 @@ ReconcileResourceLedger(world, tickRange)
 - Water is inexhaustible but any tracked matter crossing its boundary is recorded.
 - Matter quanta are game-native rather than literal physical units.
 - V1 structural biomass is `C100 H170 O40 N20 P2 S1`; micronutrients use separate DNA quotas.
+- Structural-food catabolism emits explicit zero-energy `SpentStructuralResidue(C68 H106 O8 N20 P2 S1)` so residual matter cannot be mistaken for fresh fuel.
 - Baseline structure and reserve capacity are 1,000 and 10,000 units respectively.
 - One `ReserveOrganic` quantum stores one energy quantum.
 - Founder available-store capacities are 512 expanded-matter units for dissolved macronutrients, 64 units for free micronutrients, and zero for ingested matter; initial free contents are zero.
@@ -636,7 +644,7 @@ These do not prevent implementing the ledger and first fixture, but must be reso
 - [x] Founder waste release timing and retention policy; advanced retention and recycling trait values remain to be calibrated.
 - [x] No additional ordinary resource priority classes in v1; predation priority is isolated to contested prey contents.
 - [ ] Production history bucket sizes and retention.
-- [ ] Failed reproduction-attempt costs.
+- [x] Ordinary failed reproduction transactions cost nothing and do not reschedule cooldown; explicitly risky future profiles may declare a cost.
 
 # Required validation artifacts
 

@@ -13,6 +13,7 @@ The plans remain downstream from the vision. If a plan intentionally contradicts
 | [DATA_MODEL.md](DATA_MODEL.md) | How is authoritative state represented and identified? | Architecture |
 | [CONFIGURATION_AND_BALANCE.md](CONFIGURATION_AND_BALANCE.md) | Which rules are data-driven, versioned, and tunable? | Data model |
 | [WORLD_AND_CLIMATE.md](WORLD_AND_CLIMATE.md) | How is the wrapping world generated and how do conditions evolve? | Data model, configuration |
+| [WORLD_CLIMATE_CALIBRATION.md](WORLD_CLIMATE_CALIBRATION.md) | Which first numerical values make generated worlds varied, playable, and faithful to the founding fixtures? | World and climate, gas transport, founding fixtures, health calibration |
 | [GAS_TRANSPORT_AND_ATTRITION.md](GAS_TRANSPORT_AND_ATTRITION.md) | How do volcanic gases plateau, leak into neighbors, transform, and remain locally useful without sustaining a neighboring founder? | World, resource model, founding fixtures |
 | [RESOURCE_MODEL.md](RESOURCE_MODEL.md) | How do matter and energy move through reservoirs without violating conservation? First deep-dive draft complete. | Data model, world |
 | [RESOURCE_CALIBRATION.md](RESOURCE_CALIBRATION.md) | Which numeric scales keep organism, tile, world, and lifetime accounting precise and safe? | Resource model, data model |
@@ -22,8 +23,11 @@ The plans remain downstream from the vision. If a plan intentionally contradicts
 | [SULFUR_TILE_STARTING_CONFIGURATION.md](SULFUR_TILE_STARTING_CONFIGURATION.md) | Does the fast sulfide specialist reach its opening target while remaining light-, substrate-, and micronutrient-constrained? | Founding metabolisms, resource calibration, hydrogen fixture |
 | [SIMULATION_LOOP.md](SIMULATION_LOOP.md) | In what deterministic order does a tick resolve? | World, resources, organisms |
 | [ORGANISMS.md](ORGANISMS.md) | How do individual organisms evaluate behavior, actions, lifecycle, and interactions? | Resources, simulation loop |
+| [SPATIAL_ORGANISMS_AND_BEHAVIOR.md](SPATIAL_ORGANISMS_AND_BEHAVIOR.md) | How do organisms and remains occupy local space, find targets, move, migrate, and expose observations to behavior? | Organisms, simulation loop, world, data model |
+| [SPATIAL_CALIBRATION.md](SPATIAL_CALIBRATION.md) | Which body, Brownian, sensing, interaction, placement, and active-distance scales create occasional local encounters without tile-wide reach? | Spatial organisms, health calibration, traits, simulation loop |
 | [ORGANISM_STATE_AND_HEALTH.md](ORGANISM_STATE_AND_HEALTH.md) | Which organism fields are authoritative, and how is explainable health derived and cached? | Organisms, resources, data model |
 | [ORGANISM_HEALTH_CALIBRATION.md](ORGANISM_HEALTH_CALIBRATION.md) | What first numeric values govern health, structure, nutrient sufficiency, senescence, environmental condition, and presentation? | Organism state and health, founder fixtures, configuration |
+| [LIFECYCLE_AND_RECYCLING.md](LIFECYCLE_AND_RECYCLING.md) | How do growth, reproduction, aging, death, remains, digestion, and nutrient return form one deterministic mass-balanced lifecycle? | Organisms, health, resources, storage, simulation loop, spatial rules |
 | [INTERNAL_STORAGE_AND_ALLOCATION.md](INTERNAL_STORAGE_AND_ALLOCATION.md) | How are stored resources acquired, capacity-limited, consumed, temporarily bound by active processes, or protected through evolved priority and holdback policies? | Organisms, resource model, simulation loop, traits |
 | [TRAIT_SYSTEM.md](TRAIT_SYSTEM.md) | How are linear and branching trait families authored, validated, compiled, activated, priced, and explained? | Evolution, organisms, resources, configuration |
 | [TRAIT_CATALOGUE.md](TRAIT_CATALOGUE.md) | What are the initial v1 trait trees, cross-family milestones, niches, and complexity tradeoffs? | Trait system, founding metabolisms, organisms, balance |
@@ -76,11 +80,11 @@ A planning document is ready for implementation when it includes, as applicable:
 
 # Major decisions still to make
 
-- Numeric representations for coordinates, rates, and non-resource environmental values; health ratios and probabilities have a provisional parts-per-million encoding.
-- Random-stream derivation and deterministic parallel reduction.
-- Exact resource reservoirs, reaction recipes, and uptake contention.
-- Environmental time-series generation and atmospheric transport.
-- Organism action-resolution order and simultaneous-interaction policy.
-- Mutation-point formula, trait-cost model, and autonomous-evolution weighting.
-- Save/checkpoint format and protocol code generation.
-- Concrete benchmark and fastest-speed acceptance thresholds.
+- Representative-map and biological smoke-test validation of the provisional world/climate rule pack, plus dissolved non-gas mobility. First climate coefficients, generated-start eligibility and repair thresholds, sulfur daily-light calibration, and lifecycle-owned decay rates are now specified.
+- Active movement energy/turning, final migration costs/probabilities, baseline behavior selection, and clustered spatial-performance validation. First body, Brownian, sensing, interaction, placement, and active-distance values are specified in [SPATIAL_CALIBRATION.md](SPATIAL_CALIBRATION.md).
+- Population and ecosystem validation of the complete first lifecycle rule pack: reproduction profiles, growth protection, age throughput, dormancy, multi-week remnant decay, 90-day passive mineralization, scavenging, and the balanced structural-food reaction in [LIFECYCLE_AND_RECYCLING.md](LIFECYCLE_AND_RECYCLING.md). These are calibration tasks rather than missing lifecycle semantics.
+- Final mutation-income calibration, exact mutation prices and non-lifecycle trait effects, founder rounding, autonomous-evolution weighting, and lineage record schemas.
+- Complete mid/late-game reaction and balance fixtures for organic uptake, fermentation, respiration, oxygenic photosynthesis, scavenging/predation, complex organization, and terrestrial adaptation.
+- Canonical identifier allocation, dense state layout, configuration encoding/compiler, random-key derivation, deterministic parallel reduction, and one-world/server lifecycle ownership.
+- Final date, speed presets, complete command/state-machine catalogues, save/checkpoint format, protocol code generation, and client projection schemas.
+- A representative benchmark rule pack, reference hardware, fastest-speed threshold, state-hash definition, and performance-regression policy.

@@ -71,7 +71,7 @@ Deterministic replay and internal mass balance are architectural properties, not
 - Saving and restoring the random and rules state required for continuation.
 - A simulation-rules version stored with every world.
 
-The [resource deep dive](RESOURCE_MODEL.md) and [range proof](RESOURCE_CALIBRATION.md) select signed 64-bit game-native integer quanta for authoritative matter and energy quantities, with checked 128-bit intermediates. [Organism health calibration](ORGANISM_HEALTH_CALIBRATION.md) provisionally selects a parts-per-million fixed-point ratio for health, normalized factors, and probabilities. Numeric representations for positions, rates, and non-normalized environmental values remain to be decided. Those decisions must explicitly consider cross-platform behavior, overflow, precision, mass-balance auditing, and serialization stability.
+The [resource deep dive](RESOURCE_MODEL.md) and [range proof](RESOURCE_CALIBRATION.md) select signed 64-bit game-native integer quanta for authoritative matter and energy quantities, with checked 128-bit intermediates. [Organism health calibration](ORGANISM_HEALTH_CALIBRATION.md) provisionally selects a parts-per-million fixed-point ratio for health, normalized factors, and probabilities. The first [world and climate contract](WORLD_AND_CLIMATE.md) adds signed tile coordinates, normalized fixed-point local positions, integer-meter elevation/depth, milli-degree Celsius temperature, integer precipitation rates, and the shared ratio type for normalized conditions. Exact movement velocity/distance encodings and fixed-point representations for remaining rate domains still require the same cross-platform, overflow, precision, and serialization analysis.
 
 # Server communication
 

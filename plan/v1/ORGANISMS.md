@@ -1,6 +1,6 @@
 # Organism Model and Mechanics
 
-Status: first tick-integration, predation-resolution, and internal-state pass; detailed behavior and reproduction formulas pending
+Status: first tick-integration, predation-resolution, and internal-state pass; detailed behavior and reproduction formulas pending in [LIFECYCLE_AND_RECYCLING.md](LIFECYCLE_AND_RECYCLING.md)
 
 Sources: [ORGANISMS vision](../../vision/ORGANISMS.md), [NUTRIENTS vision](../../vision/NUTRIENTS.md), and [SIMULATION vision](../../vision/SIMULATION.md).
 
@@ -41,18 +41,11 @@ EvaluateBehavior(organism, behavior, localObservation) -> intents
 
 V1 tiles have no within-tile nutrient gradients. Sensing may still detect nearby organisms and remains, local tile conditions, and neighboring-tile suitability. Future micronutrient fields must fit without rewriting the behavior interface.
 
+The first capability-filtered observation schema, typed target invalidation rules, and separation between tile-wide chemical signals and spatial entity detection are defined in [SPATIAL_ORGANISMS_AND_BEHAVIOR.md](SPATIAL_ORGANISMS_AND_BEHAVIOR.md). Exact behavior states and selection policy remain open.
+
 # Movement and space
 
-Specify:
-
-- Within-tile coordinate bounds and units.
-- Velocity integration and energy cost.
-- Random movement versus directed movement.
-- Neighbor/prey/remnant spatial index.
-- Interaction radii.
-- Edge crossing, including wrapped `x` and bounded `y` behavior.
-- Environmental compatibility and migration probability.
-- Passive movement if included in v1.
+[SPATIAL_ORGANISMS_AND_BEHAVIOR.md](SPATIAL_ORGANISMS_AND_BEHAVIOR.md) fixes the first v1 spatial contract: normalized tile-local coordinates, strictly same-tile entity interactions, a derived `16 × 16` bin index, stationary remains, default zero-mean Brownian organism displacement, at most one edge crossing per tick, deterministic placement, and a position-aware extension seam for future resource gradients. [SPATIAL_CALIBRATION.md](SPATIAL_CALIBRATION.md) supplies the first body, Brownian, sensing, action-reach, placement, and active-distance values. Active movement energy/turning, final migration probability, and detailed behavior policy remain balance/mechanics work.
 
 # Acquisition, energy capture, internal metabolism, and storage
 
@@ -87,15 +80,16 @@ Newly captured reserve and internally produced reserve are available before mand
 
 - Every founder uses the `PrimitiveFission` capability defined in [TRAIT_CATALOGUE.md](TRAIT_CATALOGUE.md), with a near-even allocation. The name avoids projecting a complete modern bacterial divisome onto the first organisms.
 - Reproduction requires a DNA-defined minimum health and resources.
-- Attempt frequency and additional energy cost are DNA-defined.
+- Reproduction commits deterministically when every eligibility gate passes; it has no repeated per-tick success roll.
+- DNA defines a base cooldown, bounded cooldown-jitter window, and additional energy cost. The jitter is sampled once with a keyed draw when the cooldown is scheduled.
 - True split allocates reserves relatively evenly.
 - Budding gives the offspring a smaller share.
 - All offspring matter, including its energy-bearing reserves, comes from the parent.
 - Abstract sexual reproduction requires no mate or proximity in v1.
 
-Both allocation modes retain the existing organism as the continuing, aging lineage and create one age-zero offspring. `AsymmetricBudding` changes allocation, offspring maturity, and cost rather than entity identity. V1 selects among discrete authored allocation profiles. A future rules version may expose a broader DNA-defined allocation spectrum, provided every profile remains zero-sum and its parent/offspring consequences are derived consistently.
+Both allocation modes retain the existing organism as the continuing, aging lineage and create one age-zero offspring. `AsymmetricBudding` changes allocation, offspring maturity, and cost rather than entity identity. V1 selects among discrete authored allocation profiles. A future rules version may expose a broader DNA-defined allocation spectrum, provided every profile remains zero-sum and its parent/offspring consequences are derived consistently. The exact primitive timing state and first `24 h + 0..3 h` cooldown rule are defined in [LIFECYCLE_AND_RECYCLING.md](LIFECYCLE_AND_RECYCLING.md).
 
-Define allocation order, rounding, minimum viable offspring state, parent identity, offspring position, lifecycle phase, and failure behavior when conditions change during resolution.
+Define allocation order, rounding, minimum viable offspring state, parent identity, lifecycle phase, and failure behavior when conditions change during resolution. Spatially, the continuing parent retains its position and an accepted offspring receives a deterministic nearby same-tile position; reproduction cannot itself cause migration or fail for lack of empty collision space.
 
 # Predation and scavenging
 
@@ -138,14 +132,15 @@ Interactions use post-movement coordinates. Newly born organisms begin at age ze
 
 - [ ] Dense physical organism layout; logical fields are defined in [ORGANISM_STATE_AND_HEALTH.md](ORGANISM_STATE_AND_HEALTH.md).
 - [x] First health formula and numeric calibration; see [ORGANISM_STATE_AND_HEALTH.md](ORGANISM_STATE_AND_HEALTH.md) and [ORGANISM_HEALTH_CALIBRATION.md](ORGANISM_HEALTH_CALIBRATION.md).
-- [ ] Behavior-selection mechanism.
-- [ ] Spatial index and interaction radii.
-- [ ] Movement/migration equations.
+- [ ] Behavior-selection mechanism; observation and target contracts are fixed, but state/utility rules remain open.
+- [x] First spatial-index, interaction-locality, and numerical-radius contract; see [SPATIAL_ORGANISMS_AND_BEHAVIOR.md](SPATIAL_ORGANISMS_AND_BEHAVIOR.md) and [SPATIAL_CALIBRATION.md](SPATIAL_CALIBRATION.md).
+- [x] First movement integration, Brownian magnitude, active-speed ceiling, and one-edge migration contract; energy/turning and final migration odds remain open. See [SPATIAL_ORGANISMS_AND_BEHAVIOR.md](SPATIAL_ORGANISMS_AND_BEHAVIOR.md) and [SPATIAL_CALIBRATION.md](SPATIAL_CALIBRATION.md).
 - [ ] Acquisition/capture/internal-metabolism intent interfaces and energy-storage enforcement.
 - [x] Temporary metabolic-resource binding and DNA priority/holdback semantics; see [INTERNAL_STORAGE_AND_ALLOCATION.md](INTERNAL_STORAGE_AND_ALLOCATION.md).
-- [ ] Detailed reproduction resolution.
+- [x] First founder and evolved reproduction gates, cooldown/jitter, work cost, allocation, offspring transaction, and lifecycle modifiers in [LIFECYCLE_AND_RECYCLING.md](LIFECYCLE_AND_RECYCLING.md); numeric population validation remains.
 - [x] First v1 predation success, defense, contention, and remnant policy.
-- [ ] Senescence and environmental-death curves.
+- [x] First primitive senescence, age-throughput, environmental-death curves, and evolved lifecycle age multipliers; later longevity/repair traits are future work.
+- [x] First simple-remnant-scavenging transfer caps, action cost, contention, and organism-local handling cooldown.
 - [ ] Tests for zero-sum reproduction and complete remnant transfer.
 - [ ] Tests proving storage capacity changes never credit reserves or nutrients and that newly expanded capacity affects derived reserve fraction as specified.
 - [ ] Tests proving founder dissolved/micronutrient capacities, composition-derived load, needs-only staging, single-quota targeting, and direct founder waste routing.
