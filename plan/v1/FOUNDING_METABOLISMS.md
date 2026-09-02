@@ -6,7 +6,7 @@ Sources: [GAMEPLAY vision](../../vision/GAMEPLAY.md), [ORGANISMS vision](../../v
 
 # Purpose
 
-Turn the two founding metabolism choices into a consequential specialist-versus-platform decision and define how they seed a v1 survival world. This document fixes the shape of the tradeoff and the initial trait paths. Exact rates and mutation-point prices remain balance data to validate with deterministic fixtures.
+Turn the two founding metabolism choices into a consequential specialist-versus-platform decision and define how they seed a v1 survival world. This document fixes the shape of the tradeoff and the initial trait paths. The named path prices are first evolution-economy anchors; exact biological rates and catalogue-wide prices remain balance data to validate with deterministic fixtures.
 
 # Founding choice
 
@@ -72,7 +72,7 @@ HydrogenAcetogenesis
             └── LaterRespirationPaths
 ```
 
-The first volcanism-independent milestone for the hydrogen lineage therefore has a provisional cumulative price of `120 MP`. Organic uptake and fermentation become useful only where dead remains, decomposition, predation, or other biological production provide suitable organic matter.
+The first volcanism-independent milestone for the hydrogen lineage therefore has a provisional cumulative price of `120 MP`. Organic uptake and fermentation become useful only where dead remains and other biological turnover produce the named labile substrate. Their exact decay source, reaction, cost, and first balance fixture are defined in [ORGANIC_UPTAKE_AND_FERMENTATION.md](ORGANIC_UPTAKE_AND_FERMENTATION.md).
 
 This path intentionally crosses trait families: `OrganicResourceUptake` belongs to resource acquisition, while `Fermentation` belongs to internal metabolism. The founding `HydrogenAcetogenesis` reaction remains external energy capture. Their prerequisite chain is cross-family rather than evidence that all three should be displayed as one metabolism family.
 
@@ -88,15 +88,15 @@ SulfideAnoxygenicPhototrophy
 │
 └── ComplexPhotosystem                  100 MP
     └── ManganeseCalciumWaterOxidation    150 MP
-        └── OxygenTolerance                    80 MP
-            └── OxygenicPhotosynthesis
+        └── OxygenToleranceI                   80 MP
+            └── enables OxygenicPhotosynthesis reaction
 ```
 
-The sulfur lineage's first fermentation route has a provisional cumulative price of `220 MP`. Its canonical oxygenic-photosynthesis route has a provisional cumulative price of `330 MP` and remains environmentally gated by manganese and calcium availability as well as its trait prerequisites.
+The sulfur lineage's first fermentation route has a provisional cumulative price of `220 MP` and uses the same exact reaction after paying its additional regulatory/generalized-catabolism bridge. Its canonical oxygenic-photosynthesis route has a cumulative price of `330 MP` and remains environmentally gated by manganese and calcium availability as well as its trait prerequisites. `OxygenicPhotosynthesis` is the enabled reaction capability at the end of those three priced nodes, not a fourth unpriced trait. Its exact source rate, catalytic quotas, light sharing, upkeep, and oxygen-system calibration are fixed in [OXYGENIC_PHOTOSYNTHESIS.md](OXYGENIC_PHOTOSYNTHESIS.md), paired with the respiratory sink in [AEROBIC_RESPIRATION.md](AEROBIC_RESPIRATION.md).
 
 Evolution remains irreversible. `MetabolicRegulation` does not remove sulfide-phototrophy DNA; it permits an organism to suppress that machinery when conditions do not support it, reducing but not necessarily eliminating its ongoing cost. The oxygenic route is a large step from one sulfur-powered photosystem to water oxidation and must not be represented as an automatic “next” metabolism.
 
-Mutation prices above are initial ratios for simulation experiments. Only versioned rule-pack values are authoritative for a saved world.
+Mutation prices above are normative first anchors for simulation experiments under [EVOLUTION.md](EVOLUTION.md). Only the complete versioned rule-pack values are authoritative for a saved world, and validation may revise the whole pinned rule pack rather than mutate an active save.
 
 # Starting tolerance choices
 
@@ -188,5 +188,5 @@ The calculated square-fixture sulfur values and ledger expectations are defined 
 # Remaining tuning questions
 
 - Representative-seed and biological validation of the first generated-world light curve and its `250..275`-tick sulfur-start band.
-- How much maintenance `MetabolicRegulation` retains when sulfide machinery is suppressed.
+- Population validation of the fixed 5-energy/hour regulation cost and 25% retained suppressible pathway upkeep.
 - Organic-resource concentration at which the hydrogen escape path becomes practically useful.

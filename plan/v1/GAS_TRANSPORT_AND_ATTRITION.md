@@ -309,7 +309,7 @@ The residual tolerance for ordinary convergence is the larger of one resource un
 
 Bounded iteration is the v1 implementation because it reuses the authoritative source/sink/exchange path, preserves its integer rounding, and is easy to inspect. An offline linear solver may be used to validate or accelerate balance experiments, but its output is not authoritative and need not exactly match fixed-point remainder state.
 
-N₂ requires a conserved initial total because zero sink plus exchange has no source-defined unique plateau. Oxygen begins at zero in the initial world and later spreads from biological sources.
+N₂ requires a conserved initial total because zero sink plus exchange has no source-defined unique plateau. Oxygen begins at zero in the initial world and later spreads from biological sources. The first source is exactly one O2 per successful oxygenic-photosynthesis extent. Its reference producer and world-scale plateau landmarks are defined in [OXYGENIC_PHOTOSYNTHESIS.md](OXYGENIC_PHOTOSYNTHESIS.md); they do not alter O2's transport or attrition coefficients.
 
 # Methane transport and future metabolism
 

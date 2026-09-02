@@ -16,6 +16,8 @@ Tiles are initially well-mixed environmental compartments: their conditions and 
 
 Localized micronutrient concentration fields are a future extension. They may eventually add within-tile resource gradients without requiring all environmental parameters and macronutrients to use the same spatial model.
 
+Organism displacement may combine separately accounted active locomotion, zero-mean Brownian motion, and future environment-driven transport such as currents or wind. Every component uses the same within-tile path and edge-crossing rules, and at most moves the existing organism rather than creating a representative copy. This lets actively mobile lineages and reproduction-driven or environmentally dispersed lineages pursue different strategies without introducing cross-tile biological interactions.
+
 # Species and individual state
 
 In the initial simulation, every organism references the single shared DNA of its species rather than storing an independently varying genome. Each individual captures at least:

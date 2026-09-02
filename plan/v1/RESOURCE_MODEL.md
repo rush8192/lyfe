@@ -121,15 +121,20 @@ The initial micronutrient catalogue is calcium, iron, potassium, sodium, magnesi
 
 ## Abstract biological compounds
 
-Three compiled resource definitions make biological accounting practical without modeling every molecule:
+Five compiled resource definitions make biological accounting practical without modeling every molecule:
 
 - `StructuralBiomass`: living cellular material with the v1 composition `C100 H170 O40 N20 P2 S1`.
 - `ReserveOrganic`: a generic energy-bearing reserve abstracted initially as CH₂O, with one usable energy quantum per resource quantum.
+- `SpentReserveCarrier`: the zero-energy `CH₂O` state of internally retained reserve-carrier matter. It exists only with `CatalyticCarrierRetention`, can be recharged only by a declared energy opportunity, and otherwise decays to matching generic organic matter.
 - `SpentStructuralResidue`: zero-energy digestive waste with composition `C68 H106 O8 N20 P2 S1`. It cannot fuel v1 catabolism and mineralizes directly into matching inorganic elemental pools on the ordinary 90-day tile half-life.
+- `LabileDissolvedOrganic`: a glucose-equivalent, readily transported substrate with composition `C6 H12 O6`. It has no directly spendable energy and enters only declared organic-catabolism reactions.
+- `ReducedFermentationProducts`: a non-fermentable reduced-product aggregate with composition `C4 H8 O4`. It has no directly spendable energy but remains distinct for the defined aerobic reduced-product reaction or future syntrophy.
 
 Micronutrients use separate DNA-defined quotas rather than being embedded in every structural unit. The initial rule pack uses 1,000 structural units as the baseline mature target, a 500-unit hard viability floor, and 10,000 reserve units as baseline energy capacity. See [RESOURCE_CALIBRATION.md](RESOURCE_CALIBRATION.md) and [ORGANISM_HEALTH_CALIBRATION.md](ORGANISM_HEALTH_CALIBRATION.md) for the range proof and health calibration.
 
 Any resource definition may eventually carry chemical-energy metadata, but `ReserveOrganic` is the only general-purpose internal energy carrier required by the initial implementation.
+
+The exact structural-decay source, fermentation reaction, persistence, throughput, and anti-cycle rules for the two dissolved compounds are defined in [ORGANIC_UPTAKE_AND_FERMENTATION.md](ORGANIC_UPTAKE_AND_FERMENTATION.md). Respiration's explicit carbon assimilation/oxidation split, energy opportunity, charged/spent carrier conversion, and oxygen accounting are defined in [AEROBIC_RESPIRATION.md](AEROBIC_RESPIRATION.md). Generic organic elemental pools are not substitutes for energy-bearing substrates or spent carriers.
 
 # Authoritative units and arithmetic
 
@@ -345,7 +350,7 @@ SpendStoredEnergy(organism, requestedEnergy, cause):
     persist any sub-quantum cost remainder
 ```
 
-For the initial `ReserveOrganic`, spent carrier matter becomes the corresponding generic organic elemental products. Founder organisms do not retain those products: one explicit waste transaction credits the tile's organic pool at the end of internal metabolism. Biomass-assembly `OrganicOxygen` follows the same route. Later `WasteRouting` or `CatalyticRecycling` traits may retain declared products subject to ordinary store capacity and a useful balanced reaction. This preserves matter after its useful chemical energy has dissipated without letting a primitive organism fill its small nutrient store with unavoidable waste.
+For the initial `ReserveOrganic`, spent carrier matter becomes the corresponding generic organic elemental products unless `CatalyticCarrierRetention` is active. Founder organisms do not retain those products: one explicit waste transaction credits the tile's organic pool at the end of internal metabolism. With carrier retention, the same spend instead converts charged `ReserveOrganic` to internal zero-energy `SpentReserveCarrier`; it must not also emit the carrier matter to the tile. Biomass-assembly `OrganicOxygen` follows the founder waste route. Later `WasteRouting` or `CatalyticRecycling` traits may retain other declared products subject to ordinary store capacity and a useful balanced reaction. This preserves matter after its useful chemical energy has dissipated without letting a primitive organism fill its small nutrient store with unavoidable waste.
 
 # Metabolic reference recipes
 
@@ -401,28 +406,38 @@ ResourceClaim:
     resourceId
     requestedAmount
     priorityClass
+    contentionWeight             # default 1; bounded typed trait effect
     cause
 ```
 
-V1 uses proportional allocation within each `(sourceAccount, resourceId, priorityClass)` group:
+V1 uses capped weighted-proportional allocation within each `(sourceAccount, resourceId, priorityClass)` group. Nearly every ordinary claim has weight `1`; `DissolvedOrganicSpecialization` supplies the first resource-specific weight `2` for LDO without creating another priority class:
 
 ```text
 ResolveClaims(available, claims, deterministicKey):
     discard invalid and zero claims
+    merge claims by claimant/contention identity before applying weight
     sort only for canonical output, not preferential access
-    if sum(requested) <= available:
-        grant every request in full
-    else:
-        for each claim:
-            baseGrant = floor(available * requested / totalRequested)
-        distribute leftover quanta among claims with unmet demand
-            by stable rank Hash(deterministicKey, claimantId)
+    remaining = available
+    active = merged claims with unmet usable request
+    while remaining > 0 and active is not empty:
+        effectiveDemand[i] = unmetRequest[i] * contentionWeight[i]
+        allocate floor(remaining * effectiveDemand[i]
+                       / sum(effectiveDemand)) to each active claim,
+            capped by its unmet requested amount
+        distribute this round's leftover quanta among unmet claims
+            by descending fractional remainder,
+            then stable Hash(deterministicKey, claimantId)
+        remove satisfied claims and repeat if a cap left stock unallocated
+    distribute each merged claimant grant to its subclaims in canonical
+        process-priority order without changing its total
     return grants in canonical claimant order
 ```
 
-Wide intermediates prevent overflow. The stable remainder rank prevents permanent low-ID preference and consumes no mutable random stream. Priority classes are permitted only for explicit mechanics; ordinary organisms competing for the same pool share one class.
+Wide intermediates prevent overflow. The stable remainder rank prevents permanent low-ID preference and consumes no mutable random stream. Priority classes are permitted only for explicit mechanics; ordinary organisms competing for the same pool share one class. A weight changes proportional share only during scarcity, never eligibility, requested usable amount, or priority. Claims from one organism are merged before weighting so splitting demand across reactions cannot multiply influence. Configuration bounds ordinary contention weights to `1..4`; only a typed resource-specific trait may change the default.
 
 Resource absorption transfers granted matter into organism storage. A metabolic reaction may then use only the organism's resulting internal inventory unless its definition explicitly couples uptake and reaction into one atomic claim bundle.
+
+Atomic multi-input bundles use the same bounded, resource-specific weights without splitting their stoichiometry. Only inputs that are physically scarce constrain allocation, and a weight on one resource cannot grant priority to another independently scarce resource. The first exact coupled algorithm and fixtures are defined for respiration in [AEROBIC_RESPIRATION.md](AEROBIC_RESPIRATION.md).
 
 The founder `PassiveSmallMoleculeUptake` rule emits at most one micronutrient claim after a deterministic keyed `0.5` success check each one-hour tick. It selects among inherited reproduction-quota deficits by greatest normalized deficit and shares the ordinary contention class. Under abundant uncontested conditions this is `0.5` expected micronutrient quantum per organism-hour. It has no marginal energy debit because its background cost is included in founder maintenance; see [INTERNAL_STORAGE_AND_ALLOCATION.md](INTERNAL_STORAGE_AND_ALLOCATION.md) for the exact policy and recalibration triggers.
 
@@ -446,9 +461,13 @@ Predation first resolves whether the target dies. Consumption is then a transfer
 
 Basic remnant scavenging may directly transfer only compatible simple reserve compounds, dissolved stores, and micronutrients. Its first profile costs 25 energy, schedules a two-hour organism-local handling cooldown, and caps one action at 200 compatible reserve quanta, 256 dissolved-matter load, and eight micronutrient units. Structural biomass requires particulate ingestion and digestion. Full cooldown, admission, contention, and destination-compartment semantics are defined in [LIFECYCLE_AND_RECYCLING.md](LIFECYCLE_AND_RECYCLING.md).
 
-The first structural-food rule is one combined digestion-and-catabolism reaction. One `StructuralBiomass(C100 H170 O40 N20 P2 S1)` yields `32 ReserveOrganic(CH2O)` plus one zero-energy `SpentStructuralResidue(C68 H106 O8 N20 P2 S1)`; it declares 40 gross recoverable energy units, dissipates eight as processing overhead, and stores 32 in the reserve output. The equation conserves every CHNOPS element. Keeping the residue distinct prevents it from being treated as fresh fuel and yielding energy twice. Buffer, throughput, output routing, upkeep, action-cost, and mineralization rules are normative in [LIFECYCLE_AND_RECYCLING.md](LIFECYCLE_AND_RECYCLING.md). It does not define general dissolved-organic fermentation or respiration.
+The first structural-food rule is one combined digestion-and-catabolism reaction. One `StructuralBiomass(C100 H170 O40 N20 P2 S1)` yields `32 ReserveOrganic(CH2O)` plus one zero-energy `SpentStructuralResidue(C68 H106 O8 N20 P2 S1)`; it declares 40 gross recoverable energy units, dissipates eight as processing overhead, and stores 32 in the reserve output. The equation conserves every CHNOPS element. Keeping the residue distinct prevents it from being treated as fresh fuel and yielding energy twice. Buffer, throughput, output routing, upkeep, action-cost, and mineralization rules are normative in [LIFECYCLE_AND_RECYCLING.md](LIFECYCLE_AND_RECYCLING.md).
 
-When multiple ordinary scavengers target the same contents, the action resolver uses the same unweighted proportional-plus-stable-remainder allocation principle as tile uptake. When multiple predators successfully kill the same prey, each eligible claim from a predator that survives the complete predation pass is capped by ingestion and storage limits and weighted by its compiled `feedingPriorityWeight`:
+The first dissolved-organic rule is separate: structural decay releases an exactly balanced fraction as `LabileDissolvedOrganic`, and fermentation converts each `C6 H12 O6` substrate into two `ReserveOrganic` plus one `ReducedFermentationProducts(C4 H8 O4)`. It recovers at most eight reserve units per decayed structural quantum, compared with 32 through direct particulate digestion. [ORGANIC_UPTAKE_AND_FERMENTATION.md](ORGANIC_UPTAKE_AND_FERMENTATION.md) is normative for this path. [AEROBIC_RESPIRATION.md](AEROBIC_RESPIRATION.md) partitions each named dissolved fuel between mass-balanced carrier assimilation and oxidation, then uses oxidation opportunity to recharge existing retained carrier matter rather than crediting matter-bearing reserve twice.
+
+The first oxygenic primary-production rule consumes one named `CO2` plus boundary water and light opportunity to create one `ReserveOrganic(CH2O)` plus one named `O2`. Its fixed-carbon output must be stored or used by the same admitted transaction; oxygen is never credited independently. Light sharing, catalyst activation, throughput, and world-source calibration are normative in [OXYGENIC_PHOTOSYNTHESIS.md](OXYGENIC_PHOTOSYNTHESIS.md).
+
+When multiple ordinary scavengers target the same contents, the action resolver uses the same deterministic proportional-plus-stable-remainder mechanics as tile uptake, with every scavenging weight fixed at `1` in v1. When multiple predators successfully kill the same prey, each eligible claim from a predator that survives the complete predation pass is capped by ingestion and storage limits and weighted by its compiled `feedingPriorityWeight`:
 
 ```text
 ResolveWeightedPredationClaims(available, successfulClaims, deterministicKey):
@@ -619,14 +638,17 @@ ReconcileResourceLedger(world, tickRange)
 - `ReserveOrganic` is initially an abstract CH₂O energy carrier.
 - Stored energy is derived from energy-bearing matter.
 - Matter and energy quantities use fixed-point integer storage with checked wide intermediates.
-- Ordinary well-mixed resource contention uses proportional allocation with deterministically ranked remainders.
-- Contested prey contents use a separate capped weighted allocation among successful predators; only explicit `feedingPriorityWeight` traits affect that weight.
+- Ordinary well-mixed resource contention uses capped weighted-proportional allocation with deterministically ranked remainders; weight defaults to `1`, and the first specialized LDO trait uses `2` without changing priority class.
+- Contested prey contents use a separate capped weighted allocation among successful predators; only explicit `feedingPriorityWeight` traits affect that predation-specific weight.
 - The hydrogen-oriented metabolism is the first reference fixture; sulfide anoxygenic phototrophy is the second. Their intended gameplay asymmetry and trait paths are specified in [FOUNDING_METABOLISMS.md](FOUNDING_METABOLISMS.md).
 - The v1 catalogue and fixtures contain two founders, but resource and reaction IDs remain data-defined so later bulk-mineral metabolisms do not require a ledger redesign.
 - Water is inexhaustible but any tracked matter crossing its boundary is recorded.
 - Matter quanta are game-native rather than literal physical units.
 - V1 structural biomass is `C100 H170 O40 N20 P2 S1`; micronutrients use separate DNA quotas.
 - Structural-food catabolism emits explicit zero-energy `SpentStructuralResidue(C68 H106 O8 N20 P2 S1)` so residual matter cannot be mistaken for fresh fuel.
+- Structural decay emits four `LabileDissolvedOrganic(C6 H12 O6)` per structural quantum plus an exact generic organic remainder; spent reserve never enters that labile pool.
+- Fermentation emits two `ReserveOrganic` plus one non-fermentable `ReducedFermentationProducts(C4 H8 O4)` per labile substrate, preventing repeated energy extraction from generic organic waste.
+- The two dissolved biological compounds exchange at `0.15%` per fully compatible edge-hour with moisture-dependent symmetric compatibility. Other non-gas resources remain tile-bound until explicitly classified.
 - Baseline structure and reserve capacity are 1,000 and 10,000 units respectively.
 - One `ReserveOrganic` quantum stores one energy quantum.
 - Founder available-store capacities are 512 expanded-matter units for dissolved macronutrients, 64 units for free micronutrients, and zero for ingested matter; initial free contents are zero.
@@ -638,7 +660,7 @@ ReconcileResourceLedger(world, tickRange)
 These do not prevent implementing the ledger and first fixture, but must be resolved before representative gameplay balancing:
 
 - [x] Gas accessibility equations for aquatic and terrestrial organisms; see [GAS_TRANSPORT_AND_ATTRITION.md](GAS_TRANSPORT_AND_ATTRITION.md).
-- [ ] Non-gas source, sink, exchange, decay, and attrition rates. First atmospheric-gas rates are fixed in [GAS_TRANSPORT_AND_ATTRITION.md](GAS_TRANSPORT_AND_ATTRITION.md).
+- [ ] Remaining non-gas source, sink, exchange, decay, and attrition rates for resources not in the organic-path fixture. Organic-substrate production, 14-/90-day passive loss, and dissolved biological-compound exchange are fixed in [ORGANIC_UPTAKE_AND_FERMENTATION.md](ORGANIC_UPTAKE_AND_FERMENTATION.md) and [WORLD_CLIMATE_CALIBRATION.md](WORLD_CLIMATE_CALIBRATION.md). First atmospheric-gas rates are fixed in [GAS_TRANSPORT_AND_ATTRITION.md](GAS_TRANSPORT_AND_ATTRITION.md).
 - [x] The v1 sulfur founder uses the worked H₂S anoxygenic-phototrophy recipe; a separate sulfur chemotrophy is not required for the founding choice.
 - [x] Temporary metabolic binding, default sharing, and DNA-defined priority/holdback semantics; see [INTERNAL_STORAGE_AND_ALLOCATION.md](INTERNAL_STORAGE_AND_ALLOCATION.md).
 - [x] Founder waste release timing and retention policy; advanced retention and recycling trait values remain to be calibrated.

@@ -49,6 +49,10 @@ Resource and energy quantities are authoritative signed 64-bit integers. Protoco
 
 Health, normalized condition factors, and probabilities use the bounded `0..1,000,000` `RatioQ` encoding and fit in Protocol Buffer `uint32` fields. The selected-organism condition projection and compact delta policy are proposed in [ORGANISM_HEALTH_CALIBRATION.md](ORGANISM_HEALTH_CALIBRATION.md).
 
+Live organism projections for carrier-retaining species distinguish charged reserve from zero-energy spent-carrier quantity; summing them as stored energy is a client error. Live tile/resource flow projections also distinguish atmospheric O2 environmental loss/exchange, biological production, and respiratory consumption, plus fuel-specific requested, granted, and consumed extents.
+
+Movement and migration events expose active, Brownian-like passive, and directional environmental displacement contributions plus the admitted crossing cause. The passive contribution reflects the organism's compiled environmental-spread multiplier. Directional environmental contribution is always zero under the v1 rule pack, but the protocol field is versioned now so later current- or wind-driven dispersal does not masquerade as active locomotion or require a breaking event-shape change. These fields remain subject to ordinary tile/species visibility.
+
 # Command semantics
 
 Every gameplay command needs:
@@ -70,6 +74,8 @@ ReceiveCommand(connection, message):
     enqueue for a safe simulation boundary
     acknowledge accepted application tick or rejection
 ```
+
+The first speciation command carries ancestor species ID, expected evolution revision, expected genome hash, explicit new trait IDs, one to four selected tile IDs, and the permitted sandbox follow-descendant preference. Its preview and rejection payloads expose the typed reasons defined in [EVOLUTION.md](EVOLUTION.md), exact founder counts, price, complexity, cooldown boundary, activation warnings, and resulting attribute/cost provenance. For a material-dependent proposal, the preview also exposes the authorized named-resource stock/flow inputs, replacement demand, local opportunity, and whether the selected founding cohort materially overshoots the estimated niche; this remains a warning rather than a validity gate. Autonomous phase-10 decisions enqueue the same semantic command for next-boundary application rather than mutating species state through a private path.
 
 # Snapshots, deltas, and interest
 

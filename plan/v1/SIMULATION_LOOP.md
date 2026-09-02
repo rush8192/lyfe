@@ -44,13 +44,13 @@ Behavior selected at the end of tick `T` controls movement and action selection 
 | 1. Calendar and conditions | Prior calendar, fixed tile baselines, weather RNG state | Tick/calendar, temperature, precipitation, surface moisture, insolation, volcanic state | Organisms experience the newly current conditions during this tick's death and metabolism phases |
 | 2. Environmental ledger | Updated conditions, prior completed tile reservoirs and old remnants | Boundary sources, environmental sinks, gas exchange, mobile-resource exchange, old-remnant decay | Gas order remains source → attrition → symmetric exchange; biological claims have not yet occurred |
 | 3. Intrinsic death | Updated environment, organism age/state at tick start | Incremented age, per-tick death-risk assessments, `DeathRecord`, cohesive remnant, organism removal | Every applicable intrinsic cause is evaluated; dead organisms do not move or act; their remains may be found later in this tick |
-| 4. Movement | Surviving organisms, prior behavior, prior active velocity, updated environment, keyed Brownian displacement | Movement-energy spend for active displacement, position, active-velocity integration, tile membership | Brownian displacement is zero-mean and uncharged; active movement is capped by affordable energy; interactions use post-movement coordinates; edge migration uses wrapped `x` and bounded `y` |
+| 4. Movement | Surviving organisms, prior behavior, prior active velocity, compiled environmental-spread profile, updated environment, keyed Brownian-like displacement, future directional transport field | Movement-energy spend for active displacement, component-attributed position change, active-velocity integration, tile membership | Passive displacement is DNA-scaled, zero-mean, and has no distance charge; directional environmental displacement is exactly zero in v1; active movement is capped by affordable energy; interactions use post-movement coordinates; edge migration uses wrapped `x` and bounded `y` |
 | 5. External intent evaluation | Post-movement organisms, tile resources, existing remains, prior behavior, compiled allocation policy | Pre-external metabolic allocations, immutable acquisition/capture/scavenging/predation intents | Private allocation precedes the stable external snapshot; energy-capture claims use age-limited extents; intent evaluation does not mutate shared resources or targets |
 | 6. External resolution | Canonically grouped external intents and phase snapshot | Action-energy spend, resource grants, external-capture products, consumed remains, scavenging cooldowns, predation deaths/transfers, new predation remnants | Ordinary claims resolve before scavenging and predation; an admitted scavenging attempt pays and schedules cooldown even if contention yields zero; granted reserve and acquired matter are available to phase 7 |
 | 7. Internal metabolism | Post-external organism stores and reserve, compiled DNA, environment | Internal reaction products/waste, reserve expenditure, maintenance, structure/growth, metabolic-failure deaths | Catabolism, digestion, and growth use the current age-throughput cap; captured energy and newly acquired substrates may pay this tick's maintenance; optional growth occurs only after mandatory maintenance |
 | 8. Lifecycle and reproduction | Post-metabolism survivors and derived health | Lifecycle transition, zero-sum parent allocation, new offspring | A new offspring begins at age zero and cannot move, act, or reproduce until the next tick |
 | 9. Behavior update | End-of-action internal state and end-of-action local observation | Behavior/goal and next-tick movement or action parameters | Only survivors update; choices affect tick `T + 1` |
-| 10. Species systems | Completed organism membership and health | Population/health aggregates, mutation-point income, autonomous speciation | Mutation income observes births and deaths from this tick; autonomous descendants begin acting next tick |
+| 10. Species systems | Completed organism membership and health | Population/health aggregates, mutation-point income/remainder, pressure accumulators, autonomous intent and queued proposal | Mutation income observes births and deaths from this tick; an autonomous proposal is revalidated and committed at the next phase-0 boundary, so descendants cannot act in their decision tick |
 | 11. Finalization | Completed authoritative world | Histories, knowledge state, events/deltas, optional hash/checkpoint | Only a fully successful tick is visible or saveable |
 
 New remains created by intrinsic death in phase 3 exist before external intent evaluation and may be scavenged during phase 6. Predation deaths occur while phase-6 intents are being resolved; their new remains are not added to the current resolution snapshot and therefore become scavenging targets on the next tick. This avoids order-dependent predation/scavenging cascades.
@@ -217,12 +217,23 @@ The primitive founder `terminalReserveThreshold` is zero. This is distinct from 
 
 ## Internal-metabolism pseudocode
 
+Organic uptake and fermentation bridge phases 6 and 7 through an atomic plan. Against the stable phase-5 view, the organism first receives whole fermentation opportunities from its reaction ceiling and shared internal-processing budget, then uses keyed draws to determine which admitted opportunities become successful candidate extents. It consumes internally retained substrate first and emits an ordinary proportional claim only for the deficit. Phase 7 executes no more than the internal quantity plus actual grant. Claimed substrate committed to the reaction may pass through the bundle without fitting in retained storage; anything retained must fit the normal `DissolvedMacronutrientStore`. Respiration uses the same work-before-draw boundary with a whole coupled fuel/O2 bundle, routes its mass-balanced assimilated carbon to new reserve or explicit waste, and recharges only retained spent carrier matter. See [COMPLEX_CELL_CALIBRATION.md](COMPLEX_CELL_CALIBRATION.md), [ORGANIC_UPTAKE_AND_FERMENTATION.md](ORGANIC_UPTAKE_AND_FERMENTATION.md), and [AEROBIC_RESPIRATION.md](AEROBIC_RESPIRATION.md).
+
+Photosynthetic plans consume one shared current-light budget across sulfide and oxygenic reactions. Oxygenic execution couples a finite CO2 grant with boundary water and a proved reserve/same-tick output destination, then buffers O2 for the deterministic tile-output merge. It cannot evolve oxygen merely because light exists or reuse light already assigned to sulfide phototrophy; see [OXYGENIC_PHOTOSYNTHESIS.md](OXYGENIC_PHOTOSYNTHESIS.md).
+
+At the start of the phase-5 pre-external allocation barrier, existing free micronutrients are promoted into compiled committed-quota deficits before capability activation is evaluated. This matter-preserving step can activate newly evolved machinery, but nutrients acquired in phase 6 wait until the next tick; see [INTERNAL_STORAGE_AND_ALLOCATION.md](INTERNAL_STORAGE_AND_ALLOCATION.md).
+
 ```text
 EvaluateInternalMetabolism(organism, environment, tickKey):
     state = organism post-external state
+    internalBudget = processing work left by the phase-5 plan after
+        probabilistic opportunities reserved work before their success draws
 
-    resolve enabled internal energy-producing reactions through the
-        DNA allocation policy using free AvailableStore and substrates
+    commit preplanned organic-uptake grants to no more than their
+        keyed successful fermentation extents
+    resolve all enabled internal energy-producing reactions through the
+        DNA allocation policy using free AvailableStore, committed substrates,
+        and internalBudget
     credit their balanced ReserveOrganic outputs and route their waste
 
     requiredMaintenance = baselineMaintenance
@@ -238,7 +249,8 @@ EvaluateInternalMetabolism(organism, environment, tickKey):
                     remaining state transferred to one remnant)
 
     resolve optional biomass assembly, binding, internal retention/routing,
-        and permitted growth through the DNA allocation policy
+        and permitted growth through the DNA allocation policy and remaining
+        internalBudget
     enforce every capacity and non-negative ledger invariant
     return Survives(updated state)
 ```
@@ -247,7 +259,7 @@ External energy-capture reactions are committed before this function, so their r
 
 # Remaining phase-local decisions
 
-The phase graph and the first external-resolution policies are sufficiently defined for implementation planning. Exact reproduction health/reserve gates, deterministic ID allocation, and the numerical predation curves remain balance/mechanics work. Reproduction has deterministic eligibility plus a keyed bounded cooldown jitter rather than a per-tick success roll; see [LIFECYCLE_AND_RECYCLING.md](LIFECYCLE_AND_RECYCLING.md). Offspring placement is defined in [SPATIAL_CALIBRATION.md](SPATIAL_CALIBRATION.md): it occurs only after an accepted zero-sum reproduction transaction, remains in the parent's tile, and cannot itself cause migration. Reproduction stays after metabolism, observes post-maintenance health, and gives the newborn no action in its birth tick.
+The phase graph and the first external-resolution policies are sufficiently defined for implementation planning. Exact reproduction health/reserve gates and deterministic ID allocation remain separate balance/engineering work. The first numerical predation, eligibility, feeding, hunting, and movement-economy proposal is defined in [PREDATION.md](PREDATION.md) and [SPATIAL_CALIBRATION.md](SPATIAL_CALIBRATION.md); its coupled population fixture remains provisional. Reproduction has deterministic eligibility plus a keyed bounded cooldown jitter rather than a per-tick success roll; see [LIFECYCLE_AND_RECYCLING.md](LIFECYCLE_AND_RECYCLING.md). Offspring placement is defined in [SPATIAL_CALIBRATION.md](SPATIAL_CALIBRATION.md): it occurs only after an accepted zero-sum reproduction transaction, remains in the parent's tile, and cannot itself cause migration. Reproduction stays after metabolism, observes post-maintenance health, and gives the newborn no action in its birth tick.
 
 # Action-cost admission
 
@@ -266,7 +278,9 @@ This immediate debit is action-cost resolution, not a second general internal-me
 
 Environmental resource and capture claims resolve before scavenging and predation. Newly granted matter is therefore part of a prey organism's contents if it is killed later in the phase. Targeted intents are admitted against the post-movement, pre-grant snapshot, so newly captured energy cannot make an otherwise unaffordable predation or scavenging attempt eligible.
 
-Ordinary finite pools use the proportional-plus-stable-remainder algorithm in [RESOURCE_MODEL.md](RESOURCE_MODEL.md): grant each request its integer proportional floor, then assign leftover quanta to unmet claims by a deterministic hashed rank. All ordinary organisms share one priority class. Acquisition traits increase eligible resources or requested throughput; they do not create an invisible contention priority.
+Ordinary finite pools use the capped weighted-proportional-plus-stable-remainder algorithm in [RESOURCE_MODEL.md](RESOURCE_MODEL.md). All ordinary organisms share one priority class and default weight `1`; a typed resource-specific acquisition trait may provide a bounded contention weight, with `DissolvedOrganicSpecialization` supplying the first weight `2`. Claims from one organism are merged before weighting, grants never exceed usable request, and cap leftovers are redistributed deterministically. A weight improves share only under scarcity and never creates an invisible absolute priority.
+
+When a weighted resource is one input of a coupled reaction, the coupled resolver applies that weight only to that scarce input and still admits complete reaction bundles atomically. A dissolved-organic acquisition weight therefore cannot confer priority over scarce oxygen.
 
 Founder passive micronutrient uptake performs its keyed `0.5` opportunity check while building environmental claims and emits at most one one-quantum claim across all inherited quota deficits. It receives no catch-up credit when the opportunity fails or contention denies the claim. The exact target-selection rule is in [INTERNAL_STORAGE_AND_ALLOCATION.md](INTERNAL_STORAGE_AND_ALLOCATION.md).
 
@@ -284,7 +298,10 @@ PredationIntent:
     feedingPriorityWeight
     attemptEnergyCost
     maximumConsumableByResource
+    destinationCapacityReservation
 ```
+
+An admitted intent reserves only the destination capacity needed for its capped feeding plan, not prey matter. The reservation prevents earlier phase-6 acquisition from filling that capacity; it is consumed by actual grants or released without backfill after the predation pass. Exact reservation and feeding semantics are defined in [PREDATION.md](PREDATION.md).
 
 The chance that one attempt kills its target is derived from opposing compiled attributes and current-state modifiers captured in the immutable post-movement external view:
 
@@ -334,6 +351,8 @@ ResolvePredation(allIntents, externalView, tickKey):
 ```
 
 Mutually successful predators may therefore kill one another, but a predator killed anywhere in the same resolution pass cannot consume another target. `predationAttackPower` changes success probability. `feedingPriorityWeight` changes only the share received when multiple successful surviving predators contest the same prey; it cannot turn a failed attempt into a successful one. Predation defenses oppose attack power through the probability formula and may also limit which capture mechanisms are eligible. This keeps offensive success, defensive resistance, ingestion capacity, and contested feeding priority separately explainable.
+
+The exact first attack/defense factors, size hard gates, pursuit and escape modifiers, attempt costs, immediate feeding caps, opportunistic target selection, hunting policy, and authoring landmarks are normative in [PREDATION.md](PREDATION.md). This document continues to own simultaneous conflict resolution and phase ordering.
 
 # Deterministic randomness
 

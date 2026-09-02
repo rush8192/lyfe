@@ -20,6 +20,8 @@ The presentation should not claim that a single lightning strike literally creat
 
 LYFE follows the principle of being biology-inspired and internally mass-balanced. It is a game rather than a complete reconstruction of evolutionary history or biochemistry, so it may simplify exact compounds, pathways, timescales, and evolutionary sequences. Those abstractions should preserve the important pressures of the early living world: limited resources, energy capture and storage, environmental tolerance, reproduction, competition, and tradeoffs between capability and cost.
 
+The expansion of a lineage should reveal its dispersal strategy in the world view. A lineage may spread through costly directed locomotion, through rapid population growth and chance migration, or eventually by exploiting environmental transport. The interface should make the difference legible through migration histories and trait explanations without implying that the player directly commanded individual routes. Any first organism that enters a tile expands knowledge through the ordinary exploration rules regardless of how it arrived.
+
 Within the chosen abstraction, nutrient matter must remain accounted for as it moves among organisms and environmental reservoirs, except through explicit sources and sinks. Whimsical presentation may simplify or personify events, but it should not undermine the causal rules of the simulation.
 
 # Lineage and ownership

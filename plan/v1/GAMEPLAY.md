@@ -41,11 +41,11 @@ There is no direct control of organism movement or actions.
 # Free sandbox
 
 - Control may move to any living species.
-- Any species may be locked or unlocked against autonomous mutation/speciation.
+- Any species may be locked or unlocked against autonomous mutation/speciation. Locking does not stop mutation income or pressure accumulation, but clears any pending autonomous intent; unlocking waits for the next ordinary autonomous evaluation.
 - The run ends early only if all life becomes extinct.
 - At the final date, the surviving tree of life and world state are summarized.
 
-Define command authority, lock behavior during a pending autonomous decision, and what is selected when the currently inspected species becomes extinct.
+Define what is selected when the currently inspected species becomes extinct. Command authority, lock behavior, and the controlled/uncontrolled speciation transition follow [EVOLUTION.md](EVOLUTION.md).
 
 # Survival
 
@@ -70,6 +70,8 @@ Exploration applies to free sandbox and survival. Player knowledge persists as a
 | Live | At least one organism of the controlled species occupies the tile | Organisms and remains, exact current conditions, exact stocks and flows, and observed history |
 
 At initialization, the player's starting tile is live and every edge-sharing neighbor is reduced. At the end of each tick, occupation promotes tiles to live and discovers their neighbors; vacated tiles demote to reduced. Player knowledge is monotonic except that exact live state becomes stale on demotion.
+
+Occupation is arrival-mechanism agnostic. Active migration, DNA-scaled Brownian-like population spread, and future directionally environment-carried dispersal all reveal a newly occupied tile through the same rule; none grants advance knowledge along a projected route. Migration history should retain whether displacement was active, passive stochastic, or directional environmental so the client can explain how the lineage spread without implying direct player control. Evolution previews for anchoring and drifting show their passive RMS, active-speed, upkeep, and estimated edge-encounter changes rather than presenting either as a generic movement bonus.
 
 In free sandbox, changing control retains all earlier discoveries but recomputes live tiles from the newly controlled species. The control command may therefore reveal every tile that species occupies and their neighbors. In survival, uncontrolled ancestors and the competing lineage do not provide live visibility.
 

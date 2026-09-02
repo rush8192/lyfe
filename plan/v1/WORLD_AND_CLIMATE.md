@@ -294,7 +294,42 @@ Non-gas resources use transport classes rather than bespoke engine code:
 | `SurfaceRunoff` | Optional directional downhill transfer on terrestrial edges; defer from the first executable slice unless needed by moisture validation |
 | `BoundaryAvailable` | Water/surface moisture opportunity, never a finite tile debit |
 
-Micronutrients default to `TileBound` in the first slice. This preserves well-mixed access inside a tile without making scarce advanced nutrients rapidly homogenize globally. Exact dissolved macronutrient exchange and remnant-decay coefficients remain part of resource calibration.
+Micronutrients and generic elemental organic/inorganic macronutrient pools default to `TileBound` in the first slice. This preserves well-mixed access inside a tile without making scarce nutrients or spent organic matter rapidly homogenize globally. `LabileDissolvedOrganic` and `ReducedFermentationProducts` are the first resources assigned to `DissolvedMobile`.
+
+The first dissolved profile uses `1,500` per million, or `0.15%`, of the stable stock difference per fully compatible undirected edge per simulated hour. Edge compatibility is symmetric:
+
+```text
+DissolvedCompatibility(tileA, tileB):
+    if both tiles are aquatic:
+        return 1.00
+    if exactly one tile is terrestrial:
+        return 0.10 * terrestrialTile.surfaceMoisture
+    return 0.25 * min(tileA.surfaceMoisture, tileB.surfaceMoisture)
+```
+
+A dry terrestrial endpoint closes dissolved exchange. V1 has no directional runoff or current. The ordinary world topology applies: each wrapped `x` edge exchanges once, bounded `y` edges do not leak, and diagonal tiles never exchange directly.
+
+```text
+ResolveDissolvedExchange(stablePostLossView):
+    for edge in canonical undirected edge order:
+        compatibilityQ = DissolvedCompatibility(edge.low, edge.high)
+
+        for resource assigned to DissolvedMobile in canonical resource order:
+            delta = stock(edge.low, resource) - stock(edge.high, resource)
+            flow = SignedFixedPointFlow(
+                delta,
+                baseRateQ = 1_500 per million per hour,
+                compatibilityQ,
+                edgeResourceRemainder[edge, resource])
+            emit one signed transfer from the higher-stock endpoint
+
+    proportionally scale any invalid aggregate outbound proposal
+    atomically apply transfers and persist remainders
+```
+
+Sources resolve first, including structural-remnant release of labile substrate. Passive compound loss resolves second. Dissolved exchange uses that stable post-loss view, and biological claims resolve later. A fermentation product created during phase 7 first participates in exchange on the next tick. The selected maximum rate proposes at most `4 × 0.15% = 0.6%` gross outbound exchange from a fully aquatic four-neighbor tile, comfortably inside explicit-diffusion stability bounds.
+
+The numeric single-source field and adjacent-consumer fixture are fixed in [WORLD_CLIMATE_CALIBRATION.md](WORLD_CLIMATE_CALIBRATION.md). Other resources require an explicit class assignment; the existence of a `DissolvedOrMobile` physical phase does not automatically make a resource passively mobile.
 
 # Cross-tile environment exchange
 
@@ -307,7 +342,7 @@ Gas transport itself does not depend on water depth. For biological claims, terr
 Further exchange work remains for:
 
 - Optional weather-dependent or directional atmospheric transport after v1.
-- Dissolved or mobile nutrient resources.
+- Classification and coefficients for any additional dissolved or mobile nutrient resources.
 - Solid or poorly transported nutrient resources.
 - Passive organism transport if present in v1.
 

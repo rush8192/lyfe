@@ -33,8 +33,8 @@ Identifiers must survive array compaction, save/load, and client resynchronizati
 | Atmospheric gases | Tile-local reservoirs |
 | Gas-source and sink remainders | Tile state |
 | Signed gas-exchange remainders | Canonical undirected tile-edge state |
-| DNA and mutation balance | Species state |
-| Position, structural matter, reserves, available-store resource balances, metabolic binding cohorts, age, reproduction cooldown/ordinal, and behavior | Organism state |
+| DNA, mutation balance/remainder, speciation cooldown/ordinal, pressure state, and autonomous intent including its material/biological-opportunity snapshot | Species state |
+| Position, structural matter, charged reserves, spent reserve-carrier balances, available-store resource balances, metabolic binding cohorts, age, reproduction cooldown/ordinal, and behavior | Organism state |
 | Tile, position, original packing profile, and remaining consumable contents | Dead-remnant state |
 | Parent-child relationships | Lineage store |
 | Controller and sandbox lock | Gameplay state |
@@ -57,9 +57,17 @@ The logical organism schema, chronological-versus-biological age distinction, an
 
 Available-store resource balances are authoritative. Used load per capacity group is composition-derived and may either be recomputed or cached with invalidation on every balance mutation; DNA-compiled group capacities and desired-inventory policies are immutable for an organism between DNA/lifecycle transitions. Persisted saves must not rely on an unverified cached used-load value. The capacity groups, load formula, and transition invariants are defined in [INTERNAL_STORAGE_AND_ALLOCATION.md](INTERNAL_STORAGE_AND_ALLOCATION.md).
 
+For organisms with `CatalyticCarrierRetention`, charged `ReserveOrganic` and zero-energy `SpentReserveCarrier` balances are separate authoritative columns sharing one compiled capacity. Exact spend, recharge, assimilation, and inheritance rules are defined in [AEROBIC_RESPIRATION.md](AEROBIC_RESPIRATION.md).
+
 Live visibility is derived from the completed world's controlled-species occupancy. Discovery and last-known observations are stored authoritative state because they persist after occupation ends and across sandbox control transfers. A save must preserve at least the discovered tile set, last full observation allowed for each previously live tile, its observation tick, and any coarse neighbor summary fixed at discovery. Client selection and camera state remain presentation-only.
 
 Lineage must distinguish `AbiogenesisOriginId` from `SpeciesId`. Root species reference their origin and have no parent species; non-root species reference exactly one parent species. An origin never carries DNA, population, mutation points, control, or extinction state.
+
+The first species-evolution and lineage records are defined in [EVOLUTION.md](EVOLUTION.md). Immutable genomes may be deduplicated by canonical trait set and rules hash, but species and lineage events never deduplicate. Mutation balance uses signed 64-bit `MutationQ` at one million units per point; its exact income remainder is authoritative unsigned 128-bit state. Saves and hashes also include the absolute speciation cooldown, evolution revision, speciation ordinal, next autonomous-evaluation tick and ordinal, pressure accumulators, and any autonomous intent with its initial material- or biological-opportunity and per-plan breakdown.
+
+For every exact `ResourceId` referenced by a selectable material-opportunity profile, tile history retains one-hour source, passive-loss, inbound-exchange, outbound-exchange, and biological-uptake buckets across the 168-hour autonomous scoring window, plus checked rolling totals. These aggregates are historical state, not client telemetry reconstructed from visible deltas. Missing world-start prehistory is zero-filled, and ring position, buckets, totals, and save/load behavior must reproduce future eviction and opportunity scores exactly; see [POPULATION_ECOSYSTEM_VALIDATION.md](POPULATION_ECOSYSTEM_VALIDATION.md).
+
+Selectable predation profiles add a sparse per-tile, ordered species-pair 168-hour ring containing eligible detections/contacts, attempts, successes, prey deaths, immediate resource-class grants, and remnant remainder. Only nonzero pairs are materialized, but their buckets, rolling totals, and cursors are historical state until the final nonzero hour ages out. These aggregates drive `BiologicalOpportunityProfile` scoring and must not be reconstructed from client-visible events; see [PREDATION.md](PREDATION.md).
 
 # Numeric representation
 
@@ -69,7 +77,9 @@ The shared `RatioQ` encoding for health, normalized factors, and probabilities i
 
 The first world contract selects signed integer tile coordinates, normalized unsigned tile-local `LocalCoordQ`, integer-meter elevation/depth, milli-degree Celsius temperature, integer micrometers-per-hour precipitation, and `RatioQ` moisture/cloud/turbidity/volcanism/insolation. The default grid is `32 × 17`, with wrapped `x` and bounded signed `y`; see [WORLD_AND_CLIMATE.md](WORLD_AND_CLIMATE.md).
 
-Organism and remnant radius are derived from structure/body-equivalent matter, compiled organization, and the pinned spatial rule pack rather than stored as freely mutable geometry. The first founder radius, structure targets, Brownian scale, and range encodings are defined in [SPATIAL_CALIBRATION.md](SPATIAL_CALIBRATION.md).
+Organism and remnant radius are derived from assigned geometric structure/body-equivalent matter, compiled organization, and the pinned spatial rule pack rather than stored as freely mutable geometry. Organism structure remains one conserved resource balance with explicit geometric and organization assignments; see [COMPLEX_CELL_CALIBRATION.md](COMPLEX_CELL_CALIBRATION.md). The first founder radius, structure targets, Brownian scale, and range encodings are defined in [SPATIAL_CALIBRATION.md](SPATIAL_CALIBRATION.md).
+
+Completed movement and migration events retain separately attributed active, Brownian-like passive, and directional environmental displacement components plus the admitted crossing class. The passive component records the already DNA-modified realized vector; its profile and multiplier are derived from the species' compiled DNA rather than stored redundantly on each organism. Directional environmental displacement is identically zero in the v1 rules, but reserving the field prevents later current-, wind-, buoyancy-, or propagule-driven dispersal from being encoded as active velocity or an unexplained tile teleport. The organism itself remains the conserved moving entity; displacement never copies biological state.
 
 The detailed pass must still decide and document:
 

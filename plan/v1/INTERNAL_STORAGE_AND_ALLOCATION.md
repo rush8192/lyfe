@@ -1,6 +1,6 @@
 # Internal Storage, Binding, and Allocation
 
-Status: first semantic, founder-capacity, and primitive-uptake pass; temporary process binding, DNA-defined allocation policy, capacity groups, founder values, and basal micronutrient acquisition are decided, while advanced trait prices and the multi-resource allocation algorithm remain to be calibrated.
+Status: first semantic, founder-capacity, primitive-uptake, retained-energy-carrier, and coupled-claim pass; later advanced capacity traits remain to be calibrated
 
 Sources: [resource model](RESOURCE_MODEL.md), [organism model](ORGANISMS.md), [simulation loop](SIMULATION_LOOP.md), [trait system](TRAIT_SYSTEM.md), and [trait catalogue](TRAIT_CATALOGUE.md).
 
@@ -95,6 +95,8 @@ Examples:
 | Inorganic phosphorus | `1` |
 | H₂S | `3` |
 | NH₃ | `4` |
+| `LabileDissolvedOrganic` | `24`; the primitive store can retain at most `21` whole quanta |
+| `ReducedFermentationProducts` | `16` |
 | One micronutrient | `1` |
 | `ReserveOrganic` | Not counted here; it uses `EnergyReserve` capacity |
 | `StructuralBiomass` | `333` when held as undigested matter; committed structure is outside `AvailableStore` |
@@ -127,6 +129,10 @@ Capacity is not a command to fill storage. Founders begin with:
 | `IngestedMatterBuffer` | `0` | No eligible acquisition |
 
 Current-tick acquisition may enter and leave the macronutrient store in the same tick, so zero initial content does not prevent the founder fixtures from operating. Actual micronutrient accumulation remains subject to acquisition eligibility, uptake throughput, tile availability, and contention.
+
+The evolved organic-uptake/fermentation path may process more than `512` load in one tick only through the committed atomic bundle in [ORGANIC_UPTAKE_AND_FERMENTATION.md](ORGANIC_UPTAKE_AND_FERMENTATION.md). Only substrate consumed by that same bundle bypasses simultaneous retained-storage fit; all pre-existing and leftover contents still count toward capacity.
+
+`CatalyticCarrierRetention` introduces a separate `EnergyCarrierPool` containing charged `ReserveOrganic` and zero-energy `SpentReserveCarrier` with identical `CH2O` composition. Their combined matter count cannot exceed the DNA reserve-capacity value; only the charged balance contributes usable energy or reserve-relative health. Spending moves charged carriers to the spent state, and a declared energy opportunity may recharge them without changing matter. Respiration may also add a small mass-balanced assimilated carrier output when capacity is free. Exact output routing, costs, reproduction behavior, and respiratory use are defined in [AEROBIC_RESPIRATION.md](AEROBIC_RESPIRATION.md).
 
 Desired inventory is a DNA/acquisition-policy value distinct from maximum capacity and from internal process holdbacks. `MacronutrientRetention` may later add a persistent fill target and capacity; `SelectiveMicronutrientStockpiling` may add resource-specific targets or protected admission. Neither trait creates the requested matter.
 
@@ -163,6 +169,23 @@ The normalized-deficit rule causes large and small inherited quotas to approach 
 
 Passive uptake has no separate per-attempt energy debit in the founder rule pack; its low background cost is included in base maintenance. `ActiveTransport` and later high-affinity or selective uptake may add direct energy costs in exchange for better access, higher throughput, or more control.
 
+## Committing newly required quotas
+
+Speciation can increase the compiled committed-quota vector without granting the selected organisms any matter. At the phase-5 pre-external allocation barrier, before capability activation is evaluated, each organism promotes free micronutrients into its compiled committed-quota deficits in canonical `ResourceId` order:
+
+```text
+for resource in canonical ResourceId order:
+    deficit = max(0, compiledCommittedQuota[resource]
+                     - structureCommittedQuota[resource])
+    promoted = min(deficit, availableStore.freeMicronutrient[resource])
+    debit availableStore.freeMicronutrient[resource] by promoted
+    credit structureCommittedQuota[resource] by promoted
+```
+
+Promotion is a matter-preserving bookkeeping abstraction for expressing genetically available machinery; v1 does not add a separate construction-energy charge or per-trait machinery inventory. A capability activates only after every quota it requires is committed. Material acquired in phase 6 waits until the next tick's barrier, preventing a same-tick uptake-and-expression shortcut. Once promoted, a quota remains committed until reproduction, death, or another already-declared whole-organism transfer rule handles it; it cannot be demoted to satisfy a different process or offspring set.
+
+The desired free-micronutrient inventory is then recalculated from the proposed DNA's complete additional reproduction set. Thus an oxygenic descendant first fills any missing `Mn 4 + Ca 1` committed activation deficit and then accumulates the full 60-unit extra set required for reproduction. Neither target may exceed the compiled free-store capacity.
+
 At the calibrated rate, the hydrogen founder requires `57 / 0.5 = 114` expected ticks and the sulfur founder `55 / 0.5 = 110` expected ticks to acquire a complete extra set under abundant uncontested conditions. These remain well inside their structural first-reproduction times of `334` and `250` ticks. With independent keyed opportunities and guaranteed grants, the probabilities of still lacking the set at those deadlines are approximately `8.1 × 10^-37` and `2.1 × 10^-20`; practical delays should therefore arise from ecological scarcity or contention rather than opening-fixture randomness.
 
 ### Recalibration triggers
@@ -180,15 +203,16 @@ The `0.5` value is a rule-pack balance parameter and must be rerun when any of t
 ## Admission and full-store behavior
 
 - External claims are capped by free load in the destination group after accounting for already committed same-phase grants.
+- An admitted predation plan may reserve bounded destination capacity for its possible post-kill grant. The reservation contains no matter, counts as used capacity against intervening environmental claims, and is consumed by actual feeding grants or released without same-phase backfill after predation resolves; see [PREDATION.md](PREDATION.md).
 - A multi-input process is admitted only when all consumed inputs and taps can coexist within their assigned groups.
 - Binding material already present does not add load, but bound material remains part of used load.
 - No baseline process automatically evicts one stored resource to admit another.
 - If a reaction would produce a retained output that cannot fit, its extent is reduced or the output must name an explicit direct waste destination.
 - Direct external-capture reactions such as the founding H₂/CO₂ and H₂S/CO₂ pathways may consume tile substrates atomically and credit `EnergyReserve` without staging those gases in `AvailableStore`.
 
-# Founder waste-routing rule
+# Founder and retained-carrier waste routing
 
-Founders have no persistent waste-storage group. At the end of internal metabolism:
+Founders without `CatalyticCarrierRetention` have no persistent waste-storage group. At the end of internal metabolism:
 
 - Matter from `ReserveOrganic` spent on maintenance becomes generic organic C/H/O and is credited directly to the tile's organic pools.
 - `OrganicOxygen` left over from biomass assembly is credited directly to the tile organic pool.
@@ -197,7 +221,7 @@ Founders have no persistent waste-storage group. At the end of internal metaboli
 
 At the current founder rates, retaining these products would add `266` matter-load units per hydrogen organism-tick and `280` per sulfur organism-tick. A `512` store would fill in approximately `1.92` or `1.83` ticks respectively, preventing normal metabolism for reasons unrelated to the intended opening balance.
 
-`WasteRouting` and `CatalyticRecycling` may later retain eligible products in an appropriate store, but retained material consumes ordinary capacity and requires an explicit useful reaction. The initial rule pack has zero passive internal leakage or decay; release occurs only through a declared waste transaction.
+With `CatalyticCarrierRetention`, spending `ReserveOrganic` instead credits `SpentReserveCarrier` inside the shared carrier pool. It does not also credit the tile's generic organic pools. A declared recharge reaction may restore the charged state; death moves both states to the remnant, where the spent state has no usable energy. Other `WasteRouting` and `CatalyticRecycling` traits may later retain eligible products in an appropriate store, but retained material consumes ordinary capacity and requires an explicit useful reaction. The initial rule pack has zero passive internal leakage or decay; release occurs only through a declared waste transaction or remnant decay.
 
 # Consumed inputs versus tap requirements
 
@@ -279,9 +303,9 @@ Founding DNA has:
 
 When multiple eligible processes in the same allocation barrier request the same free resource, none wins merely because its code or ID was evaluated first. The resolver allocates proportionally to process demand within the tier and uses deterministic largest remainders. Indivisible ties use a key derived from world seed, tick, organism, resource, and process ID so a low process ID does not receive every recurring remainder.
 
-Processes that require multiple resources request an atomic extent bundle. The final resolver must iteratively return unusable partial grants and reduce each process to whole feasible extents. It may not bind one required input when another required input makes the admitted extent zero.
+Processes that require multiple resources request an atomic extent bundle. The first external coupled-claim resolver calculates one common proportional base from every required resource, then allocates only whole post-proportional residual extents by keyed rank. It may not bind one required input when another required input makes the admitted extent zero. The normative algorithm is defined in [AEROBIC_RESPIRATION.md](AEROBIC_RESPIRATION.md).
 
-The exact bounded multi-resource algorithm remains to be written, but it must satisfy:
+Internal stored-resource allocation may use the same compiled bundle representation. Its implementation must satisfy:
 
 - Symmetric processes with symmetric demand receive symmetric expected allocations.
 - Stable IDs affect only deterministic indivisible remainders, not the bulk allocation.
@@ -389,8 +413,10 @@ Process allocation is an `InternalMetabolism` responsibility. The first progress
 | --- | --- | --- |
 | `BasalInternalMetabolism` | Equal shared tier; no holdbacks | Low control, no extra upkeep |
 | `BiomassAssemblyControl` | Select one authored bias between reserve conservation and structural growth | Small passive regulation cost; a poor bias can strand opportunity |
-| `MetabolicRegulation` | Assign bounded relative weights and tiers among enabled metabolic process classes | Passive control cost even when little contention exists |
+| `MetabolicRegulation` | Assign bounded relative weights and tiers among enabled metabolic process classes; select active/suppressed pathways once in phase 5 for the complete tick | `5` energy/hour constitutive control cost; explicitly suppressible pathway upkeep retains `25%` |
 | `ResourceAllocationControl` | Add a bounded ordered set of absolute per-resource holdbacks | Additional regulation machinery, maintenance, and possible quota requirement |
+
+Suppression has no separate transition cost, cooldown, or delay in v1. A pathway that emits an intent pays its active profile even if contention later grants nothing. Structural, quota, reproduction, and unmarked constitutive costs cannot be suppressed. The exact organic-path example and fixed-point fractional-cost handling are defined in [ORGANIC_UPTAKE_AND_FERMENTATION.md](ORGANIC_UPTAKE_AND_FERMENTATION.md).
 
 `ResourceAllocationControl` is a new child of `MetabolicRegulation`. Exact mutation price, number of tiers, weight bounds, holdback-slot count, and upkeep remain balance parameters. V1 should prefer small bounded choices over an arbitrary programmable policy language.
 
@@ -497,6 +523,7 @@ The first implementation must prove:
 - Death transfers physical matter once and discards binding policy state.
 - Speciation and policy changes do not release active bindings early.
 - Save/load and different worker counts reproduce binding cohorts, allocations, and state hashes exactly.
+- Quota promotion conserves each micronutrient exactly, follows canonical resource order, cannot use phase-6 acquisitions until the next tick, and never demotes committed matter.
 - Aggregate requested, granted, bound, and stranded quantities reconcile with organism-level changes.
 
 # Remaining storage decisions
@@ -507,7 +534,7 @@ The next passes should resolve, in order:
 2. Advanced retention targets and the exact useful reactions enabled by waste-retention/recycling traits.
 3. Capacity reductions during speciation and lifecycle transitions, including explicit overflow destinations.
 4. Exact capacity increments, structure, maintenance, quota, and reproduction costs for storage traits.
-5. The bounded multi-resource allocation algorithm and its performance layout.
+5. The performance layout and whether internal held-resource bundles can reuse the external coupled-claim implementation without copying hot-loop state.
 6. Protocol update thresholds and historical aggregation windows.
 
 Founder capacity groups, baseline capacities, needs-only macronutrient staging, one-extra-set micronutrient targeting, primitive `0.5` expected micronutrient uptake, full-store admission, founder waste release timing, and zero passive leakage are fixed by this pass.

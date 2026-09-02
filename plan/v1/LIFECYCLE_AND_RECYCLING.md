@@ -1,6 +1,6 @@
 # Lifecycle and Recycling
 
-Status: first complete v1 lifecycle rule pack; numerical population and ecosystem validation remain pending
+Status: first complete v1 lifecycle rule pack and organic-niche population calibration; executable multi-seed validation and later ecological strategies remain pending
 
 Sources: [organism mechanics](ORGANISMS.md), [simulation loop](SIMULATION_LOOP.md), [resource model](RESOURCE_MODEL.md), [organism state and health](ORGANISM_STATE_AND_HEALTH.md), [health calibration](ORGANISM_HEALTH_CALIBRATION.md), [internal storage](INTERNAL_STORAGE_AND_ALLOCATION.md), [spatial contract](SPATIAL_ORGANISMS_AND_BEHAVIOR.md), and [spatial calibration](SPATIAL_CALIBRATION.md).
 
@@ -143,7 +143,7 @@ The absolute `reproduction_not_before_tick` is authoritative and persists throug
 
 ## Already fixed
 
-- Primitive fission requires two complete inherited micronutrient quota sets and sufficient structural matter for two viable results.
+- Primitive fission requires two complete inherited micronutrient quota sets and sufficient geometric and organization structure assignments for two viable results. Founder organization structure is zero, preserving the existing arithmetic.
 - The primitive structural target is `1,000` units per mature result, so symmetric fission requires at least `2,000` structure before reproductive overhead.
 - The first founder rule uses a `500`-energy reproductive-work cost and targets first reproduction near tick `334` for hydrogen founders and tick `250` for sulfide founders.
 - Primitive reproduction is deterministic once all eligibility gates pass. It uses a `24 h` base cooldown plus one keyed `0..3 h` jitter draw per scheduled cooldown, not an independent chance each eligible tick.
@@ -171,7 +171,7 @@ all other capacity and composition invariants pass
 
 The health gate uses the ordinary post-maintenance derived health rather than a reproduction-only opaque score. The named reserve and structure gates remain separate because total health alone could hide a specific shortage behind strong values in other factors.
 
-After the `500`-energy work reaction, `PrimitiveFission` allocates structure, energy reserve, and divisible available-store balances as close to `50/50` as integer quantities allow. The continuing parent receives the deterministic remainder for structure required to retain its stable identity; other indivisible remainders use the keyed allocation rule. The parent's existing committed micronutrient set stays with it and the complete additional set becomes the offspring's committed set.
+After the `500`-energy work reaction, `PrimitiveFission` allocates each structure assignment, energy reserve, and divisible available-store balance as close to `50/50` as integer quantities allow. The continuing parent receives the deterministic remainder for structure required to retain its stable identity; other indivisible remainders use the keyed allocation rule. Each result must meet its compiled geometric and organization minima. The parent's existing committed micronutrient set stays with it and the complete additional set becomes the offspring's committed set.
 
 At a full `10,000` reserve, the work reaction leaves `9,500`, or `4,750` per result. The sulfur fixture reaches division near `9,012`; after work it leaves `4,256` per result. Both therefore begin above the common `4,000` growth-protection floor. Although each result has fewer reserves than the pre-split parent, the species gains a second mature resource-gathering organism and one age-zero lineage member without creating matter.
 
@@ -279,7 +279,7 @@ Bindings, holdbacks, behavior, and cooldowns do not survive death. Resource iden
 
 Only remnants that existed at the start of a tick participate in phase-2 decay. A remnant created later in that tick is first eligible for decay on the next tick. Scavenging in phase 6 consumes the post-decay remainder.
 
-Each decay rule must name its source resource, destination tile resource, rate, environmental modifiers, energy disposition, and fixed-point remainder policy. Structural and organic compounds decay into generic organic tile pools; inorganic compounds and micronutrients return to their matching pools. The separate slow passive-mineralization rule below eventually converts generic organic macronutrients into their inorganic forms explicitly and element-for-element.
+Each decay rule must name its source resource, destination tile resource, rate, environmental modifiers, energy disposition, and fixed-point remainder policy. Reserve and other spent organic compounds decay into generic organic tile pools; inorganic compounds and micronutrients return to their matching pools. Ordinary `StructuralBiomass` is the exception: its exact decay reaction releases a labile dissolved fraction plus a generic organic remainder as defined in [ORGANIC_UPTAKE_AND_FERMENTATION.md](ORGANIC_UPTAKE_AND_FERMENTATION.md). The separate slow passive-mineralization rule below eventually converts generic organic macronutrients into their inorganic forms explicitly and element-for-element.
 
 ## First decay cohorts
 
@@ -288,8 +288,8 @@ At the reference condition of `40 °C` in water, v1 uses these exponential-style
 | Remnant content | Half-life | Hourly decay per million | Decay destination |
 | --- | ---: | ---: | --- |
 | Dissolved available stores and free micronutrients | `168 h` / 7 days | `4,117` | Matching generic organic/inorganic or micronutrient tile pool |
-| `ReserveOrganic` and other simple energy carriers | `336 h` / 14 days | `2,061` | Constituent generic organic pools; remaining usable energy dissipates |
-| Ordinary `StructuralBiomass` and committed quotas | `720 h` / 30 days | `962` | Constituent generic organic pools; micronutrients release proportionally |
+| `ReserveOrganic`, `SpentReserveCarrier`, and other simple carriers | `336 h` / 14 days | `2,061` | Constituent generic organic pools; any remaining usable energy dissipates |
+| Ordinary `StructuralBiomass` and committed quotas | `720 h` / 30 days | `962` | Four `LabileDissolvedOrganic` per released structural quantum plus its exact generic organic remainder; micronutrients release proportionally |
 | Future resistant structure fraction | `2,160 h` / 90 days | `321` | Same products, released slowly |
 
 After 14 reference-condition days, approximately `25%` of dissolved contents, `50%` of reserve compounds, and `72%` of ordinary structure remain available for direct scavenging. After 30 days, approximately `5%`, `23%`, and `50%` remain. Remnants therefore persist as valuable local entities for weeks rather than disappearing before a scavenger can encounter them.
@@ -302,7 +302,7 @@ released    = floor(scaledDecay / RATIO_SCALE)
 newRemainderQ = scaledDecay % RATIO_SCALE
 ```
 
-Reference rates receive a temperature/moisture multiplier. Temperature uses a versioned `Q10 = 2` lookup relative to `40 °C`, and the combined multiplier is clamped to `0.25..4.0`. Aquatic tiles use moisture multiplier `1.0`; terrestrial tiles use `0.25 + 0.75 × surfaceMoisture`. V1 does not add oxygen, acidity, or volcanic-gas decay modifiers: those would introduce feedback before decomposer and oxygen economies are calibrated.
+Reference rates receive a temperature/moisture multiplier. Temperature uses a versioned `Q10 = 2` lookup relative to `40 °C`, and the combined multiplier is clamped to `0.25..4.0`. Aquatic tiles use moisture multiplier `1.0`; terrestrial tiles use `0.25 + 0.75 × surfaceMoisture`. `LabileDissolvedOrganic` and `ReducedFermentationProducts` use the same multiplier with respective 14- and 90-day reference half-lives before becoming generic organic pools. V1 does not add oxygen, acidity, pH, or volcanic-gas decay modifiers: those require coherent environmental feedback rather than an isolated penalty.
 
 Ordinary founders have no resistant fraction. A future resistant-body or dormant-structure trait must explicitly assign a bounded fraction to the 90-day cohort and pay its construction cost. Non-founder packing changes radius but do not change decay chemistry unless a trait declares a cohort effect.
 
@@ -311,6 +311,7 @@ Ordinary founders have no resistant fraction. A future resistant-body or dormant
 Predation and scavenging transfer matter; they do not automatically turn arbitrary biomass into usable reserve. V1 distinguishes simple extraction from particulate ingestion:
 
 - `RemnantScavenging` plus compatible organic uptake may transfer already-simple reserve compounds and dissolved stores directly into their matching internal compartments, subject to acquisition throughput, action cost, and capacity.
+- Basic scavenging does not mistake `SpentReserveCarrier` for charged reserve. V1 leaves spent carriers in the remnant for passive decay; direct recovery into another organism's carrier pool is a future catalytic-scavenging extension.
 - Structural biomass and other particulate contents require `ParticulateOrganicIngestion`, nonzero `IngestedMatterBuffer` capacity, and a compatible digestion process. The acquired material retains resource identity inside that buffer.
 
 ## Basic remnant-scavenging action
@@ -326,7 +327,7 @@ The first `RemnantScavenging` action targets one same-tile remnant in feeding ra
 | Micronutrient transfer cap | `8` units per action |
 | Structural-biomass transfer | `0` without particulate ingestion |
 
-All three simple-content caps may participate in one atomic claim bundle, but each is independently limited by target contents, compatible acquisition DNA, destination capacity, and the organism's declared inventory needs. Reserve transfers retain their usable chemical energy only when the scavenger can store that same compatible carrier. Dissolved matter enters the matching available-store group. Every remnant micronutrient enters free storage; scavenging never commits it directly to structure or a catalytic quota.
+All three simple-content caps may participate in one atomic claim bundle, but each is independently limited by target contents, compatible acquisition DNA, destination capacity, and the organism's declared inventory needs. Charged reserve transfers retain their usable chemical energy only when the scavenger can store that same compatible carrier; zero-energy spent carriers are ineligible for this basic transfer. Dissolved matter enters the matching available-store group. Every remnant micronutrient enters free storage; scavenging never commits it directly to structure or a catalytic quota.
 
 The two-hour cooldown preserves the initial average ceiling of `100` reserve quanta, `128` dissolved load, and `4` micronutrients per organism-hour while reducing repetitive claims. At maximum reserve grant, one action nets `175` reserve before ordinary maintenance and supplies 3.5 hours of the founder's `50`-energy base maintenance. A roughly 4,000-reserve remnant can support at most 20 full uncontested claims before decay, other contents, and capacity are considered.
 
@@ -377,7 +378,7 @@ At primitive scale these correspond to a 250-structure-equivalent buffer, at mos
 
 An internal plan may consume digestion products immediately without first fitting the entire output into dissolved storage only when the digestion-plus-downstream reaction bundle is admitted atomically. Any unconsumed output must fit ordinary stores or be routed to declared tile waste. Undigested matter remains stored, occupies capacity, and transfers to the remnant if the consumer dies.
 
-Founder organisms have no particulate-ingestion capacity. `ParticulateOrganicIngestion` provides the buffer and external transfer, while `ParticulateDigestion` provides the first exact structural-food reaction below. General dissolved-organic uptake, fermentation, respiration, prey-size compatibility, and advanced digestive reactions remain in the mid/late-game rule pack.
+Founder organisms have no particulate-ingestion capacity. `ParticulateOrganicIngestion` provides the buffer and external transfer, while `ParticulateDigestion` provides the first exact structural-food reaction below. General dissolved-organic uptake and fermentation are fixed in [ORGANIC_UPTAKE_AND_FERMENTATION.md](ORGANIC_UPTAKE_AND_FERMENTATION.md), the first respiratory reactions are fixed in [AEROBIC_RESPIRATION.md](AEROBIC_RESPIRATION.md), and prey-size compatibility is fixed in [PREDATION.md](PREDATION.md). Additional digestive substrates remain later rule-pack work.
 
 ## First structural-food reaction
 
@@ -443,7 +444,9 @@ The alternative budding profiles above replace the primitive allocation mode and
 
 `RemnantScavenging` uses the basic `25`-energy, two-hour profile. Its child is renamed `HighThroughputRemnantScavenging` for clarity: basic scavenging already supports partial consumption. The child raises each simple-content cap to `1.5×` (`300` reserve, `384` dissolved matter-load, and `12` micronutrients), keeps the two-hour cooldown, and raises action cost to `35` energy.
 
-`ParticulateOrganicIngestion` replaces the simple action cost with `50` energy when a claim bundle includes structural matter. It unlocks the `25%` buffer and `5%`-of-mature-structure per-tick ingestion cap. `ParticulateDigestion` adds `10` energy/hour constitutive upkeep while active in the DNA and unlocks the `1%`-per-hour combined reaction above. Reaction overhead remains extent-dependent and is separate from constitutive upkeep. A scavenger unable to digest more matter may still retain it in the bounded buffer; it cannot bypass capacity by spilling unclaimed input into a hidden account.
+`ParticulateOrganicIngestion` costs `120 MP / complexity 2`, adds `10` energy/hour constitutive upkeep and a committed `Mg 5 + Ca 5` quota, and replaces the simple action cost with `50` energy when a claim bundle includes structural matter. It unlocks the `25%` buffer and `5%`-of-mature-structure per-tick ingestion cap. `ParticulateDigestion` costs `140 MP / complexity 2`, adds `10` energy/hour constitutive upkeep and a committed `Zn 5 + Fe 5` quota, and unlocks the `1%`-per-hour combined reaction above. Reaction overhead remains extent-dependent and is separate from constitutive upkeep.
+
+The ingestion quota abstracts membrane/cytoskeletal handling and calcium-mediated control; the digestion quota abstracts diverse metal-dependent hydrolytic and catabolic machinery. They are construction/provisioning requirements, not per-extent consumption. Mutation grants neither quota. A scavenger unable to digest more matter may still retain it in the bounded buffer; it cannot bypass capacity by spilling unclaimed input into a hidden account. An engulfing predation attempt's `150`-energy cost includes its immediate structural grant and does not add the separate `50`-energy scavenging action, but every later remnant-scavenging action that includes particulate matter pays `50` and starts the ordinary two-hour handling cooldown.
 
 ## Senescence modifiers
 
@@ -461,7 +464,7 @@ Micronutrients remain in their single bioavailable form and therefore return dir
 
 Passive mineralization is an explicit slow phase-2 transformation from each tile's `Organic<Element>` pool to its matching `Inorganic<Element>` pool. At the same `40 °C` aquatic reference it uses a `2,160 h` / 90-day half-life and hourly coefficient `321` per million, with the same temperature/moisture multiplier and persisted remainder as remnant decay. The conversion is one elemental quantum to one elemental quantum; it changes biological form but not CHNOPS totals, creates no usable energy, and does not emit a named gas implicitly. `SpentStructuralResidue` uses the same coefficient to debit one proportional fraction of the named residue and credit its exact constituent inorganic pools atomically.
 
-Because remnant breakdown and mineralization are sequential, ordinary structure has a 30-day remnant half-life followed by a 90-day organic-pool half-life. This leaves a long scavenging window, then an organic-resource niche, and only gradually returns material to fixation-demanding inorganic pools. Biological decomposers can accelerate a specific conversion and extract declared energy, but their reactions compete with rather than duplicate the passive flow.
+Because remnant breakdown and mineralization are sequential, ordinary structure has a 30-day remnant half-life, releases both a 14-day labile dissolved fraction and a generic remainder, and only gradually returns all unconsumed matter to fixation-demanding inorganic pools. `ReducedFermentationProducts` persist on a 90-day reference half-life before joining the generic pool. This leaves a long direct-scavenging window followed by lower-value dissolved and generic-organic niches. Biological decomposers compete with rather than duplicate each passive flow.
 
 # Determinism, observability, and tests
 
@@ -483,6 +486,6 @@ Because remnant breakdown and mineralization are sequential, ordinary structure 
 2. Prove the four decay cohorts, 90-day mineralization path, and structural-food reaction conserve every element in isolated fixtures.
 3. Validate scavenger access, handling saturation, and net population benefit against spatial encounter rates and the multi-week remnant window.
 4. Validate the frozen primitive senescence curve and evolved phase/timing modifiers in multi-generation populations.
-5. Recalibrate provisional coefficients when the mid/late-game fermentation, respiration, predation, and complex-cell fixtures expose an actual imbalance.
+5. Recalibrate provisional coefficients when the fixed organic-uptake/fermentation and respiration fixtures, or the later predation and complex-cell fixtures, expose an actual imbalance.
 
-None of these is a missing lifecycle semantic decision. The subsystem is ready to hand its fixed interfaces and first balance values to implementation and scenario validation. Mutation-point prices remain owned by the next evolution-economy pass; broader metabolic reactions remain owned by the mid/late-game rule pack.
+None of these is a missing lifecycle semantic decision. The subsystem is ready to hand its fixed interfaces and first balance values to implementation and scenario validation. Mutation-point prices remain owned by the evolution economy; broader metabolic reactions beyond organic uptake, fermentation, and the first aerobic paths remain owned by the mid/late-game rule pack.

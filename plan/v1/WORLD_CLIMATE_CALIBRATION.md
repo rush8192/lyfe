@@ -236,6 +236,8 @@ The six-extent difference is `0.053%` and is accepted as deterministic integer r
  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 ```
 
+Oxygenic photosynthesis reads this same already-attenuated aquatic-light value, applies its own `0.75` saturation cap once, and never reapplies cloud, depth, or turbidity. Its reference coefficient yields 7,772 daily extents and is defined in [OXYGENIC_PHOTOSYNTHESIS.md](OXYGENIC_PHOTOSYNTHESIS.md).
+
 With the existing 5,000 reserve, 4,000 growth floor, maintenance, reserve cap, and four-extent assembly limit, the realistic curve reaches 2,000 structure at tick `263` rather than square-fixture tick `250`. It remains `21.3%` faster than hydrogen's tick `334`. The square fixture remains a reaction/accounting isolation test; `250..275` ticks is the generated sulfur-start acceptance band.
 
 ## Light eligibility
@@ -356,6 +358,61 @@ Before freezing these values, run at least 128 named seeds and retain maps, dist
 - Hydrogen and sulfur smoke-test timings remain in range, with sulfur faster in every accepted pair.
 - The same suite is bit-identical under save/reload and every supported worker count.
 
+# Dissolved-organic exchange calibration
+
+The first dissolved field uses the actual `32 × 17` world topology with wrapped `x`, bounded `y`, one central aquatic source, uniform aquatic compatibility, no biology, and the fixed `LabileDissolvedOrganic` passive-loss coefficient of `2,061` per million per hour. Source magnitude is arbitrary for the ratio comparison because the system is linear.
+
+For each candidate, the field was iterated through source, passive loss, and stable-view symmetric exchange until the maximum per-tile change was below `10^-7` resource quantum. Ring distance is Manhattan distance on the wrapped grid.
+
+| Base exchange per edge-hour | First ring / source | Second ring / source | Third ring / source | Stock-weighted RMS distance |
+| ---: | ---: | ---: | ---: | ---: |
+| `0.025%` | `8.47%` | `1.07%` | `0.14%` | `0.70` tiles |
+| `0.050%` | `13.43%` | `2.66%` | `0.55%` | `0.99` tiles |
+| `0.075%` | `16.92%` | `4.20%` | `1.09%` | `1.21` tiles |
+| `0.100%` | `19.60%` | `5.60%` | `1.67%` | `1.39` tiles |
+| **`0.150%`** | **`23.58%`** | **`8.02%`** | **`2.85%`** | **`1.71` tiles** |
+| `0.200%` | `26.48%` | `10.03%` | `3.98%` | `1.97` tiles |
+| `0.300%` | `30.63%` | `13.23%` | `5.99%` | `2.40` tiles |
+
+`0.15%` is the highest tested value that keeps the labile first ring below `25%` and the second ring below `10%`. The selected no-biology field continues to `1.05%`, `0.39%`, `0.15%`, and approximately `0.02%` at rings four, five, six, and eight. It is locally leaky rather than globally mixed.
+
+Using the same molecular-mobility coefficient with the longer-lived `ReducedFermentationProducts` pool deliberately creates a wider future respiratory/syntrophic niche. Its 90-day passive-loss coefficient produces `41.45%`, `23.53%`, `14.06%`, and `8.70%` at rings one through four and a stock-weighted RMS distance of `4.14` tiles. The field falls to `1.59%` by ring eight, `0.81%` by ring ten, and `0.09%` by ring sixteen, so it remains non-global on the default world.
+
+## Biological interpretation
+
+A continuous source equivalent to one fully decayed mature corpse per day supplies:
+
+```text
+4,000 LabileDissolvedOrganic / 24 hours
+    = 166.667 substrate/hour
+```
+
+At the selected exchange and with no biological consumption, this produces approximately `24,910` substrate in the source tile, `5,874` as the first-ring mean, and `1,998` as the second-ring mean at steady state. When an uncapped diagnostic drain continuously consumes one tile, the field's maximum sustainable deliveries are:
+
+| Consumer location | Maximum continuing grant | Fermenter maintenance equivalents at `32.5` substrate/hour |
+| --- | ---: | ---: |
+| Source tile | `165.56/hour` | `5.09` |
+| Axial first-ring tile | `39.03/hour` | `1.20` |
+| Axial second-ring tile | `9.89/hour` | `0.30` |
+| Diagonal second-ring tile with two source paths | `16.66/hour` | `0.51` |
+| Axial third-ring tile | `2.67/hour` | `0.08` |
+
+The selected v1 fermenter plans `120` attempts and therefore requests `108` successful extents/hour on average under ideal conditions; the source field's `165.56/hour` hydraulic value is not a higher organism cap. One corpse-equivalent per day can barely maintain one first-ring fermenter and cannot maintain one in any second-ring position, before growth, stress, age, or competition. The population replacement boundary is much higher than maintenance—approximately `94.01/hour` for the hydrogen-derived profile—so the adjacent tile remains a marginal extension rather than a robust independent population source. See [POPULATION_ECOSYSTEM_VALIDATION.md](POPULATION_ECOSYSTEM_VALIDATION.md).
+
+For a fully wet coast with an aquatic source adjacent to terrestrial land, the `0.10` coast modifier produces approximately `5.00%` of source stock in the first terrestrial tile and `0.59%` in the next land tile. Same-row aquatic neighbors remain near `24–27%`. Lower surface moisture reduces coastal and terrestrial transfer linearly and dry land closes it.
+
+## Fixed values and acceptance
+
+- `DissolvedMobile` base rate is `1,500` per million per fully compatible edge-hour.
+- Aquatic/aquatic compatibility is `1.00`.
+- Aquatic/terrestrial compatibility is `0.10 × terrestrialSurfaceMoisture`.
+- Terrestrial/terrestrial compatibility is `0.25 × min(surfaceMoistureA, surfaceMoistureB)`.
+- `LabileDissolvedOrganic` and `ReducedFermentationProducts` use this profile; all other non-gas resources remain `TileBound` until explicitly reassigned.
+- No-biology labile-field tests accept first-ring `23.0..24.2%`, second-ring `7.6..8.4%`, third-ring `2.6..3.1%`, and RMS distance `1.65..1.77` tiles under exact fixed-point execution.
+- The one-corpse/day axial first-ring drain must grant `37..41` substrate/hour; every second-ring drain must remain below the `32.5` maintenance threshold.
+- A fully wet coastal first land tile must remain below `6%` of source stock and its next land tile below `1%`.
+- Exchange remains mass-conserving, iteration-order-independent, stable at maximum compatibility, and identical across save/load and worker counts.
+
 # Recalibration triggers
 
 Rerun the complete seed and biological suite after changing:
@@ -367,11 +424,11 @@ Rerun the complete seed and biological suite after changing:
 - Founder tolerances, health/stress curves, metabolism yields, quotas, uptake, reproduction, or mutation pacing.
 - Atmospheric sources, sinks, exchange, accessibility, or volcanic emission profiles.
 - Starting-pair eligibility, repair weights, repair budget, or required pair count.
-- Non-gas transport and remnant recycling once those systems are calibrated.
+- Dissolved-organic transport or remnant recycling coefficients.
 
 # Remaining decisions
 
 - Validate or revise every distribution target against actual 128-seed generated maps.
 - Decide exact coarse bands exposed in reduced exploration views.
-- Calibrate dissolved non-gas exchange and runoff if retained. Remnant decay and passive mineralization are now owned by [LIFECYCLE_AND_RECYCLING.md](LIFECYCLE_AND_RECYCLING.md).
+- Decide whether any additional non-gas resources need passive mobility. Dissolved-organic exchange is fixed; directional runoff remains deferred. Remnant decay and passive mineralization are owned by [LIFECYCLE_AND_RECYCLING.md](LIFECYCLE_AND_RECYCLING.md).
 - Decide whether volcanic pulses need an opening grace rule after real Survival playtests; the first candidate has no artificial grace but starts with no active pulse.

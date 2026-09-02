@@ -34,6 +34,8 @@ Live tile inspection must include historical views of key resource quantities an
 
 The species panel should explain mutation-point income as a breakdown of the three governing inputs: total population, average relative health, and modifiers from DNA capabilities. It should show the current generation rate and available balance without requiring the player to infer them from population changes.
 
+Before speciation, the evolution view should show the exact number of founders selected in each tile, how many ancestor organisms remain, the mutation price and change complexity, the balance retained by both branches, and the next eligible speciation time. Very small or poorly activated founder groups should be explicit warnings rather than hidden rejection rules when the transaction remains valid.
+
 # Tree of Life
 
 The authoritative lineage record contains the world's complete tree of life, including living and extinct species. Its presentation begins at a non-species abiogenesis origin with one sandbox root or two independent survival roots. Each speciation edge should make the ancestor-descendant relationship clear. Species identity and ancestry may remain visible without revealing organisms or exact tile state, but operational details such as locations, health, local populations, and mutation-point balance remain constrained by player knowledge. Nodes should show controller and sandbox mutation-lock state where applicable and only the detailed state the actor is authorized to inspect.

@@ -1,6 +1,6 @@
 # Spatial Numerical Calibration
 
-Status: provisional v1 founder-scale, Brownian, sensing, interaction, placement, and active-speed rule-pack candidate; clustered population fixtures required before freezing
+Status: provisional v1 founder-scale, passive-spread, sensing, interaction, placement, active-speed, turning, and movement-energy rule-pack candidate; clustered population fixtures required before freezing
 
 Sources: [spatial organism contract](SPATIAL_ORGANISMS_AND_BEHAVIOR.md), [organism mechanics](ORGANISMS.md), [trait catalogue](TRAIT_CATALOGUE.md), [organism health calibration](ORGANISM_HEALTH_CALIBRATION.md), and [simulation loop](SIMULATION_LOOP.md).
 
@@ -30,16 +30,19 @@ The simulation uses a three-dimensional biomass-inspired cube-root relationship 
 
 ```text
 bodyRadiusQ = compiledMatureRadiusQ
-            * cbrt(currentViableStructure / compiledMatureStructure)
+            * cbrt(currentGeometricStructure
+                   / compiledGeometricStructureTarget)
             * authoredShapeMultiplier
 
 Primitive compiledMatureRadiusQ = FounderRadiusQ
-Primitive compiledMatureStructure = 1,000
+Primitive compiledGeometricStructureTarget = 1,000
 ```
 
 The authoritative implementation uses a versioned monotone fixed-point lookup or integer cube-root routine, not runtime floating point. Radius is derived and rounded to nearest with ties to even. A nonempty living organism has a minimum radius of `0.25 × FounderRadiusQ`; configured body-scale traits impose the upper bound.
 
-The first organization targets are:
+`compiledGeometricStructureTarget` is owned only by physical cell-scale traits. Total `compiledMatureStructure` may be higher because walls, internal membranes, compartments, organelles, or other organization adds matter at the same external scale. The organism therefore assigns its one conserved `StructuralBiomass` resource between `geometricStructure` and `organizationStructure`; their sum is viable structure, but only the geometric assignment affects radius. Speciation preserves both assignments and growth fills destination deficits explicitly, so organization matter can never be reinterpreted as free body volume. The exact assignment, growth, reproduction, and remnant rules are defined in [COMPLEX_CELL_CALIBRATION.md](COMPLEX_CELL_CALIBRATION.md).
+
+The first physical-scale targets are:
 
 | Cellular organization | Mature structure target | Mature-radius multiplier |
 | --- | ---: | ---: |
@@ -47,7 +50,9 @@ The first organization targets are:
 | `IncreasedCellScaleI` | `3,375` | `1.50×` |
 | `IncreasedCellScaleII` | `11,391` | `2.25×` |
 
-The second structure target rounds `1,000 × 2.25³ = 11,390.625` upward. Because both numerator and compiled target change, an existing `1,000`-structure organism that speciates into `IncreasedCellScaleI` initially retains approximately its old physical radius and must actually assemble the additional matter to reach `1.50×`. These targets express the geometric cost of scale; metabolic throughput, storage, ingestion, maintenance, and reproduction must be recalibrated so larger cells gain useful ceilings rather than only a longer growth bar.
+The second structure target rounds `1,000 × 2.25³ = 11,390.625` upward. Because both numerator and geometric target change, an existing `1,000`-structure organism that speciates into `IncreasedCellScaleI` initially retains approximately its old physical radius and must actually assemble the additional matter to reach `1.50×`. These targets express the geometric cost of scale; metabolic throughput, storage, ingestion, maintenance, and reproduction must be recalibrated so larger cells gain useful ceilings rather than only a longer growth bar.
+
+By contrast, acquiring `CompartmentalizedCell` while staying at primitive scale leaves `compiledGeometricStructureTarget = 1,000` and `compiledMatureRadiusQ = FounderRadiusQ` even though the organization multiplier raises total mature structure. A founder retains its 1,000-unit geometric assignment and physical radius while it builds organization structure. If scale and organization are acquired together, normalized assignment deficits deterministically divide new structure between body expansion and organization without either receiving free matter. See [COMPLEX_CELL_CALIBRATION.md](COMPLEX_CELL_CALIBRATION.md).
 
 A primitive organism at the `2,000` pre-fission structure threshold has radius `cbrt(2) = 1.2599×` its mature post-split radius. After a symmetric split, both `1,000`-structure organisms return to approximately `1.00×` radius.
 
@@ -74,12 +79,13 @@ brownianRmsQ = FounderBrownianRmsQ
              * sqrt(FounderRadiusQ / currentBodyRadiusQ)
              * mediumBrownianMultiplier
              * lifecycleBrownianMultiplier
+             * compiledEnvironmentalSpreadMultiplier
              * sqrt(tickDurationHours)
 ```
 
 Authoritative square-root factors use checked integer square root or a versioned monotone lookup with declared rounding. Runtime platform floating point does not determine displacement.
 
-The first aquatic active-lifecycle medium multiplier is `1.0`. Attachment and resistant dormancy may set the lifecycle multiplier to zero; ordinary dormancy provisionally uses `0.25`. Terrestrial and surface-associated multipliers remain tied to their future movement fixtures.
+The first aquatic active-lifecycle medium multiplier is `1.0`. Resistant dormancy may set the lifecycle multiplier to zero; ordinary dormancy provisionally uses `0.25`. Terrestrial and surface-associated multipliers remain tied to their future movement fixtures. The environmental-spread multiplier is a DNA effect and defaults to `1.0`; it is separate from medium and lifecycle state so later regulation can choose an attachment or dispersal state without pretending that the tile's physics changed.
 
 For mature organization targets in the same aquatic state, Brownian RMS is approximately:
 
@@ -90,6 +96,22 @@ For mature organization targets in the same aquatic state, Brownian RMS is appro
 | `IncreasedCellScaleII` | `0.001302` | `1.333 R₀` |
 
 Brownian movement remains phase-local and uncharged. It does not become persistent velocity or provide a sensed direction.
+
+## Environmental-spread profiles
+
+`EnvironmentalSpread` is the player-facing abstraction for how strongly an organism couples to unresolved, zero-mean environmental agitation. It modifies the calibrated Brownian-like component; it does not create a current, choose a direction, reveal neighboring conditions, or alter the probability of crossing an otherwise identical compatible edge a second time.
+
+| Profile | MP / complexity | Passive RMS multiplier | Active-speed multiplier | Added upkeep/hour | Intended role |
+| --- | ---: | ---: | ---: | ---: | --- |
+| Free suspension | Inherent baseline | `1.00` | `1.00` | `0` | General default |
+| `EnvironmentalAnchoring` | `40 / 1` | `0.25` | `0.50` | `2` | Retain local position and population clustering |
+| `EnvironmentalDrifting` | `60 / 1` | `1.50` | `1.00` | `3` | Increase uncontrolled encounters and geographic spread |
+
+The two acquired profiles are sibling alternatives and are mutually incompatible in v1. Anchoring is constitutive: if combined with locomotion, the active-speed penalty represents working against adhesion rather than cost-free attach/detach control. Drifting remains compatible with locomotion, but its random component is not cancelled by the desired active vector and therefore reduces fine positional control naturally. Added upkeep is constitutive and pays for adhesion, buoyancy, shape, or other maintained coupling machinery; passive distance itself remains uncharged.
+
+The baseline one-hour `2 R₀` RMS therefore becomes `0.5 R₀` while anchored and `3 R₀` while drifting for a mature primitive aquatic organism. Mean squared displacement over a fixed period scales with the square of these multipliers: approximately `0.0625x` baseline for anchoring and `2.25x` for drifting. At equal scale, the calibrated random magnitude remains capped at `9 R₀` after the largest v1 multiplier.
+
+`RegulatedAttachmentRelease` is a future node that may switch between resident and dispersive lifecycle states based on behavior or season. It must pay materially more than either constitutive profile and requires metabolic or behavioral regulation; v1 does not permit free per-tick switching.
 
 # Interaction and sensing ranges
 
@@ -103,7 +125,7 @@ Brownian movement remains phase-local and uncharged. It does not become persiste
 | `RemnantScavenging.feedingReach` | `2.0 Rₘ` | `0.001953` for primitive scavenger | Founder-sized remnant is eligible within `3.0 R₀` |
 | `NearbyOrganismDetection` | `8 R₀` | `0.0078125` | Short-range organism detection |
 | `RemnantDetection` | `16 R₀` | `0.015625` | Finds sparse cohesive remains |
-| `PreyThreatDiscrimination` | `16 R₀` | `0.015625` | Classification range after organism detection |
+| `PreyThreatDiscrimination` | `16 R₀` | `0.015625` | Extend relevant organism detection and classify prey/threat cues |
 | `ExtendedRangeSensing` ceiling | `32 R₀` | `0.03125` | Maximum first-v1 within-tile entity-sensing radius |
 
 For the primitive founder, the exact `LocalCoordQ` encodings are:
@@ -123,6 +145,8 @@ The `16 × 16` spatial-index bin width is `64 R₀`, so the longest v1 entity-se
 
 `ContactDetection` uses the applicable contact threshold rather than a separate circular sense. `ExtendedRangeSensing` doubles the inherited entity-sensing range but cannot exceed `32 R₀`. Chemical condition sensing remains tile-wide, and directional environmental sensing compares permitted neighboring-tile summaries; neither creates an entity interaction across a tile edge.
 
+`PreyThreatDiscrimination` extends its inherited organism-detection query to `16 R₀` for organisms that can be classified through its declared visible cues. It does not reveal or classify unrelated hidden state at that distance.
+
 Predation and scavenging use current target radius in their exact final threshold. Improving capture machinery may raise `captureReach` to `3 Rₘ` and then `4 Rₘ`, but it must pay corresponding structure, upkeep, or attempt-energy costs. Engulfment remains a contact action and does not inherit the longest capture reach.
 
 # Reproduction placement
@@ -141,16 +165,49 @@ For an equal founder split this is `2.5 R₀`, exactly the first contact thresho
 
 Active movement is intentionally faster and directional but remains local relative to a tile:
 
-| Capability | Maximum active displacement/hour | Founder-radius units | Directed time from tile center to an edge |
-| --- | ---: | ---: | ---: |
-| `ActiveMotility` | `1/256 = 0.003906` tile | `4 R₀` | `128 h` |
-| `FlagellarPropulsion` | `1/128 = 0.007812` tile | `8 R₀` | `64 h` |
-| `EfficientCruising` | `1/128 = 0.007812` tile | `8 R₀` | `64 h`, lower energy cost |
-| `SurfaceGliding` | `3/512 = 0.005859` tile | `6 R₀` | `85.3 h` on eligible surfaces |
-| `BurstPropulsion` | `3/128 = 0.023438` tile | `24 R₀` | `21.3 h`, high short-lived cost |
-| `AdvancedPropulsion` | `1/64 = 0.015625` tile | `16 R₀` | `32 h` before body-scale modifiers |
+| Capability | MP / complexity | Speed (`R₀/hour`) | Acceleration (`R₀/hour²`) | Maximum heading change/hour | Energy per `R₀` before scale | Total locomotion upkeep/hour |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `ActiveMotility` | `60 / 1` | `4` | `2` | `90°` | `5` | `5` |
+| `FlagellarPropulsion` | `100 / 2` | `8` | `4` | `90°` | `4` | `10` |
+| `EfficientCruising` | `100 / 2` | `8` | `3` | `60°` | `2.5` | `15` |
+| `SurfaceGliding` | `100 / 2` | `6` | `3` | `90°` | `2` | `10` |
+| `BurstPropulsion` | `120 / 2` | `24` | `24` | `180°` | `10` | `15` |
+| `AdvancedPropulsion` | `180 / 3` | `16` | `8` | `120°` | `3` | `20` |
 
-These are displacement ceilings, not default continuous speeds. Behavior, acceleration/turning limits, health, environment, reserve affordability, and action intent determine realized movement. Energy costs and turning values remain the next calibration because they depend on the internal energy economy and behavior state machine.
+The speed values preserve the earlier absolute displacements: `4`, `8`, `6`, `24`, and `16 R₀/hour` equal `1/256`, `1/128`, `3/512`, `3/128`, and `1/64` of a tile. They are ceilings, not default continuous speeds. Starting from rest may choose any heading but can add no more than the profile's acceleration. A moving organism first clamps heading change, then speed change, then affordable distance. `BurstPropulsion` can reverse and reach its ceiling in one tick; its high distance cost prevents continuous use. `SurfaceGliding` is eligible only on its configured surface class.
+
+The active profile replaces its ancestor's speed, distance cost, and locomotion upkeep rather than adding all ancestor values. Other independently selected movement machinery remains additive only when its typed effect explicitly says so. `AdvancedPropulsion` requires `ProtoEukaryoticOrganization`; v1 accounts for its protein/membrane construction in the organism's organization structure rather than adding another micronutrient quota.
+
+## Movement-energy scaling
+
+Active movement pays for realized active displacement only:
+
+```text
+effectiveScaleRadiusQ = clamp(
+    currentBodyRadius / FounderRadius,
+    minimum = 1.0,
+    maximum = compiledMatureRadius / FounderRadius)
+
+bodyAreaMultiplierQ = square(effectiveScaleRadiusQ)
+
+movementEnergy = ceil(
+    realizedActiveDistanceInFounderRadii
+    * activeProfile.energyPerFounderRadius
+    * bodyAreaMultiplierQ
+    * mediumCostMultiplierQ)
+```
+
+Brownian displacement remains free. The effective scale radius tracks actual construction during a scale transition but is clamped to the compiled phenotype's mature radius; transient pre-fission surplus therefore does not rewrite an inherited movement profile. The first open-water and ordinary terrestrial-medium multiplier is `1.0`; `SurfaceGliding` uses `0.75` on an eligible surface after its table cost, and is ineligible elsewhere. The ceiling is applied once to the complete tick cost, so splitting one movement vector into boundary segments cannot change the debit. An organism unable to afford the requested movement shortens its active vector to the greatest whole-coordinate distance whose complete rounded cost it can pay.
+
+Using physical area rather than volume is a biology-inspired abstraction for drag and membrane propulsion. At mature Scale I and Scale II, the area multipliers are `2.25` and `5.0625`. Continuous maximum `AdvancedPropulsion` therefore costs:
+
+| Body scale | Distance/hour | Movement energy/hour | Current radii/hour |
+| --- | ---: | ---: | ---: |
+| Primitive | `16 R₀` | `48` | `16.0` |
+| Scale I (`1.5 R₀` radius) | `16 R₀` | `108` | `10.7` |
+| Scale II (`2.25 R₀` radius) | `16 R₀` | `243` | `7.1` |
+
+Larger cells retain the same absolute speed ceiling but travel fewer body lengths and pay more energy. `AdvancedPropulsion` is consequently useful rather than mandatory: a Scale-I `EfficientCruising` organism moving at `8 R₀/hour` pays `45/hour`, while the advanced profile pays `108/hour` only when it realizes the full doubled speed.
 
 # Encounter-rate calculation
 
@@ -179,6 +236,18 @@ With 100 uniformly initialized founders, the versioned 256-direction/256-magnitu
 
 For a uniformly mixed population of 100, the same Brownian scale produces approximately `5.29` total boundary intersections per day before habitat gates or passive-permeability probability. This is enough to make passive spread possible without making a successful cross-tile transition automatic. The migration pass should initially target approximately `5%..15%` success on a maximally compatible purely Brownian crossing, yielding roughly `0.26..0.79` passive migrations per 100-organism day before population clustering and edge effects.
 
+Boundary intersections are approximately linear in RMS displacement for a uniform population and small steps. The first environmental-spread hypotheses therefore produce:
+
+| Profile | Raw boundary intersections per 100/day | Successful passive migrations at `5%..15%` |
+| --- | ---: | ---: |
+| Anchored `0.25x` | `1.32` | `0.07..0.20` |
+| Baseline `1.00x` | `5.29` | `0.26..0.79` |
+| Drifting `1.50x` | `7.94` | `0.40..1.19` |
+
+These are first-order uniform-density estimates, not golden simulation outputs. Anchoring and drifting will change clustering, encounter persistence, predation, scavenging, and reproduction neighborhoods, so the executable population fixture must measure those emergent effects rather than scaling every result linearly.
+
+As an order-of-magnitude comparison, an organism beginning near a tile center must cover roughly `512 R₀` to reach an edge. Equating that distance to random-walk RMS gives about 120 years for the anchored profile, 7.5 years at baseline, and 3.3 years for the drifting profile without reproduction. Basal active motility moving directly at `4 R₀/hour` covers the same distance in about 128 hours. These are explanatory scale estimates rather than first-passage guarantees; population growth supplies many simultaneous passive trials and is therefore central to the passive strategy.
+
 # Acceptance targets
 
 - A uniform 100-founder isolated tile produces `1..4` contact-positive pair snapshots per day averaged across at least 30 days.
@@ -186,6 +255,8 @@ For a uniformly mixed population of 100, the same Brownian scale produces approx
 - `NearbyOrganismDetection` produces approximately `15..35` pair opportunities per 100-organism day before capability and classification filters.
 - The complete Brownian table has exact zero signed expectation per axis and configured RMS within one `LocalCoordQ` unit after integer normalization.
 - A compatible purely Brownian boundary attempt succeeds rarely enough that active locomotion remains the reliable migration strategy.
+- Anchored, baseline, and drifting populations preserve zero signed displacement expectation while reproducing their configured `0.25`, `1.0`, and `1.5` RMS multipliers.
+- The first 100-organism uniform fixture keeps anchored, baseline, and drifting raw boundary intersections near `1.32`, `5.29`, and `7.94` per day before crossing admission; active directed migration remains more reliable than every passive profile.
 - No v1 entity-sensing or action range exceeds `1/32` of a tile without a new spatial-index and gameplay review.
 - At the uniform 100,000-organism benchmark, exact-distance filtering examines far fewer candidates than a tile-wide scan; clustered 1,000- and 10,000-organism tiles receive separate worst-case measurements.
 
@@ -193,8 +264,8 @@ For a uniformly mixed population of 100, the same Brownian scale produces approx
 
 Rerun analytic, Monte Carlo, population, and performance fixtures after changing:
 
-- Tile-local scale, tick duration, body radius, structure targets, body-scale traits, or radius derivation.
-- Brownian direction/magnitude tables, size/medium/lifecycle multipliers, or boundary response.
+- Tile-local scale, tick duration, body radius, geometric or total structure targets, body-scale traits, organization traits, or radius derivation.
+- Brownian direction/magnitude tables, size/medium/lifecycle/environmental-spread multipliers, or boundary response.
 - Spawn distance, sensing ranges, capture/feeding reach, or spatial-bin dimensions.
 - Active movement speed, movement energy, turning, migration permeability, or behavior selection.
 - Predation, scavenging, reproduction, remnant decay, population density, or maximum organism count.
@@ -202,8 +273,7 @@ Rerun analytic, Monte Carlo, population, and performance fixtures after changing
 
 # Remaining decisions
 
-- Final active-movement energy per distance, acceleration, and turning limits.
-- Exact active and passive migration probability curves and costs within the proposed `5%..15%` compatible Brownian range.
-- Capture-reach upgrades, ingestion timing, and size-compatibility curves for predation/scavenging traits.
-- Terrestrial, surface-attached, dormant, and later current-driven displacement fixtures.
+- Exact active and passive migration probability curves and costs within the proposed `5%..15%` compatible passive range.
+- Final capture-reach upgrades after testing the first size-compatibility, hunting, feeding, and engulfment profiles in [PREDATION.md](PREDATION.md).
+- Terrestrial, dormant, and later directional current-driven displacement fixtures; the first abstract anchoring/drifting multipliers are now specified.
 - Whether the `MiniaturizedCell` future branch is needed after founder encounter and scarcity playtests.

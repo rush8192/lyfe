@@ -1,6 +1,6 @@
 # Spatial Organisms and Behavior
 
-Status: first v1 spatial semantics, entity-placement, indexing, movement-boundary contract, and numerical scale; movement energy, migration odds, and behavior policy pending
+Status: first v1 spatial semantics, entity-placement, indexing, movement-boundary contract, numerical scale, and active-movement economics; migration odds and general behavior policy pending
 
 Sources: [organism mechanics](ORGANISMS.md), [simulation loop](SIMULATION_LOOP.md), [organism state](ORGANISM_STATE_AND_HEALTH.md), [world and climate](WORLD_AND_CLIMATE.md), [trait catalogue](TRAIT_CATALOGUE.md), [spatial calibration](SPATIAL_CALIBRATION.md), and [WORLD vision](../../vision/WORLD.md).
 
@@ -149,7 +149,9 @@ ResolveMovement(organism, desiredVelocity, tickDuration, environment):
     activeRequested = ScaleVelocity(desiredVelocity, tickDuration)
     activeCapped = ClampToCompiledSpeedAndAffordableDistance(activeRequested)
     brownian = SampleBrownianDisplacement(organism, tick, environment)
-    requested = CheckedVectorAdd(activeCapped, brownian)
+    environmental = SampleEnvironmentalDisplacement(organism, environment)
+                    # exactly zero in v1
+    requested = CheckedVectorAdd(activeCapped, brownian, environmental)
     trace = TraceToFirstTileBoundary(position, requested)
 
     if trace reaches no boundary:
@@ -176,11 +178,11 @@ Migration has two layers:
 1. Hard eligibility rejects absent neighbors and habitat transitions the organism cannot physically occupy, such as an aquatic founder entering dry land without a matching capability.
 2. A rule-pack probability may combine edge compatibility, crossing class, movement capability, lifecycle, health, and environmental stress. A nonzero admitted active component uses the active-attempt curve; a purely Brownian crossing uses the passive-permeability curve. Each actual boundary attempt receives one keyed draw.
 
-Failure leaves the organism in the source tile. A failed purely Brownian crossing reflects the unused normal component back into the source tile so unbiased random motion does not accumulate organisms against an impermeable boundary. An active failed attempt stops just inside the boundary and retains only permitted tangential movement. Exact migration probabilities, active attempt cost, and environmental compatibility curves remain the next numerical decisions. Direct interactions use the organism's final post-movement tile and position.
+Failure leaves the organism in the source tile. A failed purely Brownian crossing reflects the unused normal component back into the source tile so unbiased random motion does not accumulate organisms against an impermeable boundary. An active failed attempt stops just inside the boundary and retains only permitted tangential movement. Realized active distance—including distance spent reaching a failed boundary attempt—pays the movement-energy rule in [SPATIAL_CALIBRATION.md](SPATIAL_CALIBRATION.md). Exact migration probabilities, any additional active crossing cost, and environmental compatibility curves remain later numerical decisions. Direct interactions use the organism's final post-movement tile and position.
 
 # Brownian and other passive movement
 
-Eligible organisms receive a small Brownian-like displacement on every tick, including organisms without `ActiveMotility`. It represents directionless local agitation and diffusion, not a simulated current. Because tiles have no physical length scale, its magnitude is a gameplay-calibrated random-walk abstraction rather than a claim to reproduce a literal molecular diffusion coefficient:
+Eligible organisms receive a small Brownian-like displacement on every tick, including organisms without `ActiveMotility`. It represents directionless local agitation, diffusion, and unresolved small-scale environmental jostling—not a simulated current. Because tiles have no physical length scale, its magnitude is a gameplay-calibrated random-walk abstraction rather than a claim to reproduce a literal molecular diffusion coefficient:
 
 ```text
 SampleBrownianDisplacement(organism, tick, environment):
@@ -194,6 +196,7 @@ SampleBrownianDisplacement(organism, tick, environment):
                                        compiledBodyScale,
                                        mediumClass,
                                        lifecycle,
+                                       compiledEnvironmentalSpreadProfile,
                                        tickDuration)
     return FixedPointVector(direction, magnitude)
 ```
@@ -207,13 +210,33 @@ Brownian displacement:
 - carries no direct active-movement energy charge; baseline passive maintenance already accounts for ordinary existence in the medium;
 - does not create or modify the organism's persistent active velocity;
 - normally decreases as compiled body scale increases and may be reduced to zero by attachment, resistant dormancy, or another declared anchoring effect;
+- is multiplied by a DNA-defined environmental-spread profile: baseline `1.0`, constitutive anchoring `0.25`, or constitutive drifting `1.5` in the first v1 calibration;
 - has no directional environmental bias and cannot be used as a resource-gradient signal;
 - may reach a tile edge and attempt a passive crossing through the ordinary hard habitat gates and a configured passive-permeability probability;
 - is bounded with active displacement so an organism crosses at most one edge per tick.
 
 Evolved locomotion remains valuable because it adds controllable direction, greater speed, pursuit/escape effects, and reliable edge access. Brownian motion alone produces slow diffusive spread and cannot deliberately seek prey, remains, resources, or favorable neighboring tiles.
 
-Remnants remain stationary in v1. Directed currents, sinking, buoyancy, surface attachment, and other coherent passive transport are future mechanics represented through a separate `EnvironmentalDisplacement` component. Any future component must use the same boundary trace, migration eligibility, conservation rules, and deterministic key domains; it cannot teleport an entity between tile centers.
+Remnants remain stationary in v1. Directional currents, sinking, buoyancy, and other coherent passive transport remain future mechanics represented through a separate `EnvironmentalDisplacement` component. The v1 environmental-spread profile modifies only the zero-mean Brownian-like component and does not populate that directional field. Any future component must use the same boundary trace, migration eligibility, conservation rules, and deterministic key domains; it cannot teleport an entity between tile centers.
+
+## Dispersal strategies and extension point
+
+V1 supports two meaningfully different routes to geographic spread without adding another movement component:
+
+1. **Active dispersal:** locomotion and sensing pay upkeep and realized-distance energy for faster, directional edge access.
+2. **Population-driven passive dispersal:** reproduction creates more independent organisms sampling free zero-mean Brownian-like motion; inherited environmental coupling can favor anchoring or drifting, and some organisms eventually reach compatible edges and migrate without directional control.
+
+The latter is not a hidden species-level population transfer. Every migrant is one ordinary organism whose identity, position, resources, age, and health cross through the same boundary trace. Faster reproduction can therefore improve lineage spread while increasing local resource pressure; passive migration can also place an organism into a stressful tile. The first `EnvironmentalAnchoring` and `EnvironmentalDrifting` profiles are constitutive sibling choices, so staying local and spreading farther are both explicit evolutionary commitments rather than a hidden species setting.
+
+Future environment-exploiting strategies compile a nonzero coupling to the already reserved `EnvironmentalDisplacement` component:
+
+```text
+EnvironmentalDisplacement =
+    worldTransportVector(tile, time, medium)
+    * organismEnvironmentalCoupling(DNA, lifecycle, structure)
+```
+
+Candidate traits include buoyancy control, resistant or windborne propagules, current-borne drifting, and attachment/release cycles. The world supplies the transport vector; DNA supplies coupling and lifecycle eligibility. Passive distance has no active movement debit, but traits may impose structure, transition energy, dormancy, reduced feeding, environmental risk, or loss of directional control. Environmental transport must remain deterministic, cross at most one edge per v1 tick unless a later rule explicitly revises that bound, and use ordinary habitat compatibility and migration admission. Its contribution and the resulting migration cause must be observable separately from active and Brownian movement.
 
 # Spatial observation for behavior
 
@@ -230,11 +253,11 @@ LocalObservation:
     reachableEdges[]
 ```
 
-`ContactDetection` exposes contact-range entities without classifying distant targets. Later senses increase range or distinguish organism, prey, threat, remnant, and directional environmental signals. Tile-wide chemical sensing observes permitted tile-level values; it does not fabricate a direction toward a well-mixed resource. Directed environmental sensing may compare the current tile with permitted neighboring-tile summaries and choose an edge, but it does not reveal hidden exact conditions beyond the sensing capability.
+`ContactDetection` exposes entities inside the ordinary contact threshold. When paired with an active contact-capture or feeding mechanism, it also exposes otherwise targetable entities inside that mechanism's capture/feeding reach, without classifying distant targets or internal condition. Later senses increase range or distinguish organism, prey, threat, remnant, and directional environmental signals. Tile-wide chemical sensing observes permitted tile-level values; it does not fabricate a direction toward a well-mixed resource. Directed environmental sensing may compare the current tile with permitted neighboring-tile summaries and choose an edge, but it does not reveal hidden exact conditions beyond the sensing capability.
 
 A behavior target stores a stable typed entity ID, edge, or tile-local point plus the tick at which it was selected. At intent evaluation, the target is resolved against the current post-movement snapshot. Missing, consumed, out-of-range, newly ineligible, or different-tile targets cause the targeted intent to be omitted; they never redirect implicitly to a different entity. Behavior may select a new target at phase 9.
 
-The exact behavior-state set, priority/utility selection, target sampling, conservation thresholds, and stochastic exploration policy remain the next deep-dive section. Whatever policy is chosen must use keyed draws and stable candidate ordering rather than spatial-index iteration accident.
+The first predation-specific `Hunting` and `Fleeing` states, utility inputs, target hysteresis, keyed sampling, and next-tick pursuit/escape semantics are defined in [PREDATION.md](PREDATION.md). The general non-predation behavior-state set, conservation thresholds, migration choices, and cross-behavior priority policy remain a later deep dive. Every policy uses keyed draws and stable candidate ordering rather than spatial-index iteration accident.
 
 # Future localized fields
 
@@ -283,16 +306,17 @@ In v1, the first call resolves the tile-wide pool, the second returns no gradien
 - [x] Uniform `16 × 16` derived bins with exact post-filtering and stable ordering.
 - [x] Separate post-movement interaction and end-of-tick behavior-observation views.
 - [x] Deterministic setup, offspring, speciation, death, and remnant-placement semantics.
-- [x] Stationary remnants and default zero-mean Brownian organism displacement in v1; no coherent passive drift or current.
+- [x] Stationary remnants and DNA-scaled zero-mean Brownian-like organism displacement in v1; no coherent directional drift or current.
 - [x] At most one edge migration per organism-tick, with `x` corner tie-break and bounded `y`.
 - [x] Position-aware resource interface retained for future localized fields without enabling gradients in v1.
 - [x] First founder body radius, structure-to-radius curve, Brownian RMS, interaction/sensing ranges, reproduction placement, and active-distance ceilings; see [SPATIAL_CALIBRATION.md](SPATIAL_CALIBRATION.md).
+- [x] First constitutive environmental-spread profiles: baseline suspension, anchoring, and drifting; profile choice changes passive RMS and may constrain active speed without changing direction or crossing admission.
 
 # Next decisions
 
-1. Active movement energy, acceleration, and turning values for the proposed speed ceilings.
-2. Migration hard gates, active and passive compatibility curves, attempt cost, and final probability bounds.
-3. Baseline behavior states and the deterministic/stochastic selection model.
-4. Target selection within sensed candidates, including whether organisms prefer nearest, weakest, richest, or a weighted keyed sample.
-5. Capture-reach upgrades, predation/scavenging size compatibility, and non-founder remnant packing profiles.
-6. Spatial performance acceptance at clustered—not merely uniform—100,000-organism workloads.
+1. Migration hard gates, active and passive compatibility curves, attempt cost, and final probability bounds.
+2. Baseline non-predation behavior states and the cross-behavior deterministic/stochastic selection model; hunting and fleeing are specified in [PREDATION.md](PREDATION.md).
+3. Target selection within sensed candidates, including whether organisms prefer nearest, weakest, richest, or a weighted keyed sample.
+4. Final capture-reach upgrades, scavenging size compatibility, and non-founder remnant packing profiles; first predation size rules are specified in [PREDATION.md](PREDATION.md).
+5. Spatial performance acceptance at clustered—not merely uniform—100,000-organism workloads.
+6. Post-v1 directional environmental transport fields and regulated or lifecycle-specific successors to the first constitutive passive-spread traits.

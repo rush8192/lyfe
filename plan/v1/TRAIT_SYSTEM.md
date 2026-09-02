@@ -1,6 +1,6 @@
 # DNA Trait Graph and Compilation
 
-Status: v1 implementation policies decided and initial catalogue proposed; concrete file/runtime schemas and final numeric rule pack pending
+Status: v1 implementation policies and first evolution-economy scales decided; concrete file/runtime schemas and catalogue-wide numeric calibration pending
 
 Sources: [ORGANISMS vision](../../vision/ORGANISMS.md), [evolution plan](EVOLUTION.md), [organism plan](ORGANISMS.md), [configuration plan](CONFIGURATION_AND_BALANCE.md), and [resource model](RESOURCE_MODEL.md).
 
@@ -109,7 +109,7 @@ An indirect or cross-family effect uses the same typed vocabulary but names anot
 
 - A wall trait can add structural defense, chemical tolerance, mature biomass, and maintenance cost.
 - A flagellar trait can add a movement mode, velocity, construction quota, passive upkeep, and energy cost per distance.
-- A compartment trait can unlock a storage node and add structural and maintenance overhead.
+- A compartment trait can unlock a storage node, raise the shared internal-processing budget, and add structural and maintenance overhead.
 - An oxygen-respiration trait can enable an internal reaction while adding oxygen-uptake and tolerance prerequisites.
 
 Every compiled contribution retains its source `TraitId` and whether it was direct or cross-family. The client can therefore explain a final value as a breakdown rather than showing an unexplained aggregate.
@@ -122,10 +122,12 @@ Fundamental organism attributes are compiled once per species. The first catalog
 - Energy-reserve and nutrient-store capacities.
 - Baseline maintenance and stress multipliers.
 - Environmental preferred ranges, soft limits, hard limits, and death curves.
-- Movement modes, velocity, acceleration, terrain compatibility, and cost.
+- Movement modes, velocity, acceleration, terrain compatibility, cost, and zero-mean passive environmental-coupling profile.
 - Sensing signals, ranges, precision, and recurring cost.
 - Acquisition tags and throughput.
+- Resource-specific ordinary contention weights, defaulting to one and merged once per organism/resource claim group.
 - External capture and internal reaction availability, throughput, probability, and yield.
+- Shared internal-processing budget and each internal process's integer load per admitted opportunity or deterministic extent.
 - Reserve-mobilization and biomass-assembly throughput.
 - Metabolic-process binding durations, allocation tiers, relative weights, and bounded resource holdbacks.
 - Lifecycle, maturity, dormancy, senescence, and reproduction parameters.
@@ -137,7 +139,7 @@ Energy cost must be attributed to named channels rather than folded into one opa
 
 | Cost channel | Example contributors |
 | --- | --- |
-| `BaselineMaintenance` | Cell scale, organization, constitutive machinery |
+| `BaselineMaintenance` | Cell scale, organization, constitutive anchoring or drifting machinery |
 | `EnvironmentalStress` | Temperature, moisture, toxic exposure |
 | `LocomotionUse` | Propulsion type, distance, terrain |
 | `SensingUpkeep` | Active signals, range, precision |
@@ -194,6 +196,8 @@ Speciation changes the selected founders' species/DNA reference but does not cre
 - Reproduction must provide an offspring with the descendant DNA's minimum viable structure and quotas; otherwise the reproduction transaction is invalid.
 - An organism below a new mature target may grow toward it. Falling below the hard minimum-viable target produces deterministic `StructuralFailure` under the first organism-health calibration rather than creating free structure; see [ORGANISM_HEALTH_CALIBRATION.md](ORGANISM_HEALTH_CALIBRATION.md).
 
+At the phase-5 pre-external allocation barrier, an organism deterministically promotes matching free micronutrients into any deficit in its compiled committed-quota vector. Promotion follows canonical `ResourceId` order, moves existing matter from `AvailableStore` to `Structure`, and never creates matter, spends energy, or copies a catalyst. It is irreversible for the organism's lifetime; death and reproduction recover or transfer the committed matter through their ordinary ledgers. Nutrients acquired later in phase 6 cannot activate new machinery until the next tick. The ongoing upkeep of acquired DNA still applies while a quota-gated capability is inactive unless its authored cost explicitly says otherwise.
+
 This avoids per-trait expression state and prevents physical machinery from appearing without matter. It also permits members of one species to differ temporarily in active phenotype because their resources and lifecycle state differ, while their DNA remains identical.
 
 If generic structural biomass and quota gates prove too abstract for important traits, a later rules version may add explicit one-time expression/construction transactions. V1 should not add per-trait physical inventories until a fixture demonstrates the need.
@@ -208,6 +212,8 @@ Acquired traits never disappear from DNA, but some capabilities may be condition
 - Constitutive costs and structural requirements remain even when a capability is not used unless the trait explicitly marks a cost as suppressible.
 
 Suppression is runtime state or behavior, not reverse evolution. The compiled DNA records the full capability and both active/suppressed cost profiles.
+
+The first v1 profile gives `MetabolicRegulation` a non-suppressible 5-energy/hour control cost and multiplies only `suppressiblePathwayUpkeep` effects by `0.25` while suppressed. Phase 5 selects pathway state for the full tick. There is no suppression transition cost or cooldown, and a pathway that emits an intent remains active for cost even if later contention grants no substrate. Fractional hourly costs use persisted fixed-point remainders. See [ORGANIC_UPTAKE_AND_FERMENTATION.md](ORGANIC_UPTAKE_AND_FERMENTATION.md) for the first complete fixture.
 
 # Mutation cost and change complexity
 
@@ -226,6 +232,8 @@ V1 permits multiple nodes in one speciation when:
 
 Prerequisite nodes are never silently granted. The UI may construct and preview a complete path, but the command records the exact set and full price. V1 uses simple sums with no bundle discount, distance surcharge, or dynamic cost based on world conditions. Adjacency is rewarded naturally because nearby nodes require fewer prerequisite purchases and less change complexity.
 
+The founder `AsexualInheritance` profile permits `3` total change-complexity units in one event; `ExpandedChangeCapacityI` and `II` replace that ceiling with `5` and `8`. The first `20..300 MP` price bands, milestone anchors, evolutionary-machinery costs/modifiers, and seven-day branch refractory rule are normative in [EVOLUTION.md](EVOLUTION.md). Per-node prices remain authored values rather than an automatic function of family depth.
+
 # Compilation
 
 ```text
@@ -240,7 +248,7 @@ CompileDNA(baseGenome, acquiredTraitIds, compiledTraitGraph):
     resolve exclusive choices and enabled capabilities/reactions
     compile activation requirements and named cost channels
     validate ranges, quotas, reaction references, and capacity limits
-    build pressure-response and visual-descriptor indexes
+    build pressure-response, material-opportunity, and visual-descriptor indexes
     retain effect provenance for every compiled result
     hash canonical genome and compiled rules
     return immutable CompiledDNA
@@ -271,12 +279,13 @@ A proposal preview returns:
 - Newly enabled reactions, actions, senses, and behaviors.
 - New structure, micronutrient, storage, and activation requirements.
 - Current selected-founder counts likely to satisfy activation gates.
+- For complete finite-resource processes, exact named-resource stock/renewal opportunity, replacement demand, per-tile founder oversubscription, and the distinction between an advisory warning and a hard activation gate.
 - Capacity changes and the resulting reserve-relative-health impact without adding contents.
 - Incompatibilities made permanent for the descendant lineage.
 
 # Autonomous evolution
 
-Autonomous evolution searches only the same server-derived `Available` and `ReachableInProposal` nodes exposed to a player. Trait definitions carry `pressureTags` such as `HeatStress`, `SulfideToxicity`, `Starvation`, `Predation`, or `EnergyShortage`. Recent species death/stress history changes candidate weights; it never bypasses prerequisites, incompatibilities, cost, complexity, or scenario rules.
+Autonomous evolution searches only the same server-derived `Available` and `ReachableInProposal` nodes exposed to a player. Trait definitions carry `pressureTags` such as `HeatStress`, `SulfideToxicity`, `Starvation`, `Predation`, or `EnergyShortage`. Complete enabled process definitions may also carry a material-opportunity profile; preparatory traits do not receive the downstream process's benefit until the proposal closes the required capability/reaction path. Recent species death/stress history and exact named-resource opportunity change candidate weights; neither bypasses prerequisites, incompatibilities, cost, complexity, or scenario rules. See [EVOLUTION.md](EVOLUTION.md) and [POPULATION_ECOSYSTEM_VALIDATION.md](POPULATION_ECOSYSTEM_VALIDATION.md).
 
 Cross-family indirect effects also contribute pressure tags. A wall trait may therefore be considered under predation pressure even though it belongs to `CellularOrganization`, while a smaller-cell trait might respond to resource scarcity through lower maintenance.
 

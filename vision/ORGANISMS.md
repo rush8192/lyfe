@@ -45,6 +45,8 @@ Speciation is location-dependent. A speciation event may select any one to four 
 
 The fraction applies independently to the ancestor population in every selected tile. The chosen organisms form random subsets and all receive the same descendant-species DNA; organisms not selected remain members of the ancestor species. In a future version, the player may be able to choose a smaller founding fraction by spending additional mutation points.
 
+Because the unused mutation-point balance is retained on both branches, the initial rules give both ancestor and descendant a seven-day simulated refractory interval before either can speciate again. They continue accumulating mutation points during this interval. This prevents a large saved balance from producing an immediate cascade of branches without adding another mutation-point fee.
+
 Which species are human-directed depends on the game mode. In free sandbox, the player may transfer control between living species at will and may lock a species against all mutation or speciation until it is explicitly unlocked. In survival and future competitive modes, a player remains bound to one lineage; when speciation occurs, control follows the chosen descendant while the ancestor and other branches evolve autonomously.
 
 When DNA for a new species is created, its complete set of traits must satisfy all prerequisites and incompatibilities. Its resulting capabilities and ongoing costs are calculated from the interactions among all of its trait families, not by evaluating each family independently.
@@ -107,7 +109,11 @@ Waste handling, nutrient retention, digestion, and morphology do not require sep
 
 ## Locomotion
 
-Every organism occupies a specific coordinate within its current tile. Organisms can evolve ways to move through this local space. By default this locomotion is somewhat random in nature, but it can still help an organism find other organisms or dead remnants and reach the boundary of a neighboring environment more frequently than passive movement alone. An organism can migrate to a neighboring tile only when it is sufficiently near the shared edge. Locomotion takes energy!
+Every organism occupies a specific coordinate within its current tile. Organisms can evolve ways to move through this local space. Active locomotion can be random or behaviorally directed, helping an organism find other organisms or dead remnants and reach the boundary of a neighboring environment more reliably than passive movement. An organism can migrate to a neighboring tile only when it is sufficiently near the shared edge. Active locomotion takes energy!
+
+Life can also spread without investing heavily in active locomotion. Reproduction increases the number of individuals sampling passive Brownian-like environmental movement, so a successful, rapidly reproducing population can diffuse into neighboring compatible tiles even when no member chooses a direction. DNA can favor environmental anchoring, which helps a lineage remain near a favorable location at the cost of exploration, or passive drifting, which increases chance encounters and migration while making position less controllable. Future traits may make this coupling conditional or produce buoyant, windborne, current-carried, attached-and-released, dormant, or otherwise environmentally transported stages. These strategies should have little or no direct distance cost but may require maintenance and remain slower, less controllable, and dependent on environmental transport and boundary compatibility. Active and passive dispersal are alternative investments rather than a progression in which locomotion is always superior.
+
+Every form of dispersal moves the same concrete organism or offspring through ordinary space. It cannot create population, teleport between tiles, interact across a boundary, or bypass environmental tolerances. A passively carried organism may arrive in a tile it cannot survive, while an actively moving organism may spend more energy than the journey repays.
 
 ### Locomotion forms
 

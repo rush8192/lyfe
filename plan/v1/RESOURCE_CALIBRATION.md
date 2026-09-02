@@ -211,7 +211,7 @@ Use a hotspot of 25,000 organisms, each with baseline mature structure and a ful
 | Elemental matter represented by reserves | 1,000,000,000 |
 | **Total organism matter** | **9,325,000,000** |
 
-A tile with 34 resource slots at the normal maximum of `10^12` each contains at most `3.4 × 10^13` directly stored resource units before composition expansion. No initial environmental compound has more than five total CHNOPS atoms in its composition vector, so `1.7 × 10^14` is a conservative expanded-matter bound. Both environmental accounts and organism accounts fit comfortably in `long`; tile reconciliation should use `Int128`.
+A tile with 36 resource slots at the normal maximum of `10^12` each contains at most `3.6 × 10^13` directly stored resource units before composition expansion. `LabileDissolvedOrganic(C6 H12 O6)` has the largest initial environmental composition load at 24 CHNOPS quanta, so `8.64 × 10^14` is a deliberately loose expanded-matter bound for one tile. Both environmental accounts and organism accounts fit comfortably in `long`; tile reconciliation should use `Int128`.
 
 For a contention group of 25,000 claims requesting 10,000 units each:
 
@@ -225,7 +225,7 @@ Even though this total fits in `long`, the proportional term `available × reque
 
 # Scenario 4: representative benchmark world
 
-Use the default-world benchmark of 100,000 organisms across `32 × 17 = 544` tiles, with 34 possible environmental resource slots per tile: twelve generic macronutrient forms, eight named gases, and fourteen micronutrients.
+Use the default-world benchmark of 100,000 organisms across `32 × 17 = 544` tiles, with 36 possible environmental resource slots per tile: twelve generic macronutrient forms, eight named gases, fourteen micronutrients, and the two dissolved biological compounds used by fermentation.
 
 ## Organisms
 
@@ -242,33 +242,33 @@ Use the default-world benchmark of 100,000 organisms across `32 × 17 = 544` til
 If every environmental slot holds `10^12` resource units, the raw authoritative balances sum to:
 
 ```text
-544 tiles × 34 slots × 10^12
-    = 18,496,000,000,000,000 resource units
+544 tiles × 36 slots × 10^12
+    = 19,584,000,000,000,000 resource units
 ```
 
-Because resource units have different composition vectors, that raw sum must not be added directly to expanded organism matter. A conservative environmental expansion bound uses five elemental quanta per environmental resource unit:
+Because resource units have different composition vectors, that raw sum must not be added directly to expanded organism matter. A deliberately loose environmental expansion bound applies the largest initial environmental load, 24, to every slot:
 
 ```text
-5 × 18,496,000,000,000,000
-    = 92,480,000,000,000,000 elemental quanta
+24 × 19,584,000,000,000,000
+    = 470,016,000,000,000,000 elemental quanta
 ```
 
-Adding 37,300,000,000 expanded organism-matter quanta yields `92,480,037,300,000,000`, or approximately `9.248 × 10^16`. This conservative aggregate fits signed 64-bit, but the design still requires `Int128` because structural-biomass coefficients, source histories, and future configurations can push expanded totals higher.
+Adding 37,300,000,000 expanded organism-matter quanta yields `470,016,037,300,000,000`, or approximately `4.700 × 10^17`. This conservative aggregate fits signed 64-bit, but the design still requires `Int128` because structural-biomass coefficients, source histories, and future configurations can push expanded totals higher.
 
 ## Storage estimate
 
-A dense 28-slot resource vector for 100,000 organisms uses:
+A dense 30-slot resource vector for 100,000 organisms uses:
 
 ```text
-28 × 100,000 × 8 bytes = 22.4 MB
+30 × 100,000 × 8 bytes = 24.0 MB
 ```
 
-This excludes entity metadata, alignment, remnants, claims, histories, and snapshots, but confirms that dense organism resource storage is plausible. Compartment-specific slot sets should avoid allocating three full 28-slot vectors per organism when structure and reserve each require only a few slots.
+This excludes entity metadata, alignment, remnants, claims, histories, and snapshots, but confirms that dense organism resource storage is plausible. Compartment-specific slot sets should avoid allocating three full 30-slot vectors per organism when structure and reserve each require only a few slots.
 
 Tile environmental balances are comparatively small:
 
 ```text
-34 × 544 × 8 bytes = 147,968 bytes
+36 × 544 × 8 bytes = 156,672 bytes
 ```
 
 **Result:** the reference world fits the selected numeric representation and supports the proposed dense compiled layout.

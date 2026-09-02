@@ -41,11 +41,11 @@ EvaluateBehavior(organism, behavior, localObservation) -> intents
 
 V1 tiles have no within-tile nutrient gradients. Sensing may still detect nearby organisms and remains, local tile conditions, and neighboring-tile suitability. Future micronutrient fields must fit without rewriting the behavior interface.
 
-The first capability-filtered observation schema, typed target invalidation rules, and separation between tile-wide chemical signals and spatial entity detection are defined in [SPATIAL_ORGANISMS_AND_BEHAVIOR.md](SPATIAL_ORGANISMS_AND_BEHAVIOR.md). Exact behavior states and selection policy remain open.
+The first capability-filtered observation schema, typed target invalidation rules, and separation between tile-wide chemical signals and spatial entity detection are defined in [SPATIAL_ORGANISMS_AND_BEHAVIOR.md](SPATIAL_ORGANISMS_AND_BEHAVIOR.md). Predation-specific hunting and fleeing states are defined in [PREDATION.md](PREDATION.md); the general cross-behavior selection policy remains open.
 
 # Movement and space
 
-[SPATIAL_ORGANISMS_AND_BEHAVIOR.md](SPATIAL_ORGANISMS_AND_BEHAVIOR.md) fixes the first v1 spatial contract: normalized tile-local coordinates, strictly same-tile entity interactions, a derived `16 × 16` bin index, stationary remains, default zero-mean Brownian organism displacement, at most one edge crossing per tick, deterministic placement, and a position-aware extension seam for future resource gradients. [SPATIAL_CALIBRATION.md](SPATIAL_CALIBRATION.md) supplies the first body, Brownian, sensing, action-reach, placement, and active-distance values. Active movement energy/turning, final migration probability, and detailed behavior policy remain balance/mechanics work.
+[SPATIAL_ORGANISMS_AND_BEHAVIOR.md](SPATIAL_ORGANISMS_AND_BEHAVIOR.md) fixes the first v1 spatial contract: normalized tile-local coordinates, strictly same-tile entity interactions, a derived `16 × 16` bin index, stationary remains, default zero-mean Brownian organism displacement, at most one edge crossing per tick, deterministic placement, and a position-aware extension seam for future resource gradients. [SPATIAL_CALIBRATION.md](SPATIAL_CALIBRATION.md) supplies the first body, Brownian, sensing, action-reach, placement, and active-distance values. Active movement energy/turning, final migration probability, and non-predation behavior policy remain balance/mechanics work.
 
 # Acquisition, energy capture, internal metabolism, and storage
 
@@ -61,6 +61,8 @@ The organism pipeline must preserve five boundaries:
 
 Internal resources may be consumed, temporarily bound by an admitted metabolic process, or protected from lower-priority use by an evolved DNA holdback. These are distinct operations. Default DNA shares free material evenly among same-tier processes, while later regulation traits can add weights, priority tiers, and bounded holdbacks. The complete semantic contract is defined in [INTERNAL_STORAGE_AND_ALLOCATION.md](INTERNAL_STORAGE_AND_ALLOCATION.md).
 
+Internal processes also contend for one DNA-compiled processing budget after satisfying their own reaction-specific gates and ceilings. Each process declares an integer load per extent; organization traits raise the shared budget without increasing reaction yield or external acquisition. The first tiers, resolution rule, maturation behavior, and validation fixtures are defined in [COMPLEX_CELLS.md](COMPLEX_CELLS.md).
+
 V1 does not create a transient ATP-like authoritative resource. `ReserveOrganic` is directly debited by `SpendStoredEnergy`; useful work is diagnostic and energy ultimately dissipates. DNA may compile maximum reserve-spend throughput and cost multipliers, but cannot bypass a balanced debit.
 
 ```text
@@ -71,7 +73,8 @@ EvaluateOrganismMetabolism(organism, compiledDNA, environment):
     if the mandatory payment fails, append a probability-one
         MaintenanceFailure assessment and die
     otherwise resolve permitted biomass assembly, growth,
-        and explicit waste/retention transactions
+        and explicit waste/retention transactions within the
+        remaining shared internal-processing budget
 ```
 
 Newly captured reserve and internally produced reserve are available before mandatory maintenance. Movement and targeted external-action costs are admitted and spent in their own phases according to [SIMULATION_LOOP.md](SIMULATION_LOOP.md). Temporary binding, DNA allocation semantics, founder capacity groups and limits, needs-only staging, and founder waste timing are decided. The remaining detailed pass must define reserve-mobilization throughput, advanced capacity increments and retention targets, capacity-reduction overflow, and the bounded multi-resource resolver.
@@ -99,7 +102,7 @@ The kill probability compares the predator's compiled `predationAttackPower` wit
 
 If multiple attempts against one prey succeed, the prey dies once. All attack draws resolve before consumption, so mutually successful predators may kill one another and a predator killed in the same pass cannot receive food. Successful surviving predators submit resource-specific claims capped by ingestion capability and available storage. Remaining prey contents form one cohesive remnant. Contested contents are divided by feeding-priority weight with deterministic largest remainders; failed or killed predators receive nothing. All predators pay their attempt energy cost regardless of outcome.
 
-Ordinary environmental resource claims remain unweighted and proportional. Full formulas and pseudocode are defined in [SIMULATION_LOOP.md](SIMULATION_LOOP.md), while ledger transfer rules remain in [RESOURCE_MODEL.md](RESOURCE_MODEL.md).
+Ordinary environmental resource claims remain unweighted and proportional. Simultaneous-resolution pseudocode is defined in [SIMULATION_LOOP.md](SIMULATION_LOOP.md), ledger transfer rules remain in [RESOURCE_MODEL.md](RESOURCE_MODEL.md), and the first numerical capture, defense, feeding, and hunting profiles are defined in [PREDATION.md](PREDATION.md).
 
 # Aging and death
 
@@ -135,7 +138,7 @@ Interactions use post-movement coordinates. Newly born organisms begin at age ze
 - [ ] Behavior-selection mechanism; observation and target contracts are fixed, but state/utility rules remain open.
 - [x] First spatial-index, interaction-locality, and numerical-radius contract; see [SPATIAL_ORGANISMS_AND_BEHAVIOR.md](SPATIAL_ORGANISMS_AND_BEHAVIOR.md) and [SPATIAL_CALIBRATION.md](SPATIAL_CALIBRATION.md).
 - [x] First movement integration, Brownian magnitude, active-speed ceiling, and one-edge migration contract; energy/turning and final migration odds remain open. See [SPATIAL_ORGANISMS_AND_BEHAVIOR.md](SPATIAL_ORGANISMS_AND_BEHAVIOR.md) and [SPATIAL_CALIBRATION.md](SPATIAL_CALIBRATION.md).
-- [ ] Acquisition/capture/internal-metabolism intent interfaces and energy-storage enforcement.
+- [ ] Acquisition/capture/internal-metabolism intent interfaces and energy-storage enforcement; the shared internal-processing-budget contract is specified in [COMPLEX_CELLS.md](COMPLEX_CELLS.md).
 - [x] Temporary metabolic-resource binding and DNA priority/holdback semantics; see [INTERNAL_STORAGE_AND_ALLOCATION.md](INTERNAL_STORAGE_AND_ALLOCATION.md).
 - [x] First founder and evolved reproduction gates, cooldown/jitter, work cost, allocation, offspring transaction, and lifecycle modifiers in [LIFECYCLE_AND_RECYCLING.md](LIFECYCLE_AND_RECYCLING.md); numeric population validation remains.
 - [x] First v1 predation success, defense, contention, and remnant policy.

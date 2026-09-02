@@ -16,10 +16,12 @@ A complete save must account for:
 - Tick duration, current tick/calendar, final date, pause, and speed state as applicable.
 - Random-stream or counter state.
 - Fixed geography, baselines, current conditions, integer resource accounts, and named gases.
-- Every living organism and dead remnant, including structural matter, available stores, energy-bearing reserves, and active metabolic binding cohorts with release ticks.
+- Every living organism and dead remnant, including structural matter, available stores, charged energy-bearing reserves, zero-energy spent reserve carriers, and active metabolic binding cohorts with release ticks.
 - Persisted fractional remainders used by sources, sinks, exchange, rates, and energy costs.
-- Species DNA, mutation balances, aggregates needed for exact continuation, and locks.
-- Complete lineage and controller state.
+- Species genome references, mutation balances and UInt128 income remainders, evolution revisions/ordinals, absolute speciation cooldowns, pressure accumulators, autonomous intents/evaluation ordinals including material- and biological-opportunity snapshots, aggregates needed for exact continuation, and locks.
+- Exact one-hour tile flow-history rings and rolling totals for resources referenced by selectable material-opportunity profiles, covering the 168-hour scoring window and including source, passive loss, inbound/outbound exchange, and biological uptake.
+- Sparse per-tile ordered species-pair predation-history rings and rolling totals for the 168-hour biological-opportunity window, including eligible encounters, attempts, successes, deaths, grants, and remnant remainder.
+- Complete immutable genome, abiogenesis, speciation-event, species-lineage, extinction, and controller state.
 - Abiogenesis origin, root-species membership, and per-actor discovered tiles, last observations, and observation timestamps.
 - Pending accepted commands or proof that saves occur only at a boundary with none.
 - Historical aggregates and event retention needed by gameplay and the client.
@@ -60,7 +62,7 @@ Decide:
 - Compression and checksums.
 - Save metadata readable without loading the full world.
 - Compatibility policy across rule and engine versions.
-- Whether migrations are supported in v1 or incompatible saves are rejected clearly.
+- Movement/migration event provenance, including the v1-zero environmental-displacement component, and compatibility behavior when later rule packs add environment-driven transport.
 - Retention and size limits for events and resource histories.
 
 # Determinism diagnostics

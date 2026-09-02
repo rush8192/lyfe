@@ -62,7 +62,9 @@ OrganismState
 
     resources
         structure[resource_id]
+        structure_assignment[structure_role, resource_id]
         energy_reserve[resource_id]
+        spent_energy_carrier[resource_id]
         available_store[resource_id]
 
     behavior
@@ -102,8 +104,9 @@ OrganismState
 
 ## Internal resource accounts
 
-- `structure` is committed viable body material.
+- `structure` is committed viable body material. Its assignment map partitions the same balance into geometric, organization, and committed-quota roles without changing resource identity or matter totals. `geometricStructure + organizationStructure` supplies ordinary viable structure; only the geometric assignment affects derived radius. The first role rules are defined in [COMPLEX_CELL_CALIBRATION.md](COMPLEX_CELL_CALIBRATION.md).
 - `energy_reserve` holds energy-bearing organic resources that can be metabolically consumed.
+- `spent_energy_carrier` holds the composition-identical, zero-energy state of retained carrier matter when the DNA enables it. Charged and spent quantities share the compiled energy-carrier capacity, but only the charged balance is spendable or contributes stored energy.
 - `available_store` holds internally available material that has not been committed to structure or a specialized reserve.
 - Available-store balances remain one resource map but contribute to the separately limited dissolved-macronutrient, free-micronutrient, and ingested-matter capacity groups defined in [INTERNAL_STORAGE_AND_ALLOCATION.md](INTERNAL_STORAGE_AND_ALLOCATION.md).
 - Energy is not stored as a separate scalar. Total stored energy is derived from reserve quantities and configured energy densities.
@@ -184,6 +187,8 @@ The authoritative implementation must use the shared deterministic fixed-point r
 
 `reserve_fraction` compares current stored energy with the organism's current DNA-defined capacity.
 
+Zero-energy `SpentReserveCarrier` occupies physical carrier capacity but contributes zero to `stored_energy`. Consequently, spending a retained charged carrier lowers health until metabolism recharges it; retaining the carrier matter is not itself physiological energy.
+
 This intentionally means that a mutation which increases energy capacity does not create energy. With reserve quantity unchanged, relative health falls immediately because the same reserves fill a smaller fraction of capacity. The organism can restore that condition by gathering and storing additional resources.
 
 A compiled energy capacity of zero is invalid for a living organism and must be rejected during DNA compilation.
@@ -200,7 +205,7 @@ structure_factor = clamp01(
 
 - Reproduction must allocate at least the minimum viable structure required by the offspring's lifecycle phase.
 - A newly budded offspring may be viable but below its mature structural target.
-- An organism that acquires a higher body-scale trait enters the explicit `ScaleMaturation` phase: it retains the previous phase's viability floor, cannot reproduce, and uses the new mature structure as its condition target until growth is complete. No structure or stored matter is granted by the trait transition.
+- An organism that acquires a higher body-scale or organization trait enters the corresponding combined maturation phase: it retains the previous phase's viability floor, cannot reproduce, and uses the new mature total structure as its condition target until both geometric and organization assignments are complete. No structure, reassignment, or stored matter is granted by the trait transition.
 - Structural material lost to partial predation or a future injury mechanic lowers this factor until concrete resources are restored and rebuilt.
 - Cosmetic size variation does not change authoritative structure.
 
