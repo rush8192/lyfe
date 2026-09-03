@@ -72,7 +72,7 @@ Tick ownership follows the common pipeline:
 5. Phase 6 resolves finite claims and transfers; phase 7 runs internal processes and pays the full active maintenance liabilities.
 6. Phase 8 applies ordinary lifecycle and zero-sum reproduction rules; phase 11 records resource, condition, movement, and knowledge histories.
 
-Derived activity and access factors may be cached by `(speciesId, tileId, environmentVersion)` but are never independent save state. Crossing into a hostile tile in phase 4 first exposes the organism to that tile's acquisition limits during the current tick and to its intrinsic death draw in the next phase-3 evaluation, as already required by the migration rule.
+Tile-only moisture/access inputs are materialized once by the tile environment owner. The physiology owner combines them with the compiled phenotype at its named barrier and stores any activity factor consumed by multiple downstream systems, keyed by the relevant organism or occupied `(speciesId, tileId)` cohort and dependency generation. Completed materializations follow [MATERIALIZED_DERIVED_STATE.md](MATERIALIZED_DERIVED_STATE.md). Crossing into a hostile tile in phase 4 first exposes the organism to that tile's acquisition limits during the current tick and to its intrinsic death draw in the next phase-3 evaluation, as already required by the migration rule.
 
 # Occupation and migration gates
 
@@ -167,7 +167,7 @@ Because both windows have 24 samples, the runtime compares their checked integer
 
 The request is evaluated in phase 8 after this tick's death and metabolism. An early-warning transition therefore affects tick `T+1`; emergency entry at the hard threshold can protect later ticks but cannot erase a phase-3 death draw already evaluated on tick `T`. The `0.05` warning lead, `0.10` exit hysteresis, opposing trend tests, and 24-hour dwell jointly prevent one noisy observation from paying repeated `500/250` transition costs.
 
-This first selector is moisture-driven and activates only for a terrestrial organism with a surface-moisture condition. It does not infer impending food, gas, light, predation, temperature, or toxin shortages from one low current value. Aquatic and non-moisture dormancy policies remain part of the general behavior pass because they need explicit observable trend inputs and wake conditions; `ResourceConservation` must not turn into a hidden future-resource oracle.
+This first selector is moisture-driven and activates only for a terrestrial organism with a surface-moisture condition. It does not infer impending food, gas, light, predation, temperature, or toxin shortages from one low current value. Aquatic and non-moisture dormancy policies are deferred because they need explicit observable trend inputs and wake conditions. The general local controller is defined in [BEHAVIOR_AND_RESOURCE_PRESSURE.md](BEHAVIOR_AND_RESOURCE_PRESSURE.md); `ResourceConservation` must not turn into a hidden future-resource oracle.
 
 Every terrestrial tile retains a 48-hour authoritative `RatioQ` surface-moisture ring and two checked rolling 24-hour totals. World spin-up supplies the initial 48 gameplay-prehistory samples; save/load preserves the ring position and totals. The data belongs to world history rather than player knowledge, and observing or hiding a tile cannot change an organism's transition. Aquatic tiles do not allocate the ring, and organisms without the behavior profile do not read it for dormancy decisions.
 

@@ -2,7 +2,7 @@
 
 Status: first v1 mutation-income, pricing-scale, speciation, autonomous-evolution, material-opportunity scoring, and lineage rule pack; catalogue-wide per-node pricing and broader population validation remain
 
-Sources: [ORGANISMS vision](../../vision/ORGANISMS.md), [GAMEPLAY vision](../../vision/GAMEPLAY.md), and [INTERFACE vision](../../vision/INTERFACE.md).
+Sources: [ORGANISMS vision](../../vision/ORGANISMS.md), [GAMEPLAY vision](../../vision/GAMEPLAY.md), [INTERFACE vision](../../vision/INTERFACE.md), and [behavior and resource pressure](BEHAVIOR_AND_RESOURCE_PRESSURE.md).
 
 # Purpose
 
@@ -154,7 +154,7 @@ The founder modifier is `1.0×`. Compiled mutation-income modifiers are clamped 
 
 Income runs once per completed tick after births, deaths, migrations, and health are finalized. The client receives current balance, population, average health, DNA modifier with trait provenance, current MP/day, and forecasts explicitly labeled as estimates at the current rate.
 
-Using reserve fraction as the temporary fixture proxy for the full derived-health formula, this curve gives the hydrogen founder 40 MP near hour 338 and the sulfur founder 60 MP near hour 511. At a provisional fastest speed of two ticks per real second, those are approximately 2.8 and 4.3 minutes. See [SULFUR_TILE_STARTING_CONFIGURATION.md](SULFUR_TILE_STARTING_CONFIGURATION.md) for inputs and sensitivity limits. Those timings must be rerun with the structural, nutrient, age, lifecycle, and environmental factors enabled and after post-speciation scenario tests.
+Using reserve fraction as the temporary isolated-fixture proxy for the full derived-health formula, this curve gave the hydrogen founder 40 MP near hour 338 and the sulfur founder 60 MP near hour 511. The first coupled health, lifecycle, contention, reproduction, and speciation authoring run now reaches those landmarks at hours `343` and `496`, with accepted bands of `335..350` and `480..520`; see [SURVIVAL_OPENING_VALIDATION.md](SURVIVAL_OPENING_VALIDATION.md). The common denominator remains suitable for initial implementation, while production fixed-point and generated-world validation still precede freezing it as final balance.
 
 # Mutation pricing and change breadth
 
@@ -240,15 +240,15 @@ The server returns typed validation failures including `WrongController`, `Speci
 After the exact per-tile counts are known, allocate a stable `SpeciationEventId`. Rank every eligible organism in a tile by:
 
 ```text
-Hash(worldSeed,
-     SpeciationFounderSelection,
-     speciationEventId,
-     ancestorSpeciesId,
-     tileId,
-     organismId)
+Raw64(RandomAddress(
+    SpeciationFounderSelection,
+    speciationEventId,
+    tileId,
+    organismId,
+    sampleIndex = 0))
 ```
 
-Select the lowest `founderCount(tile)` ranks, breaking a hash collision by stable organism ID. Selection uses the accepted phase-0 snapshot and never depends on dense order, spatial-bin order, worker assignment, or a mutable random stream. The event stores the selection-domain version and a digest of selected IDs; ordinary history stores counts rather than a potentially large ID list.
+Select the lowest `founderCount(tile)` ranks, breaking an equal raw rank by stable organism ID. Selection uses the accepted phase-0 snapshot and never depends on dense order, spatial-bin order, worker assignment, or a mutable random stream. The event stores the RNG-schema/domain version and a digest of selected IDs; ordinary history stores counts rather than a potentially large ID list. `Raw64` use here is confined to the reviewed stable-rank operation defined in [KEYED_RANDOMNESS.md](KEYED_RANDOMNESS.md).
 
 ## Atomic transaction
 
@@ -432,6 +432,8 @@ Extinction sets `extinct_tick` when the completed phase-10 population first reac
 
 The evolution economy has no remaining semantic blocker for implementation planning. The fixed contracts are income, arithmetic, pricing composition, event-complexity limits, founder selection, balance duplication, refractory timing, pressure and material-opportunity scoring, autonomous choice, lineage, authority, and failure behavior.
 
+Player-facing proposal discovery does not change those contracts. [PLAYER_LOOP_AND_NARRATIVE.md](PLAYER_LOOP_AND_NARRATIVE.md) defines prerequisite-closed milestone presentation, the non-dominated proposal frontier, immediate/conditional/preparatory benefit timing, saved goals, and post-speciation consequence review. These are explanation and planning layers over the same validated trait set and atomic speciation command; they add no discount, refund, automatic mutation, or hidden survival forecast.
+
 Remaining work divides into two downstream categories:
 
 1. **Implementation evidence:** generate and hash the effective-population table; implement property, determinism, persistence, and population fixtures.
@@ -459,6 +461,8 @@ The first predation proposal adds a `BiologicalOpportunityProfile` because its f
 The complex-predator calibration adds exact anchors for its remaining selectable nodes. `IncreasedCellScaleI` is `160/3` and Scale II is `260/4`; `ParticulateOrganicIngestion` is `120/2` and `ParticulateDigestion` is `140/2`; the directed-hunting sensing/behavior layer totals `360 MP / complexity 6`; and locomotion ranges from `ActiveMotility 60/1` to `AdvancedPropulsion 180/3`. The first passive-spread alternatives are `EnvironmentalAnchoring 40/1` and `EnvironmentalDrifting 60/1`; their respective 2- and 3-unit hourly upkeep and spatial tradeoffs are normative in [SPATIAL_CALIBRATION.md](SPATIAL_CALIBRATION.md). Each node retains the separate upkeep, quota, activation, and opportunity liabilities in [COMPLEX_CELL_CALIBRATION.md](COMPLEX_CELL_CALIBRATION.md), [SPATIAL_CALIBRATION.md](SPATIAL_CALIBRATION.md), and [LIFECYCLE_AND_RECYCLING.md](LIFECYCLE_AND_RECYCLING.md). Autonomous scoring must evaluate complete reachable milestones and their prey-size/encounter economics rather than favoring an isolated scale, hunting, digestion, or dispersal node as though it supplied food by itself.
 
 The energy-storage ladder adds `ReserveCapacityI 40/1`, `ReserveCapacityII 80/2`, and `CompartmentalizedReserve 160/3`, producing commissioned maxima of `25,000`, `50,000`, and `150,000`. The final node additionally requires `CompartmentalizedCell 160/3`; capacity is constructed from conserved storage structure rather than granted at speciation. Autonomous scoring should require evidence of both fill opportunity and a later deficit—capacity overflow plus drawdown, recurring unfavorable intervals, failed dormancy, or resource-poor migration—because starvation without prior surplus cannot make a larger empty compartment useful. Exact costs, commissioning, and calibration are in [ENERGY_STORAGE.md](ENERGY_STORAGE.md).
+
+Behavioral-regulation proposals respond to named pressure evidence rather than raw population. Repeated low reserve, energy income below mandatory cost, unmet useful acquisition demand, growth suppression, and maintenance failure can favor `StateGatedActivity` or `ResourceConservation`; a recurrent birth-then-shortage pattern can favor `ReproductionReadiness`; environmental stress and hostile migration outcomes can favor `StressAvoidance`. These mappings use species aggregates produced from completed organism histories and never expose one organism to species-wide knowledge during behavior selection. `DirectedForaging` still requires a positive material or biological opportunity, and `MetabolicBehaviorCoordination` requires at least two useful enabled pathways whose availability or priority has actually varied. Exact scoring weights wait for the population fixtures in [BEHAVIOR_AND_RESOURCE_PRESSURE.md](BEHAVIOR_AND_RESOURCE_PRESSURE.md).
 
 The terrestrial package adds `WetSurfaceColonization 120/2` and `IntermittentDesiccationTolerance 180/3`. The first is a prerequisite-closed landfall proposal only when it also includes or inherits `SelectiveMembrane`; the second extends an existing land-capable phenotype rather than independently authorizing land. Autonomous opportunity must combine observed neighboring land availability, trailing moisture and light conditions, coarse known lithology/resource fit, usable atmospheric reactions, and current pressure. A terrestrial tag alone has zero opportunity value, hidden exact neighboring stocks are unavailable, and the proposal must retain the exact structural, maintenance, throughput, and passive-acquisition liabilities in [TERRESTRIAL_ADAPTATION.md](TERRESTRIAL_ADAPTATION.md).
 

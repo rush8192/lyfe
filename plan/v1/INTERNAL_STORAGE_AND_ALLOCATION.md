@@ -155,11 +155,13 @@ BuildPrimitiveMicronutrientClaim(organism, tileSnapshot, tick):
 
     resource = eligible resource with greatest
         (targetQuantity - freeQuantity) / targetQuantity
-    break equal deficit ratios by stable keyed rank
+    break equal deficit ratios by KeyedRank(
+        MicronutrientTargetRank, tick, organism.id, resource.id)
 
-    if not KeyedBernoulli(
-        p = 0.5,
-        key = (worldSeed, tick, organismId, PrimitiveMicronutrientUptake)):
+    if not Bernoulli(
+        RandomAddress(MicronutrientUptake,
+                      tick, organism.id, 0, sampleIndex = 0),
+        probabilityQ = 500_000).triggered:
         return no claim
 
     emit ordinary ResourceClaim(resource, requestedAmount = 1)
@@ -184,7 +186,7 @@ for resource in canonical ResourceId order:
 
 Promotion is a matter-preserving bookkeeping abstraction for expressing genetically available machinery; v1 does not add a separate construction-energy charge or per-trait machinery inventory. A capability activates only after every quota it requires is committed. Material acquired in phase 6 waits until the next tick's barrier, preventing a same-tick uptake-and-expression shortcut. Once promoted, a quota remains committed until reproduction, death, or another already-declared whole-organism transfer rule handles it; it cannot be demoted to satisfy a different process or offspring set.
 
-The desired free-micronutrient inventory is then recalculated from the proposed DNA's complete additional reproduction set. Thus an oxygenic descendant first fills any missing `Mn 4 + Ca 1` committed activation deficit and then accumulates the full 60-unit extra set required for reproduction. Neither target may exceed the compiled free-store capacity.
+The DNA compiler materializes the desired free-micronutrient inventory once from the proposed DNA's complete additional reproduction set. Thus an oxygenic descendant first fills any missing `Mn 4 + Ca 1` committed activation deficit and then accumulates the full 60-unit extra set required for reproduction. Neither target may exceed the compiled free-store capacity, and runtime consumers read the compiled target rather than re-evaluating the trait set.
 
 At the calibrated rate, the hydrogen founder requires `57 / 0.5 = 114` expected ticks and the sulfur founder `55 / 0.5 = 110` expected ticks to acquire a complete extra set under abundant uncontested conditions. These remain well inside their structural first-reproduction times of `334` and `250` ticks. With independent keyed opportunities and guaranteed grants, the probabilities of still lacking the set at those deadlines are approximately `8.1 × 10^-37` and `2.1 × 10^-20`; practical delays should therefore arise from ecological scarcity or contention rather than opening-fixture randomness.
 
@@ -457,9 +459,10 @@ Allocation-policy changes apply at the next allocation barrier. They do not canc
 - External claims and reaction extents are capped by actual free capacity, not by unbound quantity alone.
 - Binding an already stored resource requires no additional capacity.
 - A capacity increase creates only empty room.
-- A future capacity reduction must route physical overflow explicitly; it cannot resolve the conflict by deleting bindings or matter.
+- V1 has no DNA or lifecycle transition that reduces compiled storage capacity or silently removes commissioned storage structure. Reproduction must prove each result can hold its allocated contents before committing. Death moves contents to a remnant and is not a capacity reduction.
+- A future capacity-reducing transition or partial structural-damage mechanic must route physical overflow explicitly; it cannot resolve the conflict by deleting bindings or matter.
 
-This pass fixes the three founder capacity groups and their baseline values. Remaining capacity work is limited to advanced trait increments, capacity reduction during transitions, and explicit overflow routing; no rule may silently delete stored matter.
+This pass fixes the three founder capacity groups and their baseline values. The energy-storage ladder fixes its advanced capacity increments and structure commissioning in [ENERGY_STORAGE.md](ENERGY_STORAGE.md). V1 therefore rejects any authored capacity-decreasing transition; future capacity reduction requires a named conservative overflow route before it can enter a rule pack.
 
 # Presentation and explainability
 
@@ -528,13 +531,11 @@ The first implementation must prove:
 
 # Remaining storage decisions
 
-The next passes should resolve, in order:
+The remaining implementation and later-content work is:
 
-1. Reserve-production and reserve-mobilization throughput.
-2. Advanced retention targets and the exact useful reactions enabled by waste-retention/recycling traits.
-3. Capacity reductions during speciation and lifecycle transitions, including explicit overflow destinations.
-4. Exact capacity increments, structure, maintenance, quota, and reproduction costs for storage traits.
-5. The performance layout and whether internal held-resource bundles can reuse the external coupled-claim implementation without copying hot-loop state.
-6. Protocol update thresholds and historical aggregation windows.
+1. Advanced retention targets and the exact useful reactions enabled by later waste-retention/recycling traits.
+2. Benchmark the selected tile-chunk resource-major columns, inline-versus-optional binding cohorts, and pooled allocation scratch. Internal allocation and external coupled claims share compiled bundle/whole-extent primitives, but ordinary organism-local reservations remain worker scratch rather than being copied into authoritative state; see [RESOURCE_STORAGE_AND_EVALUATION.md](RESOURCE_STORAGE_AND_EVALUATION.md).
+3. Protocol update thresholds and historical aggregation windows.
+4. A future explicit overflow policy if capacity-reducing DNA, lifecycle transitions, or partial structural damage are introduced.
 
-Founder capacity groups, baseline capacities, needs-only macronutrient staging, one-extra-set micronutrient targeting, primitive `0.5` expected micronutrient uptake, full-store admission, founder waste release timing, and zero passive leakage are fixed by this pass.
+Founder capacity groups, baseline capacities, needs-only macronutrient staging, one-extra-set micronutrient targeting, primitive `0.5` expected micronutrient uptake, full-store admission, founder waste release timing, zero passive leakage, zero separate reserve-mobilization ceiling, and the commissioned energy-capacity ladder are fixed by this pass.

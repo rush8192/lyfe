@@ -1,6 +1,6 @@
 # Organism Health Calibration
 
-Status: provisional v1 ruleset for fixtures and implementation; values must be validated in population simulations before the first rule pack is frozen.
+Status: provisional v1 ruleset exercised by paired-opening and terrestrial population fixtures; broader ecosystems and production fixed-point runs remain before the first rule pack is frozen.
 
 Sources: [organism state and health](ORGANISM_STATE_AND_HEALTH.md), [resource calibration](RESOURCE_CALIBRATION.md), [hydrogen founder fixture](ONE_TILE_STARTING_CONFIGURATION.md), [sulfur founder fixture](SULFUR_TILE_STARTING_CONFIGURATION.md), and [trait catalogue](TRAIT_CATALOGUE.md).
 

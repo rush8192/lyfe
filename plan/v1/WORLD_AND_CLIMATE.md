@@ -1,8 +1,8 @@
 # World, Generation, and Climate
 
-Status: first topology, generation, calendar, climate algorithms, and numerical rule-pack candidate; representative-map validation remains provisional
+Status: first topology, generation, calendar, climate algorithms, numerical world-profile candidate, and external world-pack boundary; representative-map validation remains provisional
 
-Sources: [WORLD vision](../../vision/WORLD.md), [SIMULATION vision](../../vision/SIMULATION.md), [GAMEPLAY vision](../../vision/GAMEPLAY.md), and [numerical calibration](WORLD_CLIMATE_CALIBRATION.md).
+Sources: [WORLD vision](../../vision/WORLD.md), [SIMULATION vision](../../vision/SIMULATION.md), [GAMEPLAY vision](../../vision/GAMEPLAY.md), [moddability](MODDABILITY.md), and [numerical calibration](WORLD_CLIMATE_CALIBRATION.md).
 
 # Purpose
 
@@ -19,8 +19,28 @@ Translate fixed geography, climate baselines, current conditions, world generati
 - Current weather comes from spatially correlated, temporally interpolated keyed fields. Tiles never draw independent hourly weather noise.
 - Generated worlds use a hybrid guarantee: generate naturally, deterministically repair the best near-valid starting regions within strict bounds, and retry with a derived sub-seed if bounded repair cannot satisfy the scenario.
 - Fixed geography and climate normals are authoritative generated state. Most current conditions are deterministic functions of those baselines, seed, and time; terrestrial surface moisture remains authoritative state because it integrates prior precipitation and evaporation.
+- The generator algorithms and hard safety contracts live in engine vocabulary, while concrete geography, climate, atmosphere, tile-endowment, and start-repair settings come from one selected, validated world-generation profile.
+- The official primordial-Earth-like profile uses the same closed world-pack format available to local external packages. A world pins its pack, profile, normalized options, seed, and compiled profile hash before generation.
 
-The world size, calendar length, axial tilt, aquatic fraction, climate coefficients, and repair-count target are first rule-pack values rather than engine constants.
+The world size, calendar length, axial tilt, aquatic fraction, climate coefficients, and repair-count target are first world-profile values rather than engine constants.
+
+# World-profile ownership and selection
+
+World generation is driven by three separate inputs with different owners:
+
+```text
+CompiledRuleSet                 // resources, exposures, biological rules, engine vocabulary
+CompiledWorldGenerationProfile // physical opportunity landscape and continuing environment rules
+WorldSetup                     // seed plus profile-permitted player choices
+```
+
+The profile is loaded from exactly one `WorldGenerationPack` as defined in [MODDABILITY.md](MODDABILITY.md). It is a complete record, not a chain of inherited presets or an ordered patch stack. It may configure existing algorithms and existing resource/exposure definitions, but cannot introduce code, a new resource kind, or a new topology semantic.
+
+This separation lets the same biology run on multiple coherent worlds—such as wetter, colder, more volcanic, or nutrient-fragmented profiles—without copying biological rules. It also lets a given world profile be exercised against alternate balance sets. Compatibility is established by API/registry checks followed by whole-combination validation; a profile author's tested mechanics hash is informative rather than permission to skip validation.
+
+The profile owns both one-time generation inputs and ongoing environmental coefficients where the two must remain coherent. For example, atmospheric starting backgrounds, volcanic province frequency, emission rates, attrition, and pulse distributions belong together; so do precipitation normals, initial moisture spin-up, evaporation, and seasonal variability. The compiled profile therefore remains part of immutable `CompiledWorldRules` after generation even though generated fixed tiles become authoritative state.
+
+A profile declares a bounded setup surface using stable typed world-parameter IDs. Initial candidates include dimensions, target aquatic fraction, broad climate volatility, volcanic prevalence/activity, and initial resource richness. Each option has an authored default and allowed range or choice set; the engine applies no hidden fallback. Scenario rules may narrow those choices or require capabilities such as viable paired volcanic-ocean starts.
 
 # Numeric and coordinate contract
 
@@ -54,9 +74,11 @@ Crossing the east or west edge of a tile subtracts or adds one normalized tile w
 ```text
 WorldFixedState
     seed
+    world_generation_identity
+    normalized_selected_world_options
     width
     height
-    generation_version
+    generation_algorithm_version
     calendar_definition
     start_hour_offset
     world_resource_targets
@@ -88,14 +110,14 @@ TileDynamicEnvironment
     resource_accounts[]
 ```
 
-Current temperature, precipitation, cloud, insolation, aquatic light, and ordinary slow volcanic modulation are derived for a tick and may be cached with an explicit tick key. They are not independent writable fields. Active volcanic pulses are stored because their start, duration, and decay form an authoritative event history. Resource accounts and source/sink/exchange remainders follow the resource and gas plans.
+Current temperature, precipitation, cloud, insolation, aquatic light, and ordinary slow volcanic modulation are derived once by phase 1 and stored in the completed `TileClimateState` with its generation. They are not independently writable fields, and later phases read the stored values rather than invoking climate formulas. Active volcanic pulses are primary stored state because their start, duration, and decay form an authoritative event history. Resource accounts and source/sink/exchange remainders follow the resource and gas plans.
 
 # Deterministic world-generation pipeline
 
 Every generation stage uses a named key domain and immutable inputs. Adding a random choice to climate generation must not shift elevation or resource results.
 
 ```text
-GenerateWorld(seed, scenario, rulePack):
+GenerateWorld(seed, scenario, compiledRuleSet, compiledWorldProfile, selectedOptions):
     validate odd height, dimensions, numeric limits, and rule references
 
     for generationAttempt in 0 ..< scenario.maxGenerationAttempts:
@@ -266,7 +288,9 @@ UpdateCurrentConditions(world, nextTick):
     publish one immutable current-condition view for phases 2 through 10
 ```
 
-Current-condition derivation consumes no mutable global random stream and is independent of worker count. Save/load needs the seed, tick, baselines, rule version, moisture state, and active volcanic pulses—not a serialized copy of every derived temperature or cloud value.
+Current-condition derivation consumes no mutable global random stream and is independent of worker count. Completed saves retain the materialized current condition values and generation used by downstream phases, in addition to the seed, tick, baselines, rule version, moisture state, and active volcanic pulses. Load validates rather than silently replaces those values; see [MATERIALIZED_DERIVED_STATE.md](MATERIALIZED_DERIVED_STATE.md).
+
+Current raw/stateful conditions are held in dense field-major tile columns. After climate/resource phases establish their inputs, the engine builds compact tile-only physiology, acquisition, and movement views once per affected tile and reuses them for all organisms there. DNA- or organism-specific stress, health, and opportunity remain organism-kernel calculations rather than a species-by-tile cache. The storage layout and invalidation contract are defined in [RESOURCE_STORAGE_AND_EVALUATION.md](RESOURCE_STORAGE_AND_EVALUATION.md).
 
 ## Surface moisture
 

@@ -1,24 +1,30 @@
 # Configuration and Balance
 
-Status: first configuration inventory and validation pass; authoring format, schemas, compiler layout, and rule hashing pending
+Status: first configuration inventory plus authoring, identity, validation, hashing, and compilation-boundary contracts decided; concrete records, registry assignments, and representative bundle remain
 
-Sources: all vision documents and [technology decisions](TECHNOLOGY.md).
+Sources: all vision documents, [technology decisions](TECHNOLOGY.md), [rule-pack authoring and compilation](RULE_PACK_AUTHORING_AND_COMPILATION.md), and [moddability](MODDABILITY.md).
 
 # Purpose
 
-Separate simulation rules and balance data from engine mechanics so that biology can be tuned without rewriting the hot loop, while ensuring every saved world remains tied to a reproducible rules version.
+Separate simulation rules and balance data from engine mechanics so that biology can be tuned without rewriting the hot loop, while ensuring every saved world remains tied to an exact reproducible rules identity.
 
 # Configuration layers
 
-Plan a validated layering model for:
+Use the validated layering model defined in [RULE_PACK_AUTHORING_AND_COMPILATION.md](RULE_PACK_AUTHORING_AND_COMPILATION.md) and [MODDABILITY.md](MODDABILITY.md):
 
 1. Engine constants that cannot change without a simulation-version change.
 2. Versioned rules data for resources, traits, reactions, environments, and actions.
-3. Scenario defaults such as grid size, final date, starting population, and speed presets.
-4. Player-selected world options such as seed and permitted setup choices.
-5. Development-only overrides used for tests and balance experiments.
+3. Data-only balance/presentation mods that replace explicitly marked base-rule fields against an exact base-pack hash.
+4. Gameplay scenarios that define mode, deadline, founders, starting population, speed presets, and constraints a compatible world must satisfy.
+5. One selected world-generation pack/profile defining geography, climate, tile initialization, continuing environmental coefficients, and its bounded setup surface.
+6. Player-selected options permitted by both scenario and world profile, including seed and selected values within declared ranges.
+7. Development-only full-pack forks used for tests and structural experiments.
 
-The detailed plan must define precedence, validation, canonical serialization, hashing, and which layers are stored in a save.
+These are composed typed inputs rather than a generic precedence stack. Scenario and world-profile constraints must intersect; neither silently overrides the other. The detailed plan defines validation, canonical serialization, hashing, and which identities and selected values are stored in a save.
+
+The RNG algorithm, permanent domain IDs, coordinate schemas, and typed conversion rules are engine compatibility metadata, not tunable balance configuration. Rule data supplies bounded `RatioQ` probabilities, weights, tables, and eligible candidate sets; [KEYED_RANDOMNESS.md](KEYED_RANDOMNESS.md) alone maps them to reproducible draws.
+
+The official base values for moddable simulation parameters live in this rule data, not duplicated in engine kernels or clients. Authoring fields default to full-pack-only and opt into the stable `BalanceOverride` or `PresentationOverride` surface with a permanent mod-parameter identity. Overlays are flattened before ordinary validation/compilation and create a distinct final mechanics/mod-set identity; see [MODDABILITY.md](MODDABILITY.md).
 
 # Data-driven definitions
 
@@ -63,18 +69,22 @@ Evaluate data schemas for:
 - Mutation-income effective-population table, normalization, DNA modifier bounds, `MutationQ` scale, fractional accumulation denominator, and numeric ceiling from [EVOLUTION.md](EVOLUTION.md).
 - Autonomous pressure mappings/weights/decay, material-opportunity composition, evaluation cadence, savings horizon, exploration probability, goal invalidation rules, commit curve, base and opportunity-adjusted tile-count weights, and explanation retention from [EVOLUTION.md](EVOLUTION.md).
 - Speciation tile fractions, founder rounding and selection-key domain, typed validation errors, and lineage-event fields from [EVOLUTION.md](EVOLUTION.md).
-- World-generation distributions and climate parameters.
-- Scenario world dimensions, odd-height/equator validation, calendar definition, axial tilt, aquatic-fraction target, elevation ranges, terrain thresholds, weather-field scales, moisture coefficients, depth-light curve, phototrophy throughput, volcanic-pulse parameters, starting-region eligibility, repair weights/budget, required pair count, generation-attempt limit, and seed-suite thresholds from [WORLD_AND_CLIMATE.md](WORLD_AND_CLIMATE.md) and [WORLD_CLIMATE_CALIBRATION.md](WORLD_CLIMATE_CALIBRATION.md).
+- Strategic-intent metadata, benefit-timing rules, authored candidate goals, frontier limit, attention thresholds/recovery hysteresis, chronicle significance/deduplication windows, and consequence-review duration from [PLAYER_LOOP_AND_NARRATIVE.md](PLAYER_LOOP_AND_NARRATIVE.md). Presentation wording and private notes are not rules data.
+- Closed-schema world-generation-pack manifests, complete named profiles, stable world-parameter IDs, default/allowed option values, compatibility metadata, and profile hashes from [MODDABILITY.md](MODDABILITY.md).
+- World-profile dimensions, odd-height/equator validation, calendar definition, axial tilt, aquatic-fraction target, elevation ranges, terrain thresholds, weather-field scales, moisture coefficients, depth-light curve, phototrophy throughput, volcanic-pulse parameters, atmospheric and tile-resource initialization, lithology/endowment distributions, starting-region eligibility, repair weights/budget, required pair count, generation-attempt limit, and seed-suite thresholds from [WORLD_AND_CLIMATE.md](WORLD_AND_CLIMATE.md) and [WORLD_CLIMATE_CALIBRATION.md](WORLD_CLIMATE_CALIBRATION.md).
 
 Data-driven does not mean arbitrary scripting. Frequently executed behavior should compile or resolve into efficient runtime structures during world initialization.
 
+The complete cold-to-hot boundary is now fixed at a first-pass level in [RULE_PACK_AUTHORING_AND_COMPILATION.md](RULE_PACK_AUTHORING_AND_COMPILATION.md), [RESOURCE_STORAGE_AND_EVALUATION.md](RESOURCE_STORAGE_AND_EVALUATION.md), and [MATERIALIZED_DERIVED_STATE.md](MATERIALIZED_DERIVED_STATE.md). Strict JSON authoring records resolve through explicit permanent typed registries into a canonical normalized pack; the compiler then assigns compatible dense resource slots and emits domain-grouped immutable numerical phenotype profiles and short process plans with pre-resolved resource handles. World generation materializes fixed tile access/neighbor tables, while named phase owners update and store only those current effective values whose inputs changed. Authoring schemas remain readable domain records and never become hot memory layout.
+
 # Versioning rules
 
-- An active world uses one immutable simulation-rules version.
+- An active world uses one immutable final compiled-rules identity.
 - Hot-reloading rules into an active authoritative world is not a v1 requirement.
-- Saves record the rules version and enough configuration to reject incompatible loading.
+- Saves record the exact base pack, canonical mod set, world pack/profile/options, compiler, final rules, scenario/world-rules, and RNG compatibility identities needed to reject incompatible loading.
 - Balance-only changes still require a version decision because they affect deterministic replay.
 - Development fixtures should pin exact rule hashes.
+- A world pins one final base/mod-set and world-pack/profile/options identity at creation; neither rules, overlays, nor world-profile data hot-reload into that world.
 
 # Validation
 
@@ -103,6 +113,7 @@ Configuration loading should reject:
 - Tolerance-cost curves that are non-monotonic, non-convex, overflow-prone, or produce a negative derived upkeep contribution.
 - An effective-population table shorter than the configured organism ceiling, non-monotone table entries, a nonzero population-zero entry, invalid mutation modifier bounds, or a required genome outside the bounds.
 - A selectable non-foundation trait with zero/negative mutation price, an invalid change-complexity ceiling, an autonomous candidate with no positive weight, or pressure decay/commit probabilities outside their domains.
+- A player-facing candidate goal that is not prerequisite-closed, cannot identify its completed versus opened capabilities, uses an unknown strategic intent, labels construction-dependent capacity as immediate rather than maturing, or can otherwise label an incomplete capability as active; an attention threshold whose recovery boundary cannot provide hysteresis; or a chronicle rule without a stable deduplication key.
 - An environmental-spread profile with a non-positive or out-of-bounds passive RMS multiplier, an active-speed multiplier outside `0..1`, an unaccounted upkeep, both mutually exclusive constitutive profiles, or any v1 effect that introduces directional bias into the antipodal passive-movement table.
 - A moisture-conservation policy with non-positive trend/dwell/reserve horizons, entry warning below the compiled active hard threshold, exit recovery below entry warning or above the active preferred threshold, a missing condition-history window, or any future/calendar/visibility-dependent input.
 - A material-opportunity profile with missing resources, zero/negative yield or horizon, a history window outside retained authoritative flow data, weights outside `0..1`, weights that do not sum to `1.0`, or a proposal that claims useful material opportunity without enabling a complete consuming process.
@@ -111,26 +122,29 @@ Configuration loading should reject:
 - A complex-cell definition whose structure assignments do not sum exactly to conserved viable structure, lets organization matter affect radius or prey-size fit, grants mature scale/organization capacity before construction completes, defines non-positive processing loads, applies a respiratory-ceiling modifier separately to each fuel, applies a scale-area cost more than once, or provisions an inherited quota without matching matter.
 - An oxygenic definition that fails `CO2 + H2O -> CH2O + O2` balance, produces O2 without admitting its fixed-carbon output, double-counts light across photo reactions, omits Mn/Ca/tolerance activation, or applies depth/cloud/turbidity more than once.
 - A predation definition with cross-tile or same-species targets, player-ownership immunity, invalid kin-distance bounds, a selectable v1 `PiercingExtraction` without a complete mechanism, a probability floor applied to hard-ineligible prey, food transfer without matching acquisition/storage, non-positive attack/defense denominators, feeding weights outside declared bounds, hidden-state fields in an organism observation, or a biological-opportunity profile without a useful processing route.
+- A balance override targeting a locked/full-pack-only or unknown parameter, a stale base/value hash, the wrong value shape/unit, a duplicate writer from another mod, or a replacement that makes any ordinary whole-pack validator fail.
+- A world pack with an unknown generation API/algorithm/parameter, mismatched resource registry, partial profile relying on hidden defaults, invalid option domain, unresolved resource/exposure reference, incompatible scenario requirements, unsafe numeric bound, or generated-seed fixture that cannot meet mandatory start and reconciliation rules.
 
-# Tools and artifacts to plan
+# Required tools and artifacts
 
-- Human-authored configuration format and schema.
-- Loader and compiler pseudocode.
-- Validation-report format with source locations.
-- Rule-pack hash/version algorithm.
-- Balance-diff tool between two rule sets.
-- Minimal rule pack for deterministic tests.
-- Representative v1 rule pack for the performance benchmark.
+- [x] Human-authored format, generated editor schema, loader/compiler pipeline, and immutable runtime boundary; concrete records remain implementation work. See [RULE_PACK_AUTHORING_AND_COMPILATION.md](RULE_PACK_AUTHORING_AND_COMPILATION.md).
+- [x] Canonically ordered validation diagnostics with file, JSON pointer, line/column, definition identity, and related locations.
+- [x] Versioned semantic, presentation, registry, compiled-artifact, and world-rules hashing model; exact record/field tags remain implementation work.
+- [x] Normalized rule/phenotype diff workflow and compatibility classification.
+- [x] Local/developer data-only balance overlays over explicitly marked parameters, with exact-base targeting, duplicate-writer rejection, final mod-set identity, and no runtime lookup or scripting. See [MODDABILITY.md](MODDABILITY.md).
+- [x] Local/developer closed-schema world-generation packs with complete profiles, bounded setup options, independent package/profile identity, whole-combination validation, and no executable algorithms. See [MODDABILITY.md](MODDABILITY.md) and [WORLD_AND_CLIMATE.md](WORLD_AND_CLIMATE.md).
+- [ ] Minimal compiled rule pack for deterministic tests.
+- [ ] Representative v1 rule pack for the performance benchmark.
 
 # Open decisions
 
-- [ ] JSON, YAML, TOML, or another authoring format.
-- [ ] Whether schemas are hand-validated or generated.
-- [ ] How trait effects compile into hot-loop data.
-- [ ] General curve and probability-distribution representation; health uses the first fixed-point curve shapes in [ORGANISM_HEALTH_CALIBRATION.md](ORGANISM_HEALTH_CALIBRATION.md).
+- [x] Strict UTF-8 JSON in explicitly included domain files; no comments, trailing commas, arbitrary overlays, or scripts.
+- [x] Immutable C# authoring contracts with `System.Text.Json` metadata source generation and generated/committed JSON Schema for editor support; C# owns semantic validation.
+- [x] How trait effects and resource definitions cross into hot-loop numerical profiles, dense handles, process plans, tile matrices, and phase views; exact generated/runtime types remain prototype work. See [RESOURCE_STORAGE_AND_EVALUATION.md](RESOURCE_STORAGE_AND_EVALUATION.md).
+- [x] V1 general curves are bounded fixed-point piecewise-linear curves with integer points, endpoint clamping, checked wide interpolation, and named rounding. Nonlinear mechanics use closed typed engine evaluators; arbitrary expressions are excluded. Future non-Bernoulli distributions remain an explicit engine/RNG-schema decision.
 - [x] Game-native resource scale, structural-biomass composition, and reserve-energy density; see [RESOURCE_CALIBRATION.md](RESOURCE_CALIBRATION.md).
 - [x] Founder available-store capacity groups, composition-derived load, initial values, desired inventories, and founder waste routing; see [INTERNAL_STORAGE_AND_ALLOCATION.md](INTERNAL_STORAGE_AND_ALLOCATION.md).
 - [x] Primitive micronutrient uptake at `0.5` expected quantum per organism-hour with normalized-deficit targeting and ordinary contention; advanced trait modifiers remain open.
 - [ ] Default final date and speed presets.
-- [x] First mutation-income formula, deterministic arithmetic, economy scales, and provisional fastest opening cadence; see [EVOLUTION.md](EVOLUTION.md) and [SULFUR_TILE_STARTING_CONFIGURATION.md](SULFUR_TILE_STARTING_CONFIGURATION.md). Final population and post-speciation validation remain open.
-- [x] Two exact founding-metabolism identities, path asymmetry, and provisional opening targets; see [FOUNDING_METABOLISMS.md](FOUNDING_METABOLISMS.md). Exact numeric yields and prices remain tuning work.
+- [x] First mutation-income formula, deterministic arithmetic, economy scales, and coupled opening cadence through the first player speciation; see [EVOLUTION.md](EVOLUTION.md) and [SURVIVAL_OPENING_VALIDATION.md](SURVIVAL_OPENING_VALIDATION.md). Longer autonomous branching and final-date population validation remain open.
+- [x] Two exact founding-metabolism identities, path asymmetry, numeric reactions, milestone prices, and coupled opening targets; see [FOUNDING_METABOLISMS.md](FOUNDING_METABOLISMS.md) and [SURVIVAL_OPENING_VALIDATION.md](SURVIVAL_OPENING_VALIDATION.md). Optional founder packages and catalogue-wide prices remain tuning work.

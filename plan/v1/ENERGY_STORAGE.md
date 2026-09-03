@@ -137,7 +137,7 @@ The first two use the inherited sulfur-derived four-extent assembly ceiling; the
 
 # Reproduction
 
-Reproduction transfers concrete charged reserve, spent carriers, and all three structure assignments. It never copies capacity or fills the result. Each result independently derives current capacity from its inherited DNA, assigned `StorageStructure`, and organization activation.
+Reproduction transfers concrete charged reserve, spent carriers, and all three structure assignments. It never copies capacity or fills the result. The capacity owner materializes each result's current capacity once from its inherited DNA, assigned `StorageStructure`, and organization activation before any capacity consumer runs.
 
 Structural requirements follow the reproduction profile:
 

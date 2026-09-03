@@ -2,7 +2,7 @@
 
 Status: scaffold
 
-Sources: [INTERFACE vision](../../vision/INTERFACE.md), [GAMEPLAY vision](../../vision/GAMEPLAY.md), and [technology decisions](TECHNOLOGY.md).
+Sources: [INTERFACE vision](../../vision/INTERFACE.md), [GAMEPLAY vision](../../vision/GAMEPLAY.md), [player loop and narrative](PLAYER_LOOP_AND_NARRATIVE.md), [behavior and resource pressure](BEHAVIOR_AND_RESOURCE_PRESSURE.md), [state change and client synchronization](STATE_CHANGE_AND_CLIENT_SYNC.md), [moddability](MODDABILITY.md), and [technology decisions](TECHNOLOGY.md).
 
 # Purpose
 
@@ -20,6 +20,8 @@ The client owns:
 - Presentation-only randomness isolated from the world seed.
 
 The client does not own organism decisions, resource resolution, mutation income, game outcomes, or authoritative time.
+
+The client also does not embed authoritative balance or world-profile values. It receives the final server-compiled definition metadata required for explanation and presentation, caches it by final mechanics/presentation/world-profile identity, and displays the world's base pack, canonical mod set, selected world pack/profile/options, and certification class. A modified world must be visibly distinguishable from an official canonical world. The browser never evaluates overlay or generator logic or executes mod-supplied code; protocol values and server outcomes remain authoritative.
 
 Authoritative resource and energy quantities may exceed JavaScript's exact integer range. The protocol adapter must preserve them as `bigint`, strings, or generated long values and convert only presentation-scaled values to `number` for charts and labels.
 
@@ -49,6 +51,7 @@ PixiJS world renderer
 # Primary screens and surfaces
 
 - World creation and founding-species setup.
+- Compatible world-profile selection, bounded option controls, profile premise/pressure summary, and actor-authorized generated start-site preview; setup must not reveal exact hidden-tile composition that ordinary exploration would conceal.
 - Storybook abiogenesis introduction.
 - World map with environmental/resource layers.
 - Within-tile organism and remnant view.
@@ -56,8 +59,11 @@ PixiJS world renderer
 - Organism and species inspector.
 - Resource-level and flow history.
 - Tree of life and evolution planner.
+- Watchlist, alert inbox, evolution-goal status, and ancestor/descendant consequence review.
+- Factual world chronicle with evidence navigation and private hypothesis notes.
 - Pause, speed, date, deadline, save, and run-status controls.
 - End-of-run summary.
+- World/rule identity and modification status in setup, load, and persistent run information.
 
 Survival setup presents the two choices defined in [FOUNDING_METABOLISMS.md](FOUNDING_METABOLISMS.md), including expected opening reproduction time, environmental dependencies, tolerance, and the first route away from volcanism. It makes the paired autonomous founder explicit without displaying its hidden organisms or live resource state.
 
@@ -68,7 +74,7 @@ Survival setup presents the two choices defined in [FOUNDING_METABOLISMS.md](FOU
 - Live tiles show exact current state and truthful organism/remnant entities.
 - A live-to-reduced transition evicts organisms, remains, exact current values, and hidden chart points from the client cache.
 - Previously observed charts show explicit gaps for hidden intervals and label the last observation tick/date.
-- Sandbox control transfer retains discovered-map presentation but recomputes live styling and subscriptions from the new controlled species.
+- Sandbox control transfer retains discovered-map presentation; the authoritative knowledge owner updates the live-tile set from the new controlled species, and the client derives styling and subscriptions only from that projected set.
 
 Client layers must distinguish `current`, `last known`, `coarse`, and `unknown` values visually and textually. Rendering interpolation stops when a tile ceases to be live.
 
@@ -102,13 +108,21 @@ The predation view distinguishes opportunistic contact, directed hunting, and en
 
 Migration histories distinguish active, Brownian-like passive, and future directional environmental displacement. Species summaries expose the compiled `EnvironmentalSpread` profile and should make it possible to see whether a lineage remains clustered through anchoring, spreads through population/reproduction plus enhanced chance drift, uses directed movement, or later exploits directional environmental stages. The presentation must not imply that passive arrival was player-commanded or that environmental transport copied an organism.
 
-The organism inspector presents relative health as an explainable physiological-condition summary rather than unexplained hit points. For live observations it should show stored energy versus current commissioned and compiled maximum capacity, storage structure versus target, any organization gate, the strongest limiting health factor, significant stress channels, age, and lifecycle phase according to [ORGANISM_STATE_AND_HEALTH.md](ORGANISM_STATE_AND_HEALTH.md) and [ENERGY_STORAGE.md](ENERGY_STORAGE.md). Reduced or historical observations must retain their observation timestamp and must not be recomputed from hidden current state.
+The organism inspector presents relative health as an explainable physiological-condition summary rather than unexplained hit points. For live observations it should show stored energy versus current commissioned and compiled maximum capacity, storage structure versus target, any organization gate, the strongest limiting health factor, significant stress channels, age, and lifecycle phase according to [ORGANISM_STATE_AND_HEALTH.md](ORGANISM_STATE_AND_HEALTH.md) and [ENERGY_STORAGE.md](ENERGY_STORAGE.md). It also shows the selected behavior and target, dwell, next-tick permissions, reserve fraction, recent energy and acquisition coverage, limiting material deficit, dominant pressure cause, and whether behavior or a hard transaction gate suppressed growth or reproduction. Candidate utilities and keyed choice details are diagnostic expansion rather than permanent map labels. Reduced or historical observations must retain their observation timestamp and must not be recomputed from hidden current state.
+
+The tile and species inspectors show current behavior distributions as counts and percentages by behavior state. A live tile can show exact distributions for every species currently visible there. The controlled species can show an exact world-wide distribution and a per-occupied-tile breakdown. Other species summaries combine only current live-tile observations and are labeled `observed`, including the observed organism count and coverage scope; they must not imply knowledge of hidden populations. Reduced tiles may show a timestamped last-observed distribution but never a continuously updating one.
 
 The species/evolution view presents mutation balance and current rate as population × average-health × DNA-modifier contributions, with forecasts labeled as current-rate estimates. A proposal preview shows the exact per-tile founder counts, ancestor remainder, mutation price, change complexity, post-price duplicated balance, seven-day branch cooldown, activation risks, and permanent incompatibilities before commit. For a finite-resource capability, it also distinguishes current stock from renewable flow, compares estimated replacement demand with the selected cohort, and plainly warns when a branch is likely to overshoot the observed niche. It must label this as a current-state estimate rather than a survival guarantee. Autonomous lineage events expose their pressure, material-opportunity, tile-plan, and candidate-score rationale only through the actor's authorized species/tile projection.
+
+The planner also implements the framing contract in [PLAYER_LOOP_AND_NARRATIVE.md](PLAYER_LOOP_AND_NARRATIVE.md): immediate, maturing, conditional, and preparatory benefit timing; non-dominated proposals grouped by explanatory strategic intent; expandable prerequisite-closed milestone cards; saved goals with current-rate ETA; and side-by-side proposal comparison. Strategic-intent labels and private notes are presentation state, not simulation inputs. A preparatory node must never inherit the success language or iconography of the capability it only helps unlock; a maturing node must expose physical construction and commissioning rather than displaying its genetic maximum as present capacity.
+
+After a player speciation, the client pins a 168-hour ancestor/descendant consequence review using authorized completed-tick aggregates. The alert inbox links directly to the evidence that caused each threshold crossing. Chronicle entries navigate to their involved lineage, tile, species, resource interval, or causal record; generated prose remains visibly distinct from a player's private hypothesis note.
 
 # Performance strategy
 
 Define viewport interest, object pooling, sprite batching, level of detail, update cadence, interpolation buffers, and chart downsampling. React should not create one DOM component per organism; dense world entities belong in PixiJS-managed structures.
+
+The normalized cache and batch applier follow [STATE_CHANGE_AND_CLIENT_SYNC.md](STATE_CHANGE_AND_CLIENT_SYNC.md). A batch is fully decoded and validated, applied to a draft in dependency order, and committed at one exact stream revision before React selectors or PixiJS buffers are notified. State fields are absolute replacements, histories are keyed upserts, and entity removals distinguish destruction from loss of projection. React observes coarse changed scopes; PixiJS receives bulk changed-ID/column ranges and never renders an intermediate partial batch.
 
 # Required decisions and artifacts
 
@@ -116,10 +130,12 @@ Define viewport interest, object pooling, sprite batching, level of detail, upda
 - [ ] State-store/query approach.
 - [ ] React/Pixi ownership boundary.
 - [ ] Camera, zoom, tile, and within-tile coordinate mapping.
-- [ ] Snapshot/delta application pseudocode.
+- [x] Logical snapshot/delta application, atomicity, merge, duplicate/gap, and renderer-notification contract; concrete state-store APIs remain open. See [STATE_CHANGE_AND_CLIENT_SYNC.md](STATE_CHANGE_AND_CLIENT_SYNC.md).
 - [ ] Exploration-state visual language, stale-data UX, and live-to-reduced cache tests.
 - [ ] Resource-chart and lineage-graph libraries.
 - [ ] Loading, disconnect, resync, and command-error UX.
+- [x] Client balance/world-profile authority boundary, final-definition cache identity, world-profile setup consequences, and modified-world disclosure; exact metadata schemas remain part of the protocol pass. See [MODDABILITY.md](MODDABILITY.md).
 - [ ] Accessibility and input baseline.
 - [ ] Wireframes for all primary surfaces.
+- [ ] Decision-frontier, proposal-comparison, attention, consequence-review, chronicle, and loss-postmortem interaction tests.
 - [ ] Rendering benchmark with tens of thousands of visible entities and aggregates.

@@ -1,6 +1,6 @@
 # One-Tile Sulfide-Phototrophy Starting Configuration
 
-Status: first numerical calibration
+Status: first numerical sulfur-founder calibration and coupled opening authoring validation complete; production generated-world and optional-package tuning remain
 
 Sources: [founding metabolism decisions](FOUNDING_METABOLISMS.md), [resource model](RESOURCE_MODEL.md), [resource calibration](RESOURCE_CALIBRATION.md), and [hydrogen fixture](ONE_TILE_STARTING_CONFIGURATION.md).
 
@@ -275,7 +275,7 @@ structural growth                             =     96/day
 
 Reserve capacity causes some daylight capture to be throttled once the organism is full. This is expected and must reduce gas claims rather than destroy produced reserve after the fact.
 
-# Substrate ceiling and specialist pressure
+# Full-growth substrate ceiling and specialist pressure
 
 Average per-organism H₂S demand while sustaining four assembly extents is:
 
@@ -288,9 +288,9 @@ total       = 954 H2S/tick
 For a source `S = 200,000` and attrition `r = 0.005`, the approximate averaged positive-equilibrium condition is:
 
 ```text
-population ceiling < ((1 - r) * S) / demand
-                   < 199,000 / 954
-                   < 208.6 organisms
+full-growth population ceiling < ((1 - r) * S) / demand
+                               < 199,000 / 954
+                               < 208.6 organisms
 ```
 
 The corresponding averaged H₂S equilibria are approximately:
@@ -309,7 +309,7 @@ Fixed nitrogen is also a deliberate pressure. At 100 sulfur organisms, four asse
 
 # Provisional mutation-income calibration
 
-The opening fixtures expose enough population and reserve history to select a first mutation-income curve, although the result must be rerun when the final health function exists.
+The opening fixtures exposed enough population and reserve history to select a first mutation-income curve. The complete health function is defined in [ORGANISM_HEALTH_CALIBRATION.md](ORGANISM_HEALTH_CALIBRATION.md), and [SURVIVAL_OPENING_VALIDATION.md](SURVIVAL_OPENING_VALIDATION.md) now exercises the curve through reproduction, environmental health, contention, senescence, speciation, and post-speciation population change.
 
 Use logarithmic effective population to reward growth without making late-game point income scale linearly into an unmanageable decision flood:
 
@@ -338,7 +338,7 @@ The curve produces:
 | 10,000 | 665.8 |
 | 100,000 | 996.7 |
 
-The denominator `750` is calibrated from the first two fixtures. For this calculation only, relative health equals reserve divided by reserve capacity; external health modifiers are neutral. Reproduction is synchronized at the calculated first-split tick, a true split pays 500 energy, and no speciation, senescence, resource contention, or deaths occur.
+The denominator `750` is calibrated from the first two fixtures. For this historical authoring calculation only, relative health equals reserve divided by reserve capacity; external health modifiers are neutral. Reproduction is synchronized at the calculated first-split tick, a true split pays 500 energy, and no speciation, senescence, resource contention, or deaths occur. The coupled Survival scenario supersedes these simplifications when setting milestone bands.
 
 | Milestone | Simulated time | MP balance | At 2 ticks/second |
 | --- | ---: | ---: | ---: |
@@ -349,7 +349,7 @@ At day 20, the same calculation produces approximately 63.3 MP for hydrogen and 
 
 These values support the “meaningful choice every few real-world minutes” target at a provisional fastest speed of two one-hour ticks per real second. They do not yet determine the time to complete either escape path: spending the first trait causes speciation, transfers control to a founding subset, and changes the descendant's population and future income. Hoarding several trait costs into one speciation would produce a misleading lower bound.
 
-This curve is a calibration recommendation, not final balance, until the health calculation and speciation sequence are simulated. The implementation should make `referencePopulation`, the logarithmic curve, the `750` normalization, and DNA modifiers versioned rule data.
+The coupled authoring result supports this curve for initial implementation. It remains provisional until the production generated-world, fixed-point, replay, and broader population suites pass. The implementation should make `referencePopulation`, the logarithmic curve, the `750` normalization, and DNA modifiers versioned rule data.
 
 # Paired-region implications
 
@@ -362,19 +362,19 @@ The first coefficients and calculated paired plateaus are now fixed in [GAS_TRAN
 - CO₂ and other stable gases may mix quickly without erasing the founding distinction.
 - With no founding locomotion, neither species crosses the tile boundary before evolving or otherwise acquiring a movement mechanism.
 
-The paired fixture should run both with exchange disabled as an isolation control and with the selected coefficients, then compare first reproduction, reserve minimum, deaths by stressor, substrate trajectories, and mutation-point income for both species.
+The standalone founder fixtures remain the exchange-disabled isolation controls. The coupled executable in [SURVIVAL_OPENING_VALIDATION.md](SURVIVAL_OPENING_VALIDATION.md) runs the selected exchange coefficients and compares first reproduction, deaths, substrate trajectories, mutation income, and the first player branch for both founders.
 
-# Missing inputs exposed by calibration
+# Remaining calibration work
 
-These inputs remain necessary before the opening can be considered fully balanced:
+The health function, lifecycle rules, organic uptake and fermentation reactions, gas field, generated-climate equations, evolution economy, and general behavior controller are specified. The first coupled end-to-end authoring run is complete in [SURVIVAL_OPENING_VALIDATION.md](SURVIVAL_OPENING_VALIDATION.md). Remaining work is empirical refinement:
 
-1. **Final health function and post-speciation mutation trajectory.** The provisional logarithmic formula and two-tick-per-second target produce useful opening times, but must be rerun with environmental health adjustments, founder fractions, resource contention, senescence, and actual speciation choices.
-2. **World insolation validation.** The first seasonal, latitudinal, weather-, depth-, and turbidity-aware function is specified; generated maps and biological smoke tests must confirm its `250..275`-tick acceptance band.
-3. **Lifecycle population validation.** The zero terminal reserve, 4,000 growth-protection floor, reproduction gates, and primitive senescence curve are selected, but their long-run generation overlap and age distribution require simulation.
-4. **Organic-resource uptake and fermentation yields.** The hydrogen escape path has a mutation price but cannot be compared economically until its uptake, reaction, maintenance, and substrate values are defined.
-5. **Environmental tolerance options.** The baseline comparison is fixed, but the exact player-selectable efficiency-versus-tolerance packages must be bounded and tested so none reverses the two identities.
+1. **Production generated seed.** Exercise the real light, weather, depth, gas exchange, and starting-pair repair rules on a full map and confirm the `250..275` sulfur first-reproduction band.
+2. **Exact engine replay.** Replace authoring floating point and reduced remnant chemistry with production fixed-point arithmetic, keyed RNG, full ledger reconciliation, save/load, worker-count, and state-hash checks.
+3. **Longer population balance.** Extend beyond the current 45-day tail to measure recycling, migration, generation overlap, extinction/recovery, and autonomous branching under a final gameplay horizon.
+4. **Selectable tolerance packages.** The canonical scenario uses the reference founder profiles; optional player-facing efficiency-versus-tolerance variants still need bounded effects and comparative runs before they become setup choices.
+5. **Behavior-trait calibration.** Founders use `BaselineActivity`; later conservation and reproduction-readiness thresholds are specified but still need mutation prices, upkeep, and coupled population fixtures.
 
-Item 1 blocks final paired gameplay pacing. Items 2–3 block freezing the generated-world replacement as balanced, but no longer block its first implementation. Items 4–5 block evaluation of later player evolution choices but do not block implementation of the two founding reactions, gas propagation, or the provisional mutation curve.
+None of these items blocks implementing the reference opening. Items 1–2 determine when its balance values can be frozen as production regression targets; items 3–5 govern later pacing and setup variety.
 
 # Validation scenarios
 
@@ -391,10 +391,10 @@ Item 1 blocks final paired gameplay pacing. Items 2–3 block freezing the gener
 - Removing intrinsic H₂S adaptation applies the existing hard-stress death curve.
 - Removing the `10×` SO₂ multiplier produces the expected rapid sulfur-dioxide mortality.
 - Zero Mn, Mo, Ni, Co, and Cu enforce their declared pathway and reproduction gates.
-- At approximately 200 organisms, H₂S approaches its low positive equilibrium and constrains further growth.
+- Near the documented full-demand ceiling, H₂S approaches a low positive equilibrium and constrains further growth. This is not a hard survival population cap; energy-positive adults may persist above it at reduced or zero growth.
 - Reserve production is throttled before capacity overflow and unused substrate remains in the tile.
 - Repeating the fixture produces identical ledgers, organisms, deaths, and state hashes.
-- The provisional mutation curve reaches the hydrogen and sulfur opening choices within one tick of the stated reference milestones.
+- The isolated historical mutation proxy reproduces its stated landmarks; the coupled paired opening supersedes it with the `343 h` hydrogen-`40 MP` and `496 h` sulfur-`60 MP` reference landmarks and their accepted bands.
 
 # Scientific anchors
 

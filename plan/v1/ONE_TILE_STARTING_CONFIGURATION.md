@@ -1,6 +1,6 @@
 # One-Tile Volcanic Starting Configuration
 
-Status: first balance fixture; accounting values concrete, gameplay values provisional
+Status: first balance fixture with concrete accounting and coupled-opening landmarks; optional founder packages and production generated-world validation remain
 
 Sources: [resource model](RESOURCE_MODEL.md), [resource calibration](RESOURCE_CALIBRATION.md), [world plan](WORLD_AND_CLIMATE.md), and [organism plan](ORGANISMS.md).
 
@@ -418,7 +418,7 @@ The fixture should exhibit four phases:
 3. **Hydrogen competition:** population growth raises H₂ claims until proportional allocation slows reserve and structural growth.
 4. **Nitrogen pressure:** finite NH₃ declines, making migration, scavenging, decomposition, or a different environment increasingly valuable.
 
-The approximate H₂ equilibrium with 100 organisms consuming 80,000 per tick is 67,750,000. At roughly 300 otherwise identical organisms, biological demand approaches the volcanic H₂ supply and the equilibrium falls close to depletion. This provides a first carrying-capacity target, not a guaranteed stable population.
+The approximate H₂ equilibrium with 100 organisms consuming 80,000 per tick is 67,750,000. At roughly 300 otherwise identical organisms, full-throughput biological demand approaches the volcanic H₂ supply and the equilibrium falls close to depletion. This is a full-growth pressure target, not a hard population cap or guaranteed survival carrying capacity: adults with lower structural demand may persist above it while growth stalls.
 
 # Validation scenarios
 
@@ -449,8 +449,8 @@ The approximate H₂ equilibrium with 100 organisms consuming 80,000 per tick is
 - [x] Primitive founder micronutrient uptake throughput and targeting; recalibrate when the factors named in [INTERNAL_STORAGE_AND_ALLOCATION.md](INTERNAL_STORAGE_AND_ALLOCATION.md) change.
 - [x] Exact first sulfur fixture and its 250-tick reproduction target; see [SULFUR_TILE_STARTING_CONFIGURATION.md](SULFUR_TILE_STARTING_CONFIGURATION.md).
 - [x] First remnant decay rates and slow passive organic-to-inorganic nutrient return; see [LIFECYCLE_AND_RECYCLING.md](LIFECYCLE_AND_RECYCLING.md).
-- [ ] Senescence distribution for the founding species.
-- [ ] Mutation-point income under the resulting population curve.
+- [x] First multi-generation senescence distribution and remnant creation under the paired opening; see [SURVIVAL_OPENING_VALIDATION.md](SURVIVAL_OPENING_VALIDATION.md).
+- [x] Mutation-point income under the first coupled population curve; see [SURVIVAL_OPENING_VALIDATION.md](SURVIVAL_OPENING_VALIDATION.md).
 
 # Scientific anchors
 

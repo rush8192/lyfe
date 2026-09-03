@@ -1,8 +1,8 @@
 # Simulation Loop and Action Resolution
 
-Status: phase order, causality, and first external-conflict policies decided; intent schemas, RNG keys, parallel merge, and scheduling pending
+Status: phase order, causality, external-conflict policies, keyed randomness, and deterministic parallel reduction/commit decided; detailed typed intent payloads and wall scheduling limits remain
 
-Sources: [SIMULATION vision](../../vision/SIMULATION.md), [ORGANISMS vision](../../vision/ORGANISMS.md), and [technology decisions](TECHNOLOGY.md).
+Sources: [SIMULATION vision](../../vision/SIMULATION.md), [ORGANISMS vision](../../vision/ORGANISMS.md), [technology decisions](TECHNOLOGY.md), [keyed randomness](KEYED_RANDOMNESS.md), and [deterministic parallel execution](DETERMINISTIC_PARALLEL_EXECUTION.md).
 
 # Purpose
 
@@ -22,15 +22,16 @@ The detailed plan must specify wall-clock scheduling, catch-up policy, whether t
 
 The first authoritative phase order is:
 
-1. Admit commands at the tick boundary.
-2. Advance calendar and current environmental conditions.
-3. Apply non-biological resource sources, sinks, transport, and decay.
-4. Advance age and evaluate intrinsic death causes.
-5. Move surviving organisms and resolve tile crossings.
-6. Evaluate and resolve external resource acquisition, environmental energy capture, scavenging, and predation from post-movement positions.
+0. Admit commands at the tick boundary.
+1. Advance calendar and current environmental conditions.
+2. Apply non-biological resource sources, sinks, transport, and decay.
+3. Advance age and evaluate intrinsic death causes.
+4. Move surviving organisms and resolve tile crossings.
+5. Evaluate external resource acquisition, environmental energy capture, scavenging, and predation intents from post-movement positions.
+6. Resolve external contention and apply its transactions.
 7. Resolve internal catabolism, reserve use, maintenance, biomass assembly, and other internal metabolism.
 8. Evaluate lifecycle transitions and reproduction for surviving organisms.
-9. Recompute observations and update behavior state for the next tick.
+9. Materialize observations and update behavior state for the next tick.
 10. Update species aggregates, mutation income, and autonomous evolution.
 11. Finalize history, actor knowledge, state hashes, and authorized publication.
 
@@ -41,21 +42,23 @@ Behavior selected at the end of tick `T` controls movement and action selection 
 | Phase | Stable inputs | Authoritative writes | Important consequences |
 | --- | --- | --- | --- |
 | 0. Command admission and state preparation | Completed tick state, canonically ordered accepted commands | Control changes, speciation transactions, pause/speed state, due metabolic-binding releases | Accepted simulation commands apply atomically; expired bindings release before any organism action; query traffic consumes no randomness |
-| 1. Calendar and conditions | Prior calendar, fixed tile baselines, weather RNG state | Tick/calendar, temperature, precipitation, surface moisture, insolation, volcanic state | Organisms experience the newly current conditions during this tick's death and metabolism phases |
+| 1. Calendar and conditions | Prior calendar, fixed tile baselines, root seed and registered weather addresses | Tick/calendar, temperature, precipitation, surface moisture, insolation, volcanic state | Organisms experience the newly current conditions during this tick's death and metabolism phases |
 | 2. Environmental ledger | Updated conditions, prior completed tile reservoirs and old remnants | Boundary sources, environmental sinks, gas exchange, mobile-resource exchange, old-remnant decay | Gas order remains source → attrition → symmetric exchange; biological claims have not yet occurred |
 | 3. Intrinsic death | Updated environment, organism age/state at tick start | Incremented age, per-tick death-risk assessments, `DeathRecord`, cohesive remnant, organism removal | Every applicable intrinsic cause is evaluated; dead organisms do not move or act; their remains may be found later in this tick |
 | 4. Movement | Surviving organisms, prior behavior, prior active velocity, compiled environmental-spread profile, updated environment, keyed Brownian-like displacement, future directional transport field | Movement-energy spend for active displacement, component-attributed position change, active-velocity integration, tile membership | Passive displacement is DNA-scaled, zero-mean, and has no distance charge; directional environmental displacement is exactly zero in v1; active movement is capped by affordable energy; interactions use post-movement coordinates; edge migration uses wrapped `x` and bounded `y` |
 | 5. External intent evaluation | Post-movement organisms, tile resources, existing remains, prior behavior, compiled allocation policy | Pre-external metabolic allocations, immutable acquisition/capture/scavenging/predation intents | Private allocation precedes the stable external snapshot; energy-capture claims use age-limited extents; intent evaluation does not mutate shared resources or targets |
 | 6. External resolution | Canonically grouped external intents and phase snapshot | Action-energy spend, resource grants, external-capture products, consumed remains, scavenging cooldowns, predation deaths/transfers, new predation remnants | Ordinary claims resolve before scavenging and predation; an admitted scavenging attempt pays and schedules cooldown even if contention yields zero; granted reserve and acquired matter are available to phase 7 |
 | 7. Internal metabolism | Post-external organism stores and reserve, compiled DNA, environment | Internal reaction products/waste, reserve expenditure, maintenance, structure/growth, metabolic-failure deaths | Catabolism, digestion, and growth use the current age-throughput cap; captured energy and newly acquired substrates may pay this tick's maintenance; optional growth occurs only after mandatory maintenance |
-| 8. Lifecycle and reproduction | Post-metabolism survivors and derived health | Lifecycle transition, zero-sum parent allocation, new offspring | A new offspring begins at age zero and cannot move, act, or reproduce until the next tick |
-| 9. Behavior update | End-of-action internal state and end-of-action local observation | Behavior/goal and next-tick movement or action parameters | Only survivors update; choices affect tick `T + 1` |
-| 10. Species systems | Completed organism membership and health | Population/health aggregates, mutation-point income/remainder, pressure accumulators, autonomous intent and queued proposal | Mutation income observes births and deaths from this tick; an autonomous proposal is revalidated and committed at the next phase-0 boundary, so descendants cannot act in their decision tick |
-| 11. Finalization | Completed authoritative world | Histories, knowledge state, events/deltas, optional hash/checkpoint | Only a fully successful tick is visible or saveable |
+| 8. Lifecycle and reproduction | Post-metabolism survivors, derived health, and prior behavior directives | Lifecycle transition, zero-sum parent allocation, new offspring | Behavior may suppress an optional transition or reproduction but cannot bypass hard gates; a new offspring begins at age zero and cannot move, act, or reproduce until the next tick |
+| 9. Behavior update | End-of-action internal state, completed-tick energy/acquisition samples, pressure memory, and end-of-action capability-filtered observation | Selected behavior/target/dwell and enabled pressure-memory EMA values | Only survivors update; choices affect tick `T + 1`; no global population, hidden client, or future-world input is available |
+| 10. Species systems | Completed organism membership, health, and selected behavior | Population/health/behavior aggregates, mutation-point income/remainder, pressure accumulators, autonomous intent and queued proposal | Behavior distributions are one-way derived observations and never become organism inputs; mutation income observes births and deaths from this tick; an autonomous proposal is revalidated and committed at the next phase-0 boundary, so descendants cannot act in their decision tick |
+| 11. Finalization | Completed authoritative world | Histories, knowledge state, canonical events, sealed tick-change journal, optional hash/checkpoint | Only a fully successful tick is visible or saveable; actor-authorized protocol projection begins after atomic commit |
+
+When the world is paused, commands explicitly classified as safe-boundary transactions—such as confirmed speciation or sandbox control transfer—may commit and publish without advancing `CompletedTick`; they do increment `WorldRevision`. The next organism-action tick begins from that completed boundary, so new organisms still cannot act in their creation tick. Commands that require tick-phase inputs wait for an ordinary tick. Exact ownership and replay ordering are defined in [WORLD_EXECUTION_AND_OWNERSHIP.md](WORLD_EXECUTION_AND_OWNERSHIP.md).
 
 New remains created by intrinsic death in phase 3 exist before external intent evaluation and may be scavenged during phase 6. Predation deaths occur while phase-6 intents are being resolved; their new remains are not added to the current resolution snapshot and therefore become scavenging targets on the next tick. This avoids order-dependent predation/scavenging cascades.
 
-The post-movement `ExternalInteractionIndex` and end-of-lifecycle `BehaviorObservationIndex` are the two logical spatial snapshots behind these phases. Their contents, same-tile locality, and stable query ordering are defined in [SPATIAL_ORGANISMS_AND_BEHAVIOR.md](SPATIAL_ORGANISMS_AND_BEHAVIOR.md); a physical implementation may rebuild or deterministically update the derived bins.
+The post-movement `ExternalInteractionIndex` and end-of-lifecycle `BehaviorObservationIndex` are the two logical spatial snapshots behind these phases. Their contents, same-tile locality, and stable query ordering are defined in [SPATIAL_ORGANISMS_AND_BEHAVIOR.md](SPATIAL_ORGANISMS_AND_BEHAVIOR.md); a physical implementation may rebuild or deterministically update the derived bins. Phase-9 pressure samples, persistent behavior, and priority-banded selector are defined in [BEHAVIOR_AND_RESOURCE_PRESSURE.md](BEHAVIOR_AND_RESOURCE_PRESSURE.md).
 
 # Death causality
 
@@ -149,27 +152,34 @@ AdvanceTick(world, commands):
     apply lifecycle transitions and valid zero-sum reproduction transactions
 
     behaviorView = snapshot completed actions, births, deaths, and environment
-    behaviorUpdates = parallel map EvaluateBehaviorForNextTick(behaviorView)
+    pressureSamples = finalize useful demand/grants and usable-energy/
+        mandatory-cost coverage for each survivor
+    behaviorUpdates = parallel map EvaluateBehaviorForNextTick(
+        behaviorView, pressureSamples)
     apply behavior updates to organisms that existed before this phase
 
-    recompute species population and average-health aggregates
+    materialize species population, average-health, and per-tile/species
+        behavior-count aggregates through the sole phase-10 reducer
     accrue mutation points
-    evaluate and apply autonomous speciation
-    update lineage and historical aggregates
+    evaluate autonomous evolution and queue any proposal for a later
+        phase-0 boundary
 
+    update historical aggregates
     update actor knowledge from completed controlled-species occupancy
     validate conservation, identity, range, and topology invariants
     compute optional state hash
-    atomically commit tick
-    publish actor-authorized events and deltas from committed state
+    atomically commit tick and seal its stable-ID change journal
+    publish the completed read view and journal to downstream sinks
 ```
 
-If any phase fails, the tick transaction is discarded and the last completed state remains authoritative. This is a logical atomicity requirement; implementation may use staged buffers, inverse-free arenas, or another design rather than copying the entire world.
+If any phase fails, the tick transaction is discarded and the last completed state remains authoritative. The first physical implementation uses the pooled page-level transactional fork defined in [ENTITY_IDENTITY_AND_STORAGE.md](ENTITY_IDENTITY_AND_STORAGE.md); it may be replaced only by another implementation that preserves the same atomicity and passes the representative benchmark.
+
+Each deterministic phase commit must mutate stores and record logical dirty fields/structural operations through the same typed API. Workers, exact reduction, conflict resolution, canonical creation/ID assignment, preflight, owner-only mutation, and failure behavior follow [DETERMINISTIC_PARALLEL_EXECUTION.md](DETERMINISTIC_PARALLEL_EXECUTION.md). Every probabilistic operation uses the registered semantic address in [KEYED_RANDOMNESS.md](KEYED_RANDOMNESS.md). Phase journals merge in canonical phase order into the sealed `TickChangeSet`; they are discarded with a failed tick. Actor filtering, subscription filtering, Protocol Buffer materialization, coalescing, and socket work occur only after commit as defined in [STATE_CHANGE_AND_CLIENT_SYNC.md](STATE_CHANGE_AND_CLIENT_SYNC.md). They cannot delay the world owner or become a simulation input.
 
 ## Intrinsic-death pseudocode
 
 ```text
-EvaluateIntrinsicDeath(organism, environment, tickKey):
+EvaluateIntrinsicDeath(organism, environment, tick):
     nextAge = organism.age + tickDuration
     riskAssessments = []
     contributingStress = derive soft and hard environmental stress
@@ -189,20 +199,26 @@ EvaluateIntrinsicDeath(organism, environment, tickKey):
     for exposure in hardLimitExposures in canonical ExposureId order:
         probability = dna.deathProbability(exposure, tickDuration)
         if probability > 0:
-            draw = KeyedDraw(tickKey, organism.id, exposure.id)
+            decision = Bernoulli(
+                RandomAddress(IntrinsicExposureDeath,
+                              tick, organism.id, exposure.id, sampleIndex = 0),
+                probability)
             riskAssessments += Assessment(EnvironmentalExposure(exposure.id),
                                           probability,
-                                          draw,
-                                          triggered = draw < probability,
+                                          decision.rawWord,
+                                          triggered = decision.triggered,
                                           inputs = exposure and compiled limits)
 
     senescenceProbability = dna.senescenceProbability(nextAge, tickDuration)
     if senescenceProbability > 0:
-        draw = KeyedDraw(tickKey, organism.id, Senescence)
+        decision = Bernoulli(
+            RandomAddress(SenescenceDeath,
+                          tick, organism.id, 0, sampleIndex = 0),
+            senescenceProbability)
         riskAssessments += Assessment(Senescence,
                                       senescenceProbability,
-                                      draw,
-                                      triggered = draw < senescenceProbability,
+                                      decision.rawWord,
+                                      triggered = decision.triggered,
                                       inputs = nextAge and senescence parameters)
 
     evaluate other intrinsic lethal conditions with distinct draw keys
@@ -219,12 +235,14 @@ The primitive founder `terminalReserveThreshold` is zero. This is distinct from 
 
 Organic uptake and fermentation bridge phases 6 and 7 through an atomic plan. Against the stable phase-5 view, the organism first receives whole fermentation opportunities from its reaction ceiling and shared internal-processing budget, then uses keyed draws to determine which admitted opportunities become successful candidate extents. It consumes internally retained substrate first and emits an ordinary proportional claim only for the deficit. Phase 7 executes no more than the internal quantity plus actual grant. Claimed substrate committed to the reaction may pass through the bundle without fitting in retained storage; anything retained must fit the normal `DissolvedMacronutrientStore`. Respiration uses the same work-before-draw boundary with a whole coupled fuel/O2 bundle, routes its mass-balanced assimilated carbon to new reserve or explicit waste, and recharges only retained spent carrier matter. See [COMPLEX_CELL_CALIBRATION.md](COMPLEX_CELL_CALIBRATION.md), [ORGANIC_UPTAKE_AND_FERMENTATION.md](ORGANIC_UPTAKE_AND_FERMENTATION.md), and [AEROBIC_RESPIRATION.md](AEROBIC_RESPIRATION.md).
 
+At runtime these operations consume immutable typed phenotype process plans with pre-resolved dense resource handles. Organism-local tick reservations live only in worker scratch, while shared external claims use flat tile/resource ranges; authoritative balances change only during canonical commit. Tile-only light, moisture, depth/access, and medium transforms are built once per affected tile/phase and reused across its organisms. See [RESOURCE_STORAGE_AND_EVALUATION.md](RESOURCE_STORAGE_AND_EVALUATION.md).
+
 Photosynthetic plans consume one shared current-light budget across sulfide and oxygenic reactions. Oxygenic execution couples a finite CO2 grant with boundary water and a proved reserve/same-tick output destination, then buffers O2 for the deterministic tile-output merge. It cannot evolve oxygen merely because light exists or reuse light already assigned to sulfide phototrophy; see [OXYGENIC_PHOTOSYNTHESIS.md](OXYGENIC_PHOTOSYNTHESIS.md).
 
 At the start of the phase-5 pre-external allocation barrier, existing free micronutrients are promoted into compiled committed-quota deficits before capability activation is evaluated. This matter-preserving step can activate newly evolved machinery, but nutrients acquired in phase 6 wait until the next tick; see [INTERNAL_STORAGE_AND_ALLOCATION.md](INTERNAL_STORAGE_AND_ALLOCATION.md).
 
 ```text
-EvaluateInternalMetabolism(organism, environment, tickKey):
+EvaluateInternalMetabolism(organism, environment, tick):
     state = organism post-external state
     internalBudget = processing work left by the phase-5 plan after
         probabilistic opportunities reserved work before their success draws
@@ -259,7 +277,7 @@ External energy-capture reactions are committed before this function, so their r
 
 # Remaining phase-local decisions
 
-The phase graph and the first external-resolution policies are sufficiently defined for implementation planning. Exact reproduction health/reserve gates and deterministic ID allocation remain separate balance/engineering work. The first numerical predation, eligibility, feeding, hunting, and movement-economy proposal is defined in [PREDATION.md](PREDATION.md) and [SPATIAL_CALIBRATION.md](SPATIAL_CALIBRATION.md); its coupled population fixture remains provisional. Reproduction has deterministic eligibility plus a keyed bounded cooldown jitter rather than a per-tick success roll; see [LIFECYCLE_AND_RECYCLING.md](LIFECYCLE_AND_RECYCLING.md). Offspring placement is defined in [SPATIAL_CALIBRATION.md](SPATIAL_CALIBRATION.md): it occurs only after an accepted zero-sum reproduction transaction, remains in the parent's tile, and cannot itself cause migration. Reproduction stays after metabolism, observes post-maintenance health, and gives the newborn no action in its birth tick.
+The phase graph and the first external-resolution policies are sufficiently defined for implementation planning. Reproduction health/reserve gates, zero-sum allocation, and cooldown jitter are now fixed in [LIFECYCLE_AND_RECYCLING.md](LIFECYCLE_AND_RECYCLING.md) and exercised by [SURVIVAL_OPENING_VALIDATION.md](SURVIVAL_OPENING_VALIDATION.md); canonical production ID allocation remains engineering work. The first numerical predation, eligibility, feeding, hunting, and movement-economy proposal is defined in [PREDATION.md](PREDATION.md) and [SPATIAL_CALIBRATION.md](SPATIAL_CALIBRATION.md); its coupled population fixture remains provisional. Offspring placement is defined in [SPATIAL_CALIBRATION.md](SPATIAL_CALIBRATION.md): it occurs only after an accepted zero-sum reproduction transaction, remains in the parent's tile, and cannot itself cause migration. Reproduction stays after metabolism, observes post-maintenance health, and gives the newborn no action in its birth tick.
 
 # Action-cost admission
 
@@ -323,16 +341,20 @@ The fixed-point implementation uses checked wide intermediates and configured bo
 Resolve all admitted predation intents in two passes so predators that target one another do not produce order-dependent consumption:
 
 ```text
-ResolvePredation(allIntents, externalView, tickKey):
+ResolvePredation(allIntents, externalView, tick):
     sort all intents by (PreyId, PredatorId)
     debit every admitted predation attempt cost in PredatorId order
     // all intents were proven affordable against the same pre-grant snapshot
 
     for intent in allIntents:
         probability = CalculateKillProbability(intent, externalView)
-        draw = KeyedDraw(tickKey, intent.preyId, intent.predatorId, Predation)
+        decision = Bernoulli(
+            RandomAddress(PredationKill,
+                          tick, intent.predatorId, intent.preyId,
+                          sampleIndex = 0),
+            probability)
         append assessment to intent.prey's tick risk profile
-        mark intent successful when draw < probability
+        mark intent successful when decision.triggered
 
     killedPrey = every prey with at least one successful intent
     kill every organism in killedPrey once and create one remnant for each
@@ -356,19 +378,11 @@ The exact first attack/defense factors, size hard gates, pursuit and escape modi
 
 # Deterministic randomness
 
-Define a random-stream scheme that covers world generation, weather, organism decisions, interaction outcomes, founder selection, and autonomous evolution. It must:
-
-- Reproduce with the same seed, rules, configuration, and ordered commands.
-- Remain unchanged when presentation requests differ.
-- Avoid dependence on worker completion order.
-- Permit save/reload without changing the next draw.
-- Support diagnostic attribution of important random outcomes.
-
-Compare mutable named streams with counter-based/key-derived draws. Document how new random call sites affect compatibility with existing saves.
+The randomness design is fixed in [KEYED_RANDOMNESS.md](KEYED_RANDOMNESS.md): a pinned `Philox4x64-10` counter-based function maps the world's 128-bit seed plus a permanent domain ID, three semantic coordinates, and explicit sample index to each result. There is no mutable stream cursor. World generation, weather, organism decisions, interactions, founder selection, remainder rank, and autonomous evolution must register distinct address schemas. New calls do not shift unrelated outcomes; changing an existing schema is an explicit replay-affecting RNG version change.
 
 # Parallelism
 
-The likely first parallel boundary is tile-level evaluation. Cross-tile movements and exchanges should be emitted into deterministic boundary buffers and applied after a barrier. The plan must cover load imbalance when a few tiles contain most organisms.
+The worker, reduction, and commit design is fixed in [DETERMINISTIC_PARALLEL_EXECUTION.md](DETERMINISTIC_PARALLEL_EXECUTION.md). The first vertical slice uses one worker through the final buffer/reducer interfaces. Measured phases may later evaluate tiles/entity ranges concurrently, but cross-tile movement, exchange, shared claims, creations, materializations, and journals pass through the same canonical owner reduction and commit. Load imbalance changes performance only.
 
 # Commands and queries
 
@@ -387,9 +401,9 @@ Define behavior for invalid commands, invariant failures, tick exceptions, exces
 - [ ] Intent and resolution data structures.
 - [x] First v1 conflict rules for shared prey, remains, and ordinary resource remainders.
 - [x] First birth/death/movement timing and behavior-control horizon.
-- [ ] Detailed live/reduced visibility transitions and event filtering within the same tick.
-- [ ] RNG stream/key design.
-- [ ] Parallel partition and deterministic merge.
+- [ ] Concrete projection/event schemas and filtering implementation for the already-fixed completed-boundary unknown/reduced/live transitions.
+- [x] RNG algorithm, semantic address, conversion, compatibility, and save/replay design; permanent domain numbers remain implementation-scaffold work. See [KEYED_RANDOMNESS.md](KEYED_RANDOMNESS.md).
+- [x] Scalar oracle, worker isolation, exact reduction, stable creation/ID assignment, owner commit, and parallel equivalence design. See [DETERMINISTIC_PARALLEL_EXECUTION.md](DETERMINISTIC_PARALLEL_EXECUTION.md).
 - [ ] Tick scheduler and overload policy.
 - [ ] Pseudocode for pause, speed change, deadline, and command admission.
 - [ ] Sequence diagrams for an ordinary tick and a speciation tick.

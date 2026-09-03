@@ -256,7 +256,7 @@ Inherited founding-path upkeep and environmental stress remain additional. When 
 The organism must not claim substrate speculatively and then overflow its store when a later success roll fails. Whole opportunities first reserve shared internal-processing work from the stable phase input; candidate success is then determined before the external claim is emitted. A failed opportunity does not return work to another same-tick process.
 
 ```text
-PlanFermentation(organism, tileView, tickKey, tickDuration):
+PlanFermentation(organism, tileView, tick, tickDuration):
     reject unless OrganicResourceUptake and Fermentation are active
 
     opportunityCount = compileRate(120 per hour, tickDuration,
@@ -265,10 +265,12 @@ PlanFermentation(organism, tileView, tickKey, tickDuration):
     opportunityCount = admitThroughInternalProcessingBudget(
         opportunityCount, workPerOpportunity = 1)
 
-    successfulCandidates = keyedBinomial(
-        opportunityCount,
-        compiledSuccessProbability(base = 0.90),
-        key = (worldSeed, tick, organismId, Fermentation))
+    successfulCandidates = KeyedBinomial(
+        RandomAddress(MetabolicOpportunity,
+                      tick, organism.id, FermentationReactionId,
+                      sampleIndex = 0),
+        trials = opportunityCount,
+        probabilityQ = compiledSuccessProbability(base = 0.90))
 
     extentCapacity = capByReactionThroughputAndAccountedOutputs(
         successfulCandidates,

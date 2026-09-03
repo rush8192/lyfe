@@ -14,6 +14,7 @@ This document records the initial technology and architectural choices for LYFE 
 | Control-plane transport | HTTP for setup, metadata, saves, and other request-response operations |
 | Simulation ownership | The server is authoritative; clients never advance or resolve simulation state |
 | Deployment boundary | Server and client remain separate processes even for local single-player play |
+| Rule authoring and mods | Strict UTF-8 JSON, typed C# authoring records, generated JSON Schema, validated data-only balance overlays, and one immutable compiled rule set |
 
 Competitive multiplayer is not part of v1. Nevertheless, the server boundary, command model, clock ownership, protocol, and player-control state must not assume that only one client or human actor can ever exist.
 
@@ -34,6 +35,14 @@ The choice depends on using a data-oriented hot loop rather than an allocation-h
 
 Per-tick code should minimize heap allocations and avoid LINQ, reflection, and virtual dispatch across every organism in hot paths. These are guidelines for measured hot paths, not bans on ordinary C# elsewhere in the project.
 
+## Performance decision policy
+
+V1 begins with clear, conventional, well-bounded representations and profiles the complete path from simulation update through projection, encoding, client application, and rendering. It does not optimize a field, kernel, or message solely because that component can be made smaller or faster in isolation.
+
+The starting defaults are signed 64-bit physical columns for all matter and energy quantities, ordinary strongly typed fields rather than packed bits, one straightforward typed Protocol Buffer representation per operation, and standard runtime/library facilities. A specialization is justified only when representative workload measurements show that its resource—CPU, memory residency, copy bandwidth, allocation/GC, wire bytes, decode/apply cost, or render cost—materially limits the intended world capacity or player experience. The proposal must include the end-to-end result, complexity and migration cost, determinism/correctness coverage, and performance of the unaffected parts of the system.
+
+This policy does not weaken the data-oriented baseline or the single-source materialization rule. Dense storage, bounded buffers, and stored gameplay derivations are architectural correctness and scale choices. Narrow integer columns, bit packing, SIMD, custom codecs, adaptive sparse/dense forms, native kernels, and finely specialized page groups are deferred optimizations until the relevant bottleneck is demonstrated.
+
 The initial implementation will use the normal .NET JIT runtime. Native AOT is not a starting requirement because startup latency is less important than sustained simulation throughput, profiling visibility, and compatibility. Production server configurations should evaluate Server GC, but garbage-collector settings must be selected from measurements rather than assumed in advance.
 
 ## Standalone simulation library
@@ -42,7 +51,7 @@ The simulation will be implemented as a pure library with no dependency on ASP.N
 
 - World, tile, species, organism, and dead-remain state.
 - The deterministic tick pipeline.
-- Seeded simulation randomness.
+- Versioned counter-based simulation randomness addressed by stable semantic keys.
 - Resource transfers and flow accounting.
 - Mutation, speciation, lineage, lifecycle, and environmental rules.
 - Saveable authoritative state and replay-relevant events.
@@ -56,20 +65,26 @@ The server host owns networking, connected-client sessions, command validation, 
 
 The core engine uses explicit ordered phases rather than allowing organisms or asynchronous tasks to mutate shared state arbitrarily. The authoritative order and dependency table are defined in [SIMULATION_LOOP.md](SIMULATION_LOOP.md). In summary, a tick resolves commands; environment and non-biological resources; intrinsic death; movement; external acquisition/capture/interactions; internal metabolism and maintenance; lifecycle and reproduction; next-tick behavior; species systems; and final publication. Each phase commits before a dependent phase takes its fresh snapshot.
 
-Parallel execution may accelerate work inside a phase, particularly across tiles, but worker completion order must not affect results. Parallel work should produce isolated outputs that are merged through a deterministic reduction step.
+Parallel execution may accelerate work inside a phase, particularly across tiles, but worker completion order must not affect results. [KEYED_RANDOMNESS.md](KEYED_RANDOMNESS.md) fixes `Philox4x64-10`, the permanent domain/address schema, and integer conversions. [DETERMINISTIC_PARALLEL_EXECUTION.md](DETERMINISTIC_PARALLEL_EXECUTION.md) fixes sealed phase views, isolated worker outputs, exact grouped reduction, canonical ID assignment, owner-only commit, and scalar/parallel equivalence. The first vertical slice runs the same pipeline with one worker and activates parallel evaluation only for measured phases.
 
 The engine will not begin with a general-purpose ECS dependency. Dense custom storage is a better initial match for deterministic phase ordering and tile partitioning. An ECS library may be evaluated later if a representative prototype demonstrates a concrete benefit without weakening determinism.
+
+Rules, traits, reactions, scenarios, and balance values cross the one-way cold-path boundary in [RULE_PACK_AUTHORING_AND_COMPILATION.md](RULE_PACK_AUTHORING_AND_COMPILATION.md). `System.Text.Json` metadata source generation loads strict domain records; explicit registries, semantic validators, normalization, and canonical hashing produce immutable global artifacts and typed compiled phenotypes. JSON, schema validation, stable-key maps, and file I/O never enter the organism tick path.
+
+The same boundary is the supported mod seam. V1 should accept locally installed, declarative balance overlays that replace only explicitly registered fields before whole-pack validation and compilation, plus complete closed-schema world-generation profiles selected during world setup. It does not execute mod code or hot-reload an active world. The exact surface, provenance, conflict, save, client, and future-extension rules are in [MODDABILITY.md](MODDABILITY.md).
+
+The first execution and storage contracts are now specified in [WORLD_EXECUTION_AND_OWNERSHIP.md](WORLD_EXECUTION_AND_OWNERSHIP.md) and [ENTITY_IDENTITY_AND_STORAGE.md](ENTITY_IDENTITY_AND_STORAGE.md): one loaded world has one exclusive runner/writer; ticks use pooled copy-on-write page transactions; organisms/remnants begin in `256`-row tile-partitioned chunked structure-of-arrays stores; stable opaque IDs resolve through paged locators; and phase workers return isolated outcomes for canonical commit. Alternative chunk/page sizes or layouts are considered only after the baseline profile identifies the corresponding bottleneck.
 
 ## Determinism and conservation
 
 Deterministic replay and internal mass balance are architectural properties, not later testing enhancements. The implementation must support:
 
 - Stable iteration and interaction ordering.
-- Seeded random decisions that do not depend on thread scheduling.
+- Root-seeded semantic-address random decisions that do not depend on call order, storage, or scheduling.
 - State hashes for replay and parallelism tests.
 - Resource-ledger checks across organisms, remains, tiles, transformations, sources, and sinks.
-- Saving and restoring the random and rules state required for continuation.
-- A simulation-rules version stored with every world.
+- Saving and restoring the root seed, RNG algorithm/schema IDs, semantic event ordinals, and rules state required for continuation.
+- The exact base-pack, canonical mod-set, world-pack/profile/options, compiler, final-rules/scenario/world-rules, and RNG compatibility identities stored with every world.
 
 The [resource deep dive](RESOURCE_MODEL.md) and [range proof](RESOURCE_CALIBRATION.md) select signed 64-bit game-native integer quanta for authoritative matter and energy quantities, with checked 128-bit intermediates. [Organism health calibration](ORGANISM_HEALTH_CALIBRATION.md) provisionally selects a parts-per-million fixed-point ratio for health, normalized factors, and probabilities. The first [world and climate contract](WORLD_AND_CLIMATE.md) adds signed tile coordinates, normalized fixed-point local positions, integer-meter elevation/depth, milli-degree Celsius temperature, integer precipitation rates, and the shared ratio type for normalized conditions. Exact movement velocity/distance encodings and fixed-point representations for remaining rate domains still require the same cross-platform, overflow, precision, and serialization analysis.
 

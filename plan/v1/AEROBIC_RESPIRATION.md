@@ -258,7 +258,7 @@ CoupledReactionClaim:
 ```
 
 ```text
-ResolveCoupledReactionClaims(availableByResource, claims, tickKey):
+ResolveCoupledReactionClaims(availableByResource, claims, tick, tileId):
     discard invalid, zero, or output-unaccounted claims
     remainingExtent[i] = maximumCandidateExtents[i]
     admittedExtent[i] = 0
@@ -288,7 +288,8 @@ ResolveCoupledReactionClaims(availableByResource, claims, tickKey):
         atomically reserve every base extent and subtract its complete bundle
         residualClaims = feasible unmet claims sorted by
             descending fractionalPart(exactEntitlement[i]), then
-            stable Hash(tickKey, claimant_id, reaction_id)
+            KeyedRank(CoupledClaimRemainder,
+                      tick, claimant_id, Pack32(tileId, reaction_id))
         give at most one additional complete extent to each feasible claim
             in that order, then repeat with the remaining stock and demand
 

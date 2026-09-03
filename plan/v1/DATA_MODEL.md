@@ -1,8 +1,8 @@
 # Authoritative Data Model
 
-Status: first ownership and numeric-contract pass; identifiers, dense layout, knowledge schemas, and event retention pending
+Status: first identity, ownership, numeric, transactional-page, and dense-layout pass decided; physical sizes, knowledge schemas, and event retention pending
 
-Sources: [SIMULATION vision](../../vision/SIMULATION.md), [WORLD vision](../../vision/WORLD.md), [ORGANISMS vision](../../vision/ORGANISMS.md), and [NUTRIENTS vision](../../vision/NUTRIENTS.md).
+Sources: [SIMULATION vision](../../vision/SIMULATION.md), [WORLD vision](../../vision/WORLD.md), [ORGANISMS vision](../../vision/ORGANISMS.md), [NUTRIENTS vision](../../vision/NUTRIENTS.md), [rule-pack authoring and compilation](RULE_PACK_AUTHORING_AND_COMPILATION.md), [moddability](MODDABILITY.md), [keyed randomness](KEYED_RANDOMNESS.md), and [deterministic parallel execution](DETERMINISTIC_PARALLEL_EXECUTION.md).
 
 # Purpose
 
@@ -10,9 +10,11 @@ Define the canonical state representation shared by simulation systems without c
 
 # Identity model
 
-Define strongly typed, stable identifiers for at least:
+The canonical representation and allocation rules are defined in [ENTITY_IDENTITY_AND_STORAGE.md](ENTITY_IDENTITY_AND_STORAGE.md). In summary, hot simulation entities use strongly typed opaque world-local `uint64` IDs allocated monotonically per entity type by canonical owner-thread commit; tiles and compiled definitions use strongly typed `uint32` IDs; server/application identities use opaque 128-bit values. Definition IDs and stable keys are explicitly assigned in typed active/tombstoned registries as defined in [RULE_PACK_AUTHORING_AND_COMPILATION.md](RULE_PACK_AUTHORING_AND_COMPILATION.md). Zero is reserved, IDs are never reused, and dense slots never escape storage.
 
-- World and rules version.
+Stable identifiers exist for at least:
+
+- World, base-rule-pack, canonical mod-set, selected world-pack/profile/options, and final compiled-rules identity.
 - Tile and grid coordinate.
 - Species and lineage event.
 - Organism and dead remnant.
@@ -22,7 +24,11 @@ Define strongly typed, stable identifiers for at least:
 - Simulation event and command.
 - Abiogenesis origin and player-knowledge record.
 
-Identifiers must survive array compaction, save/load, and client resynchronization. The detailed plan must decide identifier width, allocation strategy, reuse policy, and whether IDs encode type or world information.
+Identifiers survive array compaction, save/load, and client resynchronization. Runtime IDs encode no type, world, tile, species, time, or slot; the strong field type or explicit generic-reference kind supplies type, while enclosing state supplies world context. Next-ID counters are authoritative state. Parallel evaluators emit creation intents, and canonical commit order assigns IDs.
+
+# Random compatibility state
+
+Each world stores a 128-bit root seed, pinned RNG algorithm ID, and RNG schema version. The authoritative simulation has no mutable global or per-worker random cursor. Stable domain IDs plus tick/entity/definition coordinates address draws, while subsystem-owned ordinals persist only for repeated semantic events that a tick cannot uniquely name. See [KEYED_RANDOMNESS.md](KEYED_RANDOMNESS.md).
 
 # State ownership
 
@@ -34,32 +40,30 @@ Identifiers must survive array compaction, save/load, and client resynchronizati
 | Gas-source and sink remainders | Tile state |
 | Signed gas-exchange remainders | Canonical undirected tile-edge state |
 | DNA, mutation balance/remainder, speciation cooldown/ordinal, pressure state, and autonomous intent including its material/biological-opportunity snapshot | Species state |
-| Position, structural matter and its geometric/organization/storage assignments, charged reserves, spent reserve-carrier balances, available-store resource balances, metabolic binding cohorts, age, reproduction cooldown/ordinal, and behavior | Organism state |
+| Position, structural matter and its geometric/organization/storage assignments, charged reserves, spent reserve-carrier balances, available-store resource balances, metabolic binding cohorts, age, reproduction cooldown/ordinal, selected behavior/target/dwell, and enabled behavior-pressure memory | Organism state |
 | Tile, position, original packing profile, and remaining consumable contents | Dead-remnant state |
 | Parent-child relationships | Lineage store |
 | Controller and sandbox lock | Gameplay state |
 | Discovered tiles, last observations, and observation timestamps | Per-actor knowledge state |
-| Seed, tick, calendar, deadline, rules version | World state |
+| 128-bit root seed, RNG algorithm/schema IDs, tick, calendar, deadline, base-pack/mod-set/world-pack/profile/options/final-rules identities, and certification class | World state |
 
 # Stored versus derived data
 
-The detailed plan should classify every field as:
+Every field is classified as primary authoritative state, immutable compiled state, materialized current state, phase materialization, rebuildable structural index, historical aggregate, or presentation-only state. [MATERIALIZED_DERIVED_STATE.md](MATERIALIZED_DERIVED_STATE.md) defines the single-source rule: a gameplay-relevant formula has one owner, is evaluated at one named barrier when dependencies change, stores its result, and is never independently reproduced by consumers.
 
-- Authoritative stored state.
-- Derived each tick or on demand.
-- Cached with an invalidation rule.
-- Historical aggregate.
-- Presentation-only state that must not enter the simulation.
+Relative health, species population/average health, current behavior distributions, reproductive trend, used storage load, commissioned capacity, stored usable energy, body radius, age throughput, active capability state, current tile conditions, tile access/opportunity values, and similar repeatedly consumed numbers are materialized derived state. They are not independently writable, but their completed values are stored, hashed, diffed, and saved when they affect continuation or the completed view. Debug recomputation is a validation oracle rather than a fallback result.
 
-Likely derived values include relative health, species population, species average health, tile/species reproductive trend, and some environmental values. Health may be cached and projected to clients, but save/load and replay must reproduce it from authoritative organism state, compiled DNA, and environment as defined in [ORGANISM_STATE_AND_HEALTH.md](ORGANISM_STATE_AND_HEALTH.md).
+The logical organism schema, chronological-versus-biological age distinction, and condition-materialization inputs are also defined in [ORGANISM_STATE_AND_HEALTH.md](ORGANISM_STATE_AND_HEALTH.md). Current environmental stress is a materialized condition assessment rather than a primary accumulated injury; a future persistent poisoning/injury mechanic must add specifically named concrete state.
 
-The logical organism schema, chronological-versus-biological age distinction, and condition-cache invalidation inputs are also defined in [ORGANISM_STATE_AND_HEALTH.md](ORGANISM_STATE_AND_HEALTH.md). Current environmental stress is derived rather than durable organism state unless a future mechanic adds a specifically named accumulated condition.
+An organism with a history-using behavior retains the fixed-point recent-energy-coverage and recent-acquisition-coverage moving averages defined in [BEHAVIOR_AND_RESOURCE_PRESSURE.md](BEHAVIOR_AND_RESOURCE_PRESSURE.md). The behavior owner materializes composite pressure, channel deficits, utilities, and the chosen next-tick directive once at its named barrier; completed outputs that affect the next tick are stored, while discarded candidate scratch is not. Optional behavior-memory columns exist only for organisms whose compiled DNA uses them, but slot migration, save/load, and speciation preserve the logical values exactly.
 
-Available-store resource balances are authoritative. Used load per capacity group is composition-derived and may either be recomputed or cached with invalidation on every balance mutation; DNA-compiled group capacities and desired-inventory policies are immutable for an organism between DNA/lifecycle transitions. Persisted saves must not rely on an unverified cached used-load value. The capacity groups, load formula, and transition invariants are defined in [INTERNAL_STORAGE_AND_ALLOCATION.md](INTERNAL_STORAGE_AND_ALLOCATION.md).
+Available-store resource balances are primary authoritative state. Used load per capacity group is a materialized derived value updated by the owning balance mutator in the same transaction, or by a mandatory barrier before any capacity consumer. DNA-compiled group capacities and desired-inventory policies are immutable between DNA/lifecycle transitions. Saves retain the completed used-load value and dependency generation; debug/load verification may recompute and reject a mismatch but never silently substitute it. The capacity groups, load formula, and transition invariants are defined in [INTERNAL_STORAGE_AND_ALLOCATION.md](INTERNAL_STORAGE_AND_ALLOCATION.md).
 
 For organisms with `CatalyticCarrierRetention`, charged `ReserveOrganic` and zero-energy `SpentReserveCarrier` balances are separate authoritative columns sharing one currently commissioned capacity. The maximum and storage-structure target are DNA-compiled; current capacity is derived from authoritative structural assignments and organization activation. Exact commissioning is defined in [ENERGY_STORAGE.md](ENERGY_STORAGE.md), while spend, recharge, assimilation, and inheritance rules are defined in [AEROBIC_RESPIRATION.md](AEROBIC_RESPIRATION.md).
 
 Live visibility is derived from the completed world's controlled-species occupancy. Discovery and last-known observations are stored authoritative state because they persist after occupation ends and across sandbox control transfers. A save must preserve at least the discovered tile set, last full observation allowed for each previously live tile, its observation tick, and any coarse neighbor summary fixed at discovery. Client selection and camera state remain presentation-only.
+
+Current behavior distributions are materialized once from organism behavior after phase 9 and stored with the completed species/tile aggregate generation. A last-observed per-tile distribution retained after a tile becomes reduced is actor knowledge and persists with its observation tick. Neither current nor retained aggregates are permitted inputs to individual behavior; the aggregation direction is organism state to observation only.
 
 Lineage must distinguish `AbiogenesisOriginId` from `SpeciesId`. Root species reference their origin and have no parent species; non-root species reference exactly one parent species. An origin never carries DNA, population, mutation points, control, or extinction state.
 
@@ -93,14 +97,19 @@ The detailed pass must still decide and document:
 
 # Data-oriented layout
 
-Explore a tile-partitioned layout with dense organism columns rather than one deeply referenced object graph. The detailed plan should compare:
+The first implementation uses tile-partitioned, lazily allocated, chunked structure-of-arrays stores for organisms and remnants, dense resource-major tile matrices, field-major tile condition columns, small dense paged species stores, domain-shaped immutable genomes plus typed compiled phenotypes, append-only paged lineage/events, and typed sparse optional-component stores. Stable-ID-to-slot lookup uses paged direct locators rather than object references. Details and fallback benchmarks are defined in [ENTITY_IDENTITY_AND_STORAGE.md](ENTITY_IDENTITY_AND_STORAGE.md) and [RESOURCE_STORAGE_AND_EVALUATION.md](RESOURCE_STORAGE_AND_EVALUATION.md).
 
-- Array-of-structures and structure-of-arrays layouts.
-- Stable IDs plus dense slots and an ID-to-slot index.
-- Moving organisms between tile-owned collections.
-- Tombstones versus swap removal.
-- Species lookup and spatial-neighbor indexing.
-- Snapshot-friendly read models.
+Completed state is an immutable page-root. A tick or safe-boundary transaction shallow-forks that root and copies a pooled page on first write. Success atomically replaces the root; failure discards private pages. The prototype starts with uniform signed-64-bit resource columns, `256`-row chunks, tile-partitioned SoA, straightforward copy-on-write field groups, common inline state, and dense bounded resource vectors. It instruments these choices end to end before implementing alternatives. Targeted comparisons are permitted only when the corresponding measurement is material:
+
+- another organism/remnant chunk capacity when chunk occupancy, metadata, iteration, or copying is limiting;
+- Tile-partitioned SoA versus global SoA plus tile membership under adversarial population clustering.
+- Copy-on-write hot-column bandwidth versus double-buffering if the former misses the fastest-speed target.
+- Core versus optional placement for bounded behavior/binding state.
+- Dense resource vectors versus a hybrid only if catalogue growth demonstrates a crossover.
+
+Every physical store must pair its typed mutation operations with dirty tracking as specified in [STATE_CHANGE_AND_CLIENT_SYNC.md](STATE_CHANGE_AND_CLIENT_SYNC.md). Sparse writes record stable IDs by logical field group; dense writes may mark a tile/store chunk. Creates, removals, and relocations are explicit structural operations. Dense slots and dirty metadata are physical implementation details: neither enters saves, authoritative hashes, or network schemas.
+
+The first dense-layout prototype must prevent mutation through untracked array references. Debug shadow hashes or mutation epochs compare actual changed columns/stores with the sealed phase journal and fail on missing coverage. Derived projection dependencies—such as reserve/environment changes invalidating health—belong in an explicit field dependency catalogue rather than ad hoc serializer knowledge.
 
 # Event model
 
@@ -110,29 +119,31 @@ Classify events by purpose:
 - Replay inputs and command results.
 - Resource-ledger transactions.
 - Historical/analytical events such as death-risk profiles, realized death triggers, and speciation.
-- Ephemeral client notifications.
+- Canonical notable-event facts derived at completed boundaries for the factual chronicle.
+- Actor attention alerts and automatic-pause transitions; non-pausing presentation notifications may remain ephemeral.
 - Metrics that should be aggregated rather than retained individually.
 
-# Pseudocode to add
+Canonical notable events store facts and evidence references, not localized narrative prose. Player pins, layouts, labels, and hypothesis notes are presentation/profile records and must not enter world simulation state, autonomous evidence, or deterministic world hashes. An evolution goal or attention policy becomes authoritative actor state only when server evaluation while disconnected or an automatic clock pause depends on it; see [PLAYER_LOOP_AND_NARRATIVE.md](PLAYER_LOOP_AND_NARRATIVE.md).
 
-```text
-AllocateStableId(entityType)
-ResolveIdToDenseSlot(id)
-MoveOrganismBetweenTiles(organismId, sourceTile, targetTile)
-RemoveOrganismAndCreateRemnant(organismId, deathRecord)
-BuildImmutableReadSnapshot(completedTick)
-```
+An internal change journal is not another authoritative event category. It identifies which final values a downstream projection may need to reread and references retained event facts where necessary; it does not duplicate the resource ledger, command log, or event store.
+
+# Canonical storage operations
+
+ID allocation, locator resolution, swap removal, migration, transactional world forks, and immutable completed handles are specified with pseudocode in [ENTITY_IDENTITY_AND_STORAGE.md](ENTITY_IDENTITY_AND_STORAGE.md). Atomic tick ownership and save/publication capture are specified in [WORLD_EXECUTION_AND_OWNERSHIP.md](WORLD_EXECUTION_AND_OWNERSHIP.md).
 
 # Required decisions
 
-- [ ] Canonical ID representation and allocation.
+- [x] Canonical ID representation, allocation, zero/non-reuse policy, and creation ordering; final range proof remains. See [ENTITY_IDENTITY_AND_STORAGE.md](ENTITY_IDENTITY_AND_STORAGE.md).
 - [x] Integer resource scale and range proof; see [RESOURCE_CALIBRATION.md](RESOURCE_CALIBRATION.md).
-- [ ] Dense storage and indexing strategy.
+- [x] First dense storage, transactional page, locator, migration/removal, optional-component, and derived-index strategy; chunk/page sizes remain benchmark decisions. See [ENTITY_IDENTITY_AND_STORAGE.md](ENTITY_IDENTITY_AND_STORAGE.md).
+- [x] Mutation/change-capture boundary, stable-ID dirty journals, structural operations, and dense-versus-sparse marking contract; physical dirty-set representation remains open. See [STATE_CHANGE_AND_CLIENT_SYNC.md](STATE_CHANGE_AND_CLIENT_SYNC.md).
+- [x] First hot organism-resource, internal reservation/claim, tile-stock matrix, tile-effective-view, and compiled-phenotype strategy; final slot catalogue, page grouping, and thresholds remain benchmark decisions. See [RESOURCE_STORAGE_AND_EVALUATION.md](RESOURCE_STORAGE_AND_EVALUATION.md).
 - [x] First organism stored/derived/cached field inventory and health contract; see [ORGANISM_STATE_AND_HEALTH.md](ORGANISM_STATE_AND_HEALTH.md). Other entity inventories remain open.
 - [x] Founder available-store balance ownership, capacity-group load derivation, and DNA-compiled baseline limits; see [INTERNAL_STORAGE_AND_ALLOCATION.md](INTERNAL_STORAGE_AND_ALLOCATION.md).
 - [x] Energy-carrier pool ownership, compiled maximum versus structure-commissioned capacity, and storage-structure assignment; see [ENERGY_STORAGE.md](ENERGY_STORAGE.md).
+- [x] Root-seed, RNG algorithm/schema compatibility state, semantic draw addressing, and commit-owned occurrence ordinals; permanent numeric domain assignments remain implementation scaffold work. See [KEYED_RANDOMNESS.md](KEYED_RANDOMNESS.md).
 - [ ] Event retention categories.
 - [ ] Actor knowledge, observation snapshot, and visibility-state schemas.
 - [ ] Abiogenesis-origin representation and root-species invariants.
-- [x] First logical within-tile spatial index: derived `16 × 16` bins for organisms and remains with exact-distance filtering and stable ordering; see [SPATIAL_ORGANISMS_AND_BEHAVIOR.md](SPATIAL_ORGANISMS_AND_BEHAVIOR.md). Dense physical layout remains open.
+- [x] First logical and physical within-tile spatial-index strategy: derived pooled `16 × 16` bins for organisms and remains, rebuilt after movement, with exact-distance filtering and stable ordering; see [SPATIAL_ORGANISMS_AND_BEHAVIOR.md](SPATIAL_ORGANISMS_AND_BEHAVIOR.md) and [ENTITY_IDENTITY_AND_STORAGE.md](ENTITY_IDENTITY_AND_STORAGE.md).
 - [ ] Maximum expected counts used to size and benchmark structures.

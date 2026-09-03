@@ -1,14 +1,16 @@
 # DNA Trait Graph and Compilation
 
-Status: v1 implementation policies and first evolution-economy scales decided; concrete file/runtime schemas and catalogue-wide numeric calibration pending
+Status: v1 implementation policies, strict authoring/compilation boundary, typed compiled-phenotype shape, and first evolution-economy scales decided; concrete records and catalogue-wide numeric calibration pending
 
-Sources: [ORGANISMS vision](../../vision/ORGANISMS.md), [evolution plan](EVOLUTION.md), [organism plan](ORGANISMS.md), [configuration plan](CONFIGURATION_AND_BALANCE.md), and [resource model](RESOURCE_MODEL.md).
+Sources: [ORGANISMS vision](../../vision/ORGANISMS.md), [evolution plan](EVOLUTION.md), [organism plan](ORGANISMS.md), [configuration plan](CONFIGURATION_AND_BALANCE.md), [rule-pack authoring and compilation](RULE_PACK_AUTHORING_AND_COMPILATION.md), and [resource model](RESOURCE_MODEL.md).
 
 # Purpose
 
 Define how LYFE authors, validates, prices, unlocks, compiles, applies, and explains DNA traits. The trait system must support linear progressions, branching family trees, hard cross-family prerequisites, incompatibilities, direct and indirect attribute effects, and energy/resource costs without placing arbitrary scripts in the simulation hot loop.
 
-This document fixes the v1 data, policy, and compilation shape. The initial tree topology, ecological roles, and complexity tradeoffs are proposed in [TRAIT_CATALOGUE.md](TRAIT_CATALOGUE.md). Concrete file/runtime encodings and final per-node numerical values remain to be designed and calibrated.
+This document fixes the v1 data, policy, and phenotype shape. The initial tree topology, ecological roles, and complexity tradeoffs are proposed in [TRAIT_CATALOGUE.md](TRAIT_CATALOGUE.md). Strict JSON encoding, permanent typed identities, normalization, hashing, validation stages, and the loader/compiler lifecycle are defined in [RULE_PACK_AUTHORING_AND_COMPILATION.md](RULE_PACK_AUTHORING_AND_COMPILATION.md). Concrete C# records, registry assignments, and final per-node numerical values remain to be implemented and calibrated.
+
+DNA representation favors the biological domain over compactness. The authoritative genome remains an immutable canonical acquired-trait set with the full trait graph, family layout, prerequisites, incompatibilities, and provenance available for evolution and explanation. It is one-per-genome/species-scale data, not copied into organisms or traversed in hot loops.
 
 # Core model
 
@@ -197,7 +199,7 @@ Speciation changes the selected founders' species/DNA reference but does not cre
 - Scalar DNA parameters apply beginning with the next organism-evaluation phase.
 - Storage-capacity changes preserve current contents.
 - A capability with activation requirements is present genetically but inactive for an organism until its current structure, resource quotas, lifecycle, and environment satisfy those requirements.
-- Activation is derived from current state rather than stored as a second genetic flag.
+- Activation is materialized from current state at the named capability barrier rather than stored as a second independently writable genetic flag. All consumers read that materialized activation state.
 - Reproduction must provide an offspring with the descendant DNA's minimum viable structure and quotas; otherwise the reproduction transaction is invalid.
 - An organism below a new mature target may grow toward it. Falling below the hard minimum-viable target produces deterministic `StructuralFailure` under the first organism-health calibration rather than creating free structure; see [ORGANISM_HEALTH_CALIBRATION.md](ORGANISM_HEALTH_CALIBRATION.md).
 
@@ -259,7 +261,9 @@ CompileDNA(baseGenome, acquiredTraitIds, compiledTraitGraph):
     return immutable CompiledDNA
 ```
 
-Rule-pack loading expands display-parent prerequisites, validates the global DAG, and compiles effect metadata once. DNA compilation occurs for known genomes when that rule pack loads and when a new descendant DNA proposal is previewed or accepted. Organism ticks read dense immutable compiled structures; they do not traverse trait graphs or evaluate prerequisites.
+Rule-pack loading expands display-parent prerequisites, validates the global DAG, and compiles effect metadata once. DNA compilation fully recomputes a phenotype from the canonical acquired-trait set for known founders and for each new descendant preview or acceptance; it never patches an ancestor's already-rounded output. Preview compilation allocates no authoritative identity, while accepted commit interns the logical genome through normal world creation ordering. Organism ticks read dense immutable compiled structures; they do not traverse trait graphs or evaluate prerequisites.
+
+The runtime result is a typed `CompiledPhenotype` grouped by consumer domain—storage, metabolism/process allocation, tolerance, movement, sensing/behavior, lifecycle, interaction/defense, and evolution. Frequently used values are named numerical fields; enabled reactions/processes are short immutable arrays whose resource references are already resolved to compatible dense storage handles. Capability bit flags may accelerate tests, but they supplement rather than replace the domain genome. Species reference the compiled phenotype, and derived tile/species cohorts may resolve it once for many organism rows. The compiled result is the single operational source for every consumer; explanations use its stored provenance rather than recompiling effects. See [RESOURCE_STORAGE_AND_EVALUATION.md](RESOURCE_STORAGE_AND_EVALUATION.md) and [MATERIALIZED_DERIVED_STATE.md](MATERIALIZED_DERIVED_STATE.md).
 
 Two identical acquired sets under one rule-pack hash must produce the same genome ID, compiled values, provenance, and canonical hash regardless of acquisition history or worker scheduling.
 

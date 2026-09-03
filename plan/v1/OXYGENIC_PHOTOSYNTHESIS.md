@@ -127,8 +127,11 @@ baseRequestedOpportunities = floor(1,500 * effectiveLightQ)
 requestedOpportunities = MulIntByQ(baseRequestedOpportunities,
                                    habitatActivityQ)
 successfulExtents = KeyedBinomial(
-    requestedOpportunities,
-    idealSuccessQ = 0.90)
+    RandomAddress(MetabolicOpportunity,
+                  tick, organism.id, OxygenicPhotosynthesisReactionId,
+                  sampleIndex = 0),
+    trials = requestedOpportunities,
+    probabilityQ = 900_000)
 ```
 
 The hourly parameter compiles proportionally if tick duration changes, while the one-hour fixture remains normative. At zero light, the reaction requests nothing but its non-suppressible machinery upkeep remains. Values above `0.75` do not increase base throughput and do not cause damage in v1.

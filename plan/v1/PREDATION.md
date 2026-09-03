@@ -2,7 +2,7 @@
 
 Status: first v1 behavior, eligibility, capture, defense, feeding, movement, and analytical ecosystem-balance proposal; executable coupled population validation remains
 
-Sources: [simulation loop](SIMULATION_LOOP.md), [spatial organisms and behavior](SPATIAL_ORGANISMS_AND_BEHAVIOR.md), [spatial calibration](SPATIAL_CALIBRATION.md), [lifecycle and recycling](LIFECYCLE_AND_RECYCLING.md), [organism health](ORGANISM_STATE_AND_HEALTH.md), [trait catalogue](TRAIT_CATALOGUE.md), and [evolution](EVOLUTION.md).
+Sources: [simulation loop](SIMULATION_LOOP.md), [spatial organisms and behavior](SPATIAL_ORGANISMS_AND_BEHAVIOR.md), [general behavior and resource pressure](BEHAVIOR_AND_RESOURCE_PRESSURE.md), [spatial calibration](SPATIAL_CALIBRATION.md), [lifecycle and recycling](LIFECYCLE_AND_RECYCLING.md), [organism health](ORGANISM_STATE_AND_HEALTH.md), [trait catalogue](TRAIT_CATALOGUE.md), and [evolution](EVOLUTION.md).
 
 # Purpose
 
@@ -81,7 +81,7 @@ compatible food processing
 
 `NearbyOrganismDetection` exposes nearby entities, while `PreyThreatDiscrimination` exposes only coarse mechanically relevant cues: species identity, current radius/size class, movement class, visible capture/defense tags, distance, and whether the target is currently behaving as a threat. It does not reveal exact internal reserve, nutrient stores, health factors, or future intent.
 
-`HuntingBehavior` turns those observations into a persistent prey target and directed movement. Without it, contact predators may attack an eligible organism already in range but cannot pursue one deliberately. The first sensing and behavioral costs are:
+`HuntingBehavior` turns those observations into a persistent prey target and directed movement. Without it, contact predators may attack an eligible organism already in range but cannot pursue one deliberately. Hunting participates in the general controller's `Foraging` priority band; the predation rules below continue to own prey utility and target persistence after that band is selected. The first sensing and behavioral costs are:
 
 | Trait | MP / complexity | Passive upkeep | Principal effect |
 | --- | ---: | ---: | --- |
@@ -218,8 +218,8 @@ Defense factors multiply in canonical trait-effect order. Configuration validati
 A contact predator without `HuntingBehavior` does not receive omniscient prey choice. At phase 5 it forms all hard-eligible in-range targets from the stable post-movement view, sorts by `OrganismId`, and selects the minimum keyed rank:
 
 ```text
-target = argmin Hash(worldSeed, tick, predatorId, candidateId,
-                     OpportunisticPredationTarget)
+target = argmin KeyedRank(
+    PredationTargetChoice, tick, predatorId, candidatePreyId)
 ```
 
 It attacks only when at least one authorized content claim could be positive and it can pay the complete attempt cost. The predator need not retain enough reserve for later maintenance: a hungry organism may gamble its remaining usable energy on an affordable attack, benefit if it captures processable food, or die from ordinary maintenance failure if the gamble fails.

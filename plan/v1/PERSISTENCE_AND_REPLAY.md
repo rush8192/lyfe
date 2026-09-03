@@ -1,38 +1,45 @@
 # Persistence, Checkpoints, and Replay
 
-Status: scaffold
+Status: first save-content and completed-root capture pass; container, replay log, compatibility, hash cadence, and retention details pending
 
-Sources: [SIMULATION vision](../../vision/SIMULATION.md), [GAMEPLAY vision](../../vision/GAMEPLAY.md), and [technology decisions](TECHNOLOGY.md).
+Sources: [SIMULATION vision](../../vision/SIMULATION.md), [GAMEPLAY vision](../../vision/GAMEPLAY.md), [player loop and narrative](PLAYER_LOOP_AND_NARRATIVE.md), [keyed randomness](KEYED_RANDOMNESS.md), [deterministic parallel execution](DETERMINISTIC_PARALLEL_EXECUTION.md), [rule-pack authoring and compilation](RULE_PACK_AUTHORING_AND_COMPILATION.md), [moddability](MODDABILITY.md), and [technology decisions](TECHNOLOGY.md).
 
 # Purpose
 
-Define how complete worlds are saved, resumed, checkpointed, verified, and replayed under a specific simulation-rules version.
+Define how complete worlds are saved, resumed, checkpointed, verified, and replayed under one exact compiled-rules, mod-set, and world-generation identity.
 
 # Save contents
 
 A complete save must account for:
 
-- World identity, seed, mode, configuration, and rules version/hash.
+- World identity, seed, mode, normalized setup options, and the complete simulation-compatibility identity: engine simulation version, base-pack identity, canonically ordered balance-mod package identities/mod-set hash, final mechanics and registry-manifest hashes, rule-compiler version, scenario identity, world-pack package/profile identity, selected-world-options hash, compiled-world-profile/world-rules hashes, and RNG algorithm/schema IDs.
 - Tick duration, current tick/calendar, final date, pause, and speed state as applicable.
-- Random-stream or counter state.
+- The 128-bit root seed, pinned RNG algorithm ID, RNG schema version, and subsystem-owned semantic event ordinals; there is no mutable global or per-worker random stream/cursor.
 - Fixed geography, baselines, current conditions, integer resource accounts, and named gases.
 - Every living organism and dead remnant, including structural matter, available stores, charged energy-bearing reserves, zero-energy spent reserve carriers, and active metabolic binding cohorts with release ticks.
+- Every living organism's selected behavior, typed target, selection tick, dwell boundary, and enabled recent energy/acquisition-coverage memory.
 - Persisted fractional remainders used by sources, sinks, exchange, rates, and energy costs.
 - Species genome references, mutation balances and UInt128 income remainders, evolution revisions/ordinals, absolute speciation cooldowns, pressure accumulators, autonomous intents/evaluation ordinals including material- and biological-opportunity snapshots, aggregates needed for exact continuation, and locks.
 - Exact one-hour tile flow-history rings and rolling totals for resources referenced by selectable material-opportunity profiles, covering the 168-hour scoring window and including source, passive loss, inbound/outbound exchange, and biological uptake.
 - Sparse per-tile ordered species-pair predation-history rings and rolling totals for the 168-hour biological-opportunity window, including eligible encounters, attempts, successes, deaths, grants, and remnant remainder.
 - Complete immutable genome, abiogenesis, speciation-event, species-lineage, extinction, and controller state.
-- Abiogenesis origin, root-species membership, and per-actor discovered tiles, last observations, and observation timestamps.
+- Abiogenesis origin, root-species membership, and per-actor discovered tiles, last observations—including retained per-tile behavior distributions—and observation timestamps.
 - Pending accepted commands or proof that saves occur only at a boundary with none.
 - Historical aggregates and event retention needed by gameplay and the client.
+- Canonical notable-event facts, deduplication/hysteresis state, active consequence-review anchors, and any actor evolution goal or attention policy whose evaluation can cause an authoritative pause.
+- Completed materialized tile climate/resource-effective values, organism condition/capacity/activation values, and species/tile aggregates with their dependency generations and compiled hashes.
 
 The save contains the complete authoritative world even where a player lacks visibility. Loading or reconnecting must rebuild only that actor's authorized unknown/reduced/live projection. Replays restore knowledge state at checkpoints and reproduce visibility transitions from controlled-species occupancy; watching a replay must not retroactively fill hidden historical intervals unless a separate omniscient presentation mode is explicitly selected after the run.
 
-Derived stored-energy, elemental totals, and organism health need not be duplicated in the save when they can be recomputed exactly from resource definitions, account quantities, DNA, and environment. If health is retained as diagnostic snapshot data, load must recompute and verify or discard it according to [ORGANISM_STATE_AND_HEALTH.md](ORGANISM_STATE_AND_HEALTH.md).
+Gameplay-relevant derived values follow the materialize-once contract in [MATERIALIZED_DERIVED_STATE.md](MATERIALIZED_DERIVED_STATE.md). Completed stored energy, used load/capacity, organism health/activation, current tile effective values, current behavior distributions, species aggregates, and next-tick behavior outputs are saved when they feed continuation or represent the completed boundary. Load validates their rules/dependency generations and may compare a debug recomputation oracle, but it does not silently replace them with a new calculation. Ephemeral candidate lists, discarded behavior utilities, phase allocation/claim arenas, spatial indexes, and presentation-only derivations remain excluded. Last-observed behavior distributions remain persistent actor knowledge with their observation tick.
+
+Chronicle titles and prose, panel layout, visual pins, and private notes are presentation/profile data and are excluded from authoritative state hashes. Canonical notable-event facts and an automatic pause actually applied by an attention policy are historical records. Replaying the simulation regenerates the same facts; presentation may render them with different wording. Private annotations never become autonomous-evolution evidence.
 
 # Snapshot consistency
 
-Saves should be captured only from a completed tick boundary. Define whether the simulation pauses briefly, copies an immutable snapshot, or uses another approach. A save must be atomic from the loader's perspective and must not replace a valid prior save with a partial file.
+Saves are captured only from a completed tick or safe command boundary. The runner retains the immutable copy-on-write world root for that exact tick/revision, then the persistence worker serializes, compresses, checksums, and atomically replaces the destination asynchronously. The world need not remain paused, although holding the version consumes a bounded page/memory lease. Initially only one full save serialization runs per world; compatible requests may coalesce and others return a typed busy result. A save must be atomic from the loader's perspective and must not replace a valid prior save with a partial file. See [WORLD_EXECUTION_AND_OWNERSHIP.md](WORLD_EXECUTION_AND_OWNERSHIP.md) and [ENTITY_IDENTITY_AND_STORAGE.md](ENTITY_IDENTITY_AND_STORAGE.md).
+
+Internal phase/tick dirty buffers and per-connection projection-stream state are not canonical save contents. After load, stores begin with clean change metadata and the server builds a fresh actor-authorized projection snapshot or resumes only from separately retained compatible stream batches. Accepted command records, canonical events, authoritative actor knowledge, and histories remain saved according to their own ownership; a transient `TickChangeSet` never substitutes for them. See [STATE_CHANGE_AND_CLIENT_SYNC.md](STATE_CHANGE_AND_CLIENT_SYNC.md).
 
 # Replay model
 
@@ -45,7 +52,7 @@ The detailed plan should distinguish:
 
 ```text
 Replay(initialSnapshot, commandLog, targetTick):
-    validate rules and configuration hashes
+    validate the complete simulation-compatibility identity
     load nearest checkpoint at or before target
     apply commands at recorded ticks and order
     advance every intervening tick
@@ -64,6 +71,7 @@ Decide:
 - Compatibility policy across rule and engine versions.
 - Movement/migration event provenance, including the v1-zero environmental-displacement component, and compatibility behavior when later rule packs add environment-driven transport.
 - Retention and size limits for events and resource histories.
+- Whether small data-only base/mod/world-pack sources and locks are embedded in saves by default or exported as a portable sidecar bundle.
 
 # Determinism diagnostics
 
@@ -77,11 +85,14 @@ V1 may use local files, but persistence interfaces should not assume the client 
 
 - [ ] Save/checkpoint schema and container.
 - [ ] Atomic write and recovery procedure.
-- [ ] Snapshot boundary and background serialization.
+- [x] Completed-boundary immutable-root capture and background serialization ownership; exact container, memory, concurrency, and timeout limits remain open.
+- [x] RNG continuation state and validation boundary: canonical root seed, pinned algorithm ID, RNG schema version, and persistent semantic ordinals are saved; mutable stream cursors do not exist. Exact container encoding remains open. See [KEYED_RANDOMNESS.md](KEYED_RANDOMNESS.md).
 - [ ] Replay command-log format.
 - [ ] State-hash scope and cadence.
-- [ ] Version-compatibility policy.
+- [x] Exact base/mod-set/world-pack/profile/options/final-rule/world compatibility identity and fail-closed load boundary; see [RULE_PACK_AUTHORING_AND_COMPILATION.md](RULE_PACK_AUTHORING_AND_COMPILATION.md) and [MODDABILITY.md](MODDABILITY.md).
+- [ ] Engine/save-schema migration and retained multi-version compatibility policy.
 - [ ] Event/history retention and compression.
+- [ ] Canonical-event versus presentation-preference storage boundary, including export/privacy behavior for private notes.
 - [ ] Corruption detection and user-visible errors.
 - [ ] Round-trip equality tests.
 - [ ] Long replay and deliberate-divergence tests.

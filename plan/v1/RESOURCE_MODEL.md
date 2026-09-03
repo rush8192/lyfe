@@ -148,6 +148,8 @@ Authoritative matter quantities use nonnegative signed 64-bit integers. One stor
 - Checked 128-bit intermediate arithmetic is used for multiplication, allocation, and reconciliation.
 - State mutation rejects overflow rather than wrapping or saturating silently.
 
+This is the logical ledger, arithmetic, save, protocol, and reconciliation width. A dense organism column may use a narrower unsigned physical encoding only under the complete per-group range proof and checked accessor contract in [RESOURCE_STORAGE_AND_EVALUATION.md](RESOURCE_STORAGE_AND_EVALUATION.md). Runtime kernels still observe/promote `long` quantities, and an out-of-range rule pack is rejected rather than clamped. Tile/world accounts remain signed 64-bit storage.
+
 The client initially presents LYFE resource units, normalized quantities, or rates. Any future physical-scale overlay is presentation metadata and does not change authoritative accounting.
 
 ## Energy
@@ -246,14 +248,16 @@ Boundary accounts do not need finite balances, but every transaction using them 
 
 The ledger-account model is conceptual; it does not require a heap object or dictionary entry for every balance. Rule compilation assigns dense integer slots to resources permitted in each reservoir kind.
 
-- Tile balances use dense arrays indexed by compiled resource slot.
-- Organism and remnant balances use dense columns or fixed-size resource vectors associated with their entity slots.
+- Tile balances use dense resource-major matrices indexed by compiled reservoir slot and `TileId`; source, sink, exchange, claim, and projection phases receive precompiled slot lists by transport/behavior class.
+- Common organism and remnant balances use resource-major columns inside their tile-owned entity chunks. High-frequency structure/reserve accounts receive dedicated columns, while bounded group-specific vectors use compiled dense handles.
+- Rare future mutually exclusive internal compound families use typed optional component stores rather than a dictionary per organism or permanently widening every core row.
 - Account keys in diagnostics are reconstructed from the owner, compartment, and compiled slot.
-- Evaluation emits compact claims and reaction executions into per-tile or per-worker buffers.
+- DNA compilation resolves reaction inputs/outputs, quotas, process priority, holdbacks, and costs to immutable numerical process plans and dense resource handles. Ticks do not traverse trait definitions or perform `ResourceId` map lookups in inner loops.
+- Evaluation emits compact claims and reaction executions into flat per-tile or per-worker buffers; ordinary internal tick reservations remain scratch rather than authoritative state.
 - Production applies resolved batches directly and updates aggregate flow counters.
 - Debug mode may additionally materialize individual ledger entries for a bounded window.
 
-The detailed data-layout benchmark should compare dense vectors with a hybrid sparse layout, but v1 should begin dense because the catalogue is small and predictable.
+The selected layouts, option comparison, tile effective views, and benchmark matrix are defined in [RESOURCE_STORAGE_AND_EVALUATION.md](RESOURCE_STORAGE_AND_EVALUATION.md). Dense core slots remain the default because the v1 catalogue is small and predictable, but organism memory is tracked per group because each additional `int64` slot costs approximately `0.8 MB` per `100,000` organisms per populated world version.
 
 ## Transfers
 
@@ -413,7 +417,7 @@ ResourceClaim:
 V1 uses capped weighted-proportional allocation within each `(sourceAccount, resourceId, priorityClass)` group. Nearly every ordinary claim has weight `1`; `DissolvedOrganicSpecialization` supplies the first resource-specific weight `2` for LDO without creating another priority class:
 
 ```text
-ResolveClaims(available, claims, deterministicKey):
+ResolveClaims(available, claims, tick, tileId, resourceId):
     discard invalid and zero claims
     merge claims by claimant/contention identity before applying weight
     sort only for canonical output, not preferential access
@@ -426,7 +430,8 @@ ResolveClaims(available, claims, deterministicKey):
             capped by its unmet requested amount
         distribute this round's leftover quanta among unmet claims
             by descending fractional remainder,
-            then stable Hash(deterministicKey, claimantId)
+            then KeyedRank(ResourceRemainderRank,
+                           tick, claimantId, Pack32(tileId, resourceId))
         remove satisfied claims and repeat if a cap left stock unallocated
     distribute each merged claimant grant to its subclaims in canonical
         process-priority order without changing its total
@@ -470,7 +475,8 @@ The first oxygenic primary-production rule consumes one named `CO2` plus boundar
 When multiple ordinary scavengers target the same contents, the action resolver uses the same deterministic proportional-plus-stable-remainder mechanics as tile uptake, with every scavenging weight fixed at `1` in v1. When multiple predators successfully kill the same prey, each eligible claim from a predator that survives the complete predation pass is capped by ingestion and storage limits and weighted by its compiled `feedingPriorityWeight`:
 
 ```text
-ResolveWeightedPredationClaims(available, successfulClaims, deterministicKey):
+ResolveWeightedPredationClaims(available, successfulClaims,
+                                tick, tileId, resourceId):
     remaining = available
     active = valid positive claims
 
@@ -480,7 +486,8 @@ ResolveWeightedPredationClaims(available, successfulClaims, deterministicKey):
             capped by its unmet requested amount
         distribute this round's leftover quanta among unmet claims
             by descending fractional remainder,
-            then stable Hash(deterministicKey, claimantId)
+            then KeyedRank(PredationFeedingRemainder,
+                           tick, claimantId, Pack32(tileId, resourceId))
         remaining -= total grants made in this round
         remove fully satisfied claims
         stop if the round grants zero

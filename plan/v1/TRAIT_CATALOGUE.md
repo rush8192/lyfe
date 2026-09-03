@@ -103,7 +103,7 @@ Every founder starts with the following common traits or equivalent compiled cap
 | `NutrientStorage` | `PrimitiveNutrientStore` | Needs-only macronutrient staging plus one extra inherited micronutrient-quota set |
 | `GrowthLifecycle` | `DirectLifecycle` | Growth directly to reproductive maturity; no dormant or specialized phase |
 | `Reproduction` | `PrimitiveFission` | Near-even zero-sum division with a conservative health gate |
-| `BehavioralRegulation` | `StochasticActivity` | Random or fixed activity without sensed goal selection |
+| `BehavioralRegulation` | `BaselineActivity` | Ordinary unregulated activity under hard physiological safeguards |
 | `EvolutionaryMachinery` | `AsexualInheritance` | Baseline mutation income and change-complexity limit |
 
 Passive environmental displacement is world physics, not a locomotion trait. Founders have no active locomotion, sensing, predation, or defense capability unless a scenario later adds it explicitly.
@@ -411,22 +411,28 @@ ContactDetection                                        Early
 ## `BehavioralRegulation`
 
 ```text
-StochasticActivity                                      Foundation
+BaselineActivity                                        Foundation
 ├── StateGatedActivity                                  Early
 │   ├── ResourceConservation                            Early/Middle
+│   │   └── StochasticQuiescence                        Future placeholder
 │   ├── ReproductionReadiness                           Middle
 │   └── StressAvoidance                                 Middle
 ├── DirectedForaging                                    Middle
-│   ├── ScavengingBehavior                             Middle
+│   ├── ScavengingBehavior                              Middle
 │   └── HuntingBehavior                                 Late
-└── MetabolicBehaviorCoordination                       Middle/Late
+├── MetabolicBehaviorCoordination                       Middle/Late
+└── QuorumResponse                                      Future placeholder
 ```
 
-- State gating reduces waste when reserve or health is low but adds control upkeep and can miss brief opportunities.
-- Directed behavior requires a matching sense and locomotion capability; without both it cannot activate.
-- Conservation may suppress movement, acquisition, or reproduction while preserving baseline maintenance.
+- `BaselineActivity` supplies ordinary unregulated behavior under the universal affordability, growth-floor, reproduction-viability, lifecycle, and habitat safeguards. It is not a random chance to decline mandatory physiology.
+- `StateGatedActivity` reads current reserve, condition causes, and concrete inventory deficits. It reduces waste but adds control upkeep and can miss brief opportunities.
+- `ResourceConservation` adds the first approximately one-day resource-experience memory, persistent conservation state, entry/exit hysteresis, and action gating. Conservation may suppress optional growth, reproduction, dispersal, paid movement, active transport, or futile pathway activation. It never suppresses mandatory maintenance or free useful passive acquisition.
+- `ReproductionReadiness` is a sibling of `ResourceConservation` under `StateGatedActivity` and compiles the energy-coverage memory it needs independently. Its first profile requires recent energy coverage of at least `1.05` and enough projected reserve to leave both reproduction results with the greater of their ordinary profile minimum or 48 hours of current-environment mandatory-cost runway. Reproduction remains deterministic when all active gates pass.
 - With `DormantPhase`, `ResourceConservation` compiles the first `MoistureConservation` transition policy. It uses only current and trailing moisture plus internal reserve, with a warning lead, trend confirmation, hysteresis, and minimum dwell; the exact v1 profile is defined in [TERRESTRIAL_ADAPTATION.md](TERRESTRIAL_ADAPTATION.md). The behavior trait does not itself grant dormancy or terrestrial survival.
-- Metabolic coordination complements, but does not replace, the internal `MetabolicRegulation` trait.
+- Directed behavior requires a matching sense and locomotion capability; without both it cannot activate. Opportunistic contact actions do not require deliberate pursuit.
+- Metabolic coordination complements, but does not replace, `MetabolicRegulation`, internal allocation policies, reaction throughput, or storage.
+- `StochasticQuiescence` and `QuorumResponse` are non-selectable future placeholders for bet-hedging and costly density-responsive behavior. Founders do not receive free exact population knowledge.
+- The general behaviors, pressure inputs and memory, first `0.50/0.65` conservation hysteresis, critical `0.20` reserve rule, four-hour dwell, and priority-banded keyed selection are normative in [BEHAVIOR_AND_RESOURCE_PRESSURE.md](BEHAVIOR_AND_RESOURCE_PRESSURE.md).
 - `DirectedForaging` is `80 MP / complexity 1 / 5 upkeep`; `HuntingBehavior` is `120 / 2 / 8`. Together with the two sensing nodes, the directed-hunting information/behavior layer costs `360 MP`, change complexity `6` across multiple events, and `23` energy/hour before locomotion and capture.
 
 ## `PredationScavenging`

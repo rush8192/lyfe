@@ -1,6 +1,6 @@
 # Spatial Organisms and Behavior
 
-Status: first v1 spatial semantics, entity-placement, indexing, movement-boundary and migration contract, numerical scale, and active-movement economics; general behavior policy pending
+Status: first v1 spatial semantics, entity-placement, indexing, movement-boundary and migration contract, numerical scale, active-movement economics, and behavior-observation contract
 
 Sources: [organism mechanics](ORGANISMS.md), [simulation loop](SIMULATION_LOOP.md), [organism state](ORGANISM_STATE_AND_HEALTH.md), [world and climate](WORLD_AND_CLIMATE.md), [trait catalogue](TRAIT_CATALOGUE.md), [spatial calibration](SPATIAL_CALIBRATION.md), and [WORLD vision](../../vision/WORLD.md).
 
@@ -220,18 +220,22 @@ Eligible organisms receive a small Brownian-like displacement on every tick, inc
 
 ```text
 SampleBrownianDisplacement(organism, tick, environment):
-    directionIndex = KeyedUniform(
-        worldSeed, tick, organismId, BrownianDirection,
+    directionIndex = UniformBelow(
+        RandomAddress(BrownianDirection,
+                      tick, organism.id, 0, sampleIndex = 0),
         fixedAntipodalDirectionTable.count)
-    magnitudeDraw = KeyedDraw(
-        worldSeed, tick, organismId, BrownianMagnitude)
+    magnitudeIndex = UniformBelow(
+        RandomAddress(BrownianMagnitude,
+                      tick, organism.id, 0, sampleIndex = 0),
+        fixedMagnitudeTable.count)
     direction = fixedAntipodalDirectionTable[directionIndex]
-    magnitude = BrownianMagnitudeCurve(magnitudeDraw,
-                                       compiledBodyScale,
-                                       mediumClass,
-                                       lifecycle,
-                                       compiledEnvironmentalSpreadProfile,
-                                       tickDuration)
+    magnitude = ScaleBrownianMagnitude(
+        fixedMagnitudeTable[magnitudeIndex],
+        compiledBodyScale,
+        mediumClass,
+        lifecycle,
+        compiledEnvironmentalSpreadProfile,
+        tickDuration)
     return FixedPointVector(direction, magnitude)
 ```
 
@@ -291,7 +295,7 @@ LocalObservation:
 
 A behavior target stores a stable typed entity ID, edge, or tile-local point plus the tick at which it was selected. At intent evaluation, the target is resolved against the current post-movement snapshot. Missing, consumed, out-of-range, newly ineligible, or different-tile targets cause the targeted intent to be omitted; they never redirect implicitly to a different entity. Behavior may select a new target at phase 9.
 
-The first predation-specific `Hunting` and `Fleeing` states, utility inputs, target hysteresis, keyed sampling, and next-tick pursuit/escape semantics are defined in [PREDATION.md](PREDATION.md). The general non-predation behavior-state set, conservation thresholds, migration choices, and cross-behavior priority policy remain a later deep dive. Every policy uses keyed draws and stable candidate ordering rather than spatial-index iteration accident.
+The first predation-specific `Hunting` and `Fleeing` states, utility inputs, target hysteresis, keyed sampling, and next-tick pursuit/escape semantics are defined in [PREDATION.md](PREDATION.md). The general behavior-state set, resource-pressure memory, conservation thresholds, reproduction readiness, migration choices, and cross-behavior priority policy are defined in [BEHAVIOR_AND_RESOURCE_PRESSURE.md](BEHAVIOR_AND_RESOURCE_PRESSURE.md). Every policy uses keyed draws and stable candidate ordering rather than spatial-index iteration accident.
 
 # Future localized fields
 
@@ -308,7 +312,7 @@ In v1, the first call resolves the tile-wide pool, the second returns no gradien
 # Determinism, save, and protocol implications
 
 - Tile, position, velocity, current behavior, and typed target are authoritative and saved.
-- Derived body radius and index bins are recomputed from saved state and the pinned rule pack.
+- Stored body radius and its dependency generation are loaded and validated as gameplay materialized state. Spatial index bins are structural indexes and are rebuilt from the loaded positions and stored radii.
 - Stable IDs, not dense slots or bin offsets, cross save or protocol boundaries.
 - A live tile projection may send exact entity positions. Reduced and unknown projections send no current organisms or remains.
 - Server interest management may change transmission cost but cannot change index construction, sensing, target selection, or simulation outcomes.
@@ -349,8 +353,7 @@ In v1, the first call resolves the tile-wide pool, the second returns no gradien
 
 # Next decisions
 
-1. Baseline non-predation behavior states and the cross-behavior deterministic/stochastic selection model; hunting and fleeing are specified in [PREDATION.md](PREDATION.md), and the first terrestrial `MoistureConservation` lifecycle selector is fixed in [TERRESTRIAL_ADAPTATION.md](TERRESTRIAL_ADAPTATION.md).
-2. Target selection within sensed candidates, including whether organisms prefer nearest, weakest, richest, or a weighted keyed sample.
-3. Final capture-reach upgrades, scavenging size compatibility, and non-founder remnant packing profiles; first predation size rules are specified in [PREDATION.md](PREDATION.md).
-4. Spatial performance acceptance at clustered—not merely uniform—100,000-organism workloads.
-5. Post-v1 directional environmental transport fields and regulated or lifecycle-specific successors to the first constitutive passive-spread traits.
+1. Generic scavenging target-value calibration and non-sensing dispersal persistence; the general priority-banded selector and bounded keyed near-equivalent choice are fixed in [BEHAVIOR_AND_RESOURCE_PRESSURE.md](BEHAVIOR_AND_RESOURCE_PRESSURE.md).
+2. Final capture-reach upgrades, scavenging size compatibility, and non-founder remnant packing profiles; first predation size rules are specified in [PREDATION.md](PREDATION.md).
+3. Spatial performance acceptance at clustered—not merely uniform—100,000-organism workloads.
+4. Post-v1 directional environmental transport fields and regulated or lifecycle-specific successors to the first constitutive passive-spread traits.

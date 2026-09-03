@@ -1,12 +1,12 @@
 # World and Climate Numerical Calibration
 
-Status: provisional v1 numerical rule-pack candidate; representative-seed maps and population smoke tests required before freezing
+Status: provisional official primordial-Earth-like world-profile candidate; representative-seed maps and population smoke tests required before freezing
 
-Sources: [world and climate algorithms](WORLD_AND_CLIMATE.md), [gas transport](GAS_TRANSPORT_AND_ATTRITION.md), [hydrogen founder fixture](ONE_TILE_STARTING_CONFIGURATION.md), [sulfur founder fixture](SULFUR_TILE_STARTING_CONFIGURATION.md), [terrestrial adaptation](TERRESTRIAL_ADAPTATION.md), and [organism health calibration](ORGANISM_HEALTH_CALIBRATION.md).
+Sources: [world and climate algorithms](WORLD_AND_CLIMATE.md), [world-pack moddability](MODDABILITY.md), [gas transport](GAS_TRANSPORT_AND_ATTRITION.md), [hydrogen founder fixture](ONE_TILE_STARTING_CONFIGURATION.md), [sulfur founder fixture](SULFUR_TILE_STARTING_CONFIGURATION.md), [terrestrial adaptation](TERRESTRIAL_ADAPTATION.md), and [organism health calibration](ORGANISM_HEALTH_CALIBRATION.md).
 
 # Purpose
 
-Assign a coherent first set of numerical values to world generation, climate, aquatic light, terrestrial moisture and resource access, volcanism, and paired-start eligibility. These values turn the algorithm contract into a reproducible rule-pack candidate; they remain balance data, not engine constants.
+Assign a coherent first set of numerical values to world generation, climate, aquatic light, terrestrial moisture and resource access, volcanism, and paired-start eligibility. These values define the official primordial-Earth-like world profile; they remain replaceable world data, not engine constants. Other official or external profiles may intentionally target different distributions and ecological pressures while passing the same structural and safety contracts.
 
 # Calibration priorities
 
@@ -365,7 +365,7 @@ Repairable deficits use this weighted score:
 | Advanced micronutrient gates | `0.10` | Reduce an existing amount by at most `50%`; cannot turn a rich tile into zero |
 | Light via depth/cloud/turbidity | `0.10` | Only within the individual bounds above; never alter latitude/time |
 
-Each dimension reports a normalized `0..1` deficit before weighting. Total repair cost must not exceed `0.55`. Repaired pairs must be disjoint and pair centers must be at least four toroidal Manhattan steps apart. Stable ordering is total score, then hydrogen coordinate, sulfur coordinate, and orientation.
+Each dimension reports a normalized `0..1` deficit before weighting. Total repair cost must not exceed `0.55`. Repaired pairs must be disjoint and pair centers must be at least four cylindrical Manhattan steps apart: `x` distance takes the shorter wrapped route, while `y` distance is the ordinary bounded absolute difference. Stable ordering is total score, then hydrogen coordinate, sulfur coordinate, and orientation.
 
 The generator first retains natural eligible pairs, then repairs the best near-valid candidates until it reaches four or exhausts candidates. Failure to reach four triggers the next named generation attempt; the eighth failure returns a stable setup error.
 

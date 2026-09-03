@@ -1,8 +1,8 @@
 # Validation, Testing, and Performance
 
-Status: scaffold
+Status: test taxonomy and extensive subsystem invariants defined; benchmark contract, state hash, CI policy, and production scenario implementations remain
 
-Sources: all vision documents and [technology decisions](TECHNOLOGY.md).
+Sources: all vision documents, [technology decisions](TECHNOLOGY.md), [rule-pack authoring and compilation](RULE_PACK_AUTHORING_AND_COMPILATION.md), and [moddability](MODDABILITY.md).
 
 # Purpose
 
@@ -12,6 +12,9 @@ Define how v1 proves biological rules, mass balance, deterministic replay, proto
 
 ## Unit tests
 
+- Strict rule parsing, source-mapped diagnostics, typed registries/tombstones, reference resolution, normalization, canonical hashes, and full deterministic phenotype compilation.
+- Mod-parameter registry generation, policy/shape/unit checks, expected-base-value checks, canonical disjoint-overlay composition, dependency validation, and duplicate-writer rejection.
+- World-pack manifest/profile parsing, closed algorithm/reference validation, world-parameter option bounds, scenario/profile constraint intersection, canonical profile hashing, and complete-record enforcement.
 - Trait validation and compiled effects.
 - Resource composition expansion, transfers, and statically balanced reactions.
 - Energy-carrier conversion and capacity enforcement.
@@ -29,6 +32,7 @@ Define how v1 proves biological rules, mass balance, deterministic replay, proto
 - Periodic elevation/weather seams, bounded polar neighbors, depth-light anchors, moisture recurrence, and starting-region scoring/repair.
 - Local-coordinate arithmetic, exhaustive-versus-indexed proximity results, placement, same-tile interaction locality, zero-mean keyed Brownian displacement, and one-edge migration traversal.
 - Protocol validation and command authority.
+- Benefit-timing classification—including construction-dependent `Maturing` proposals—proposal dominance, evolution-goal invalidation, alert hysteresis, and notable-event deduplication.
 
 ## Property and generative tests
 
@@ -85,17 +89,62 @@ Define how v1 proves biological rules, mass balance, deterministic replay, proto
 ## Determinism tests
 
 - Same seed/configuration/commands produce equal state hashes.
+- The empty mod set is semantically identical to direct official-pack compilation; reordering disjoint mod inputs does not change canonical mod-set or final-mechanics identity, while any changed authoritative value does.
+- A save/load cycle retains exact base-pack, mod-package, mod-set, final-mechanics, and certification identities and refuses a missing or mismatched required package rather than silently using a nearby version.
+- World-pack file order and installed-package enumeration do not change profile hashes. Any effective profile or selected-option change changes compiled-world identity, even when a sampled seed happens to yield the same visible tiles.
+- The same biological/mod rule set, world-pack hash, profile, options, and seed reproduces fixed geography, climate baselines, tile stocks, atmospheric initialization, bounded start repair, and generation diagnostics across save/load and supported worker counts.
 - Single-threaded and supported parallel worker counts agree.
+- The pinned `Philox4x64-10` implementation matches Random123 known-answer vectors; all authoritative domains use permanent numeric IDs and documented coordinate schemas.
+- Keyed results are invariant under call/enumeration order, physical partitioning, worker delay, dense-row compaction, observation, logging, and rejected/failed unrelated work.
+- Exact bounded draws, fixed-point Bernoulli thresholds, weighted choices, stable ranks, and per-trial keyed binomials match their scalar golden/reference implementations.
+- Each parallel phase covers its logical work exactly once; isolated outputs reduce to the same preflighted mutation plan, creation IDs, materializations, events, and phase journal as the one-worker oracle.
 - Pause and real-time speed changes do not alter results.
 - Client subscriptions and presentation requests do not alter results.
 - Save/reload continuation matches uninterrupted execution.
 - Replay identifies intentional divergence.
+- Authoritative world hashes and future outcomes are unchanged by the number of projection streams, subscriptions, publication cadence, coalescing, reconnects, or disconnected clients.
+- Supported worker counts and dense-slot permutations produce the same canonical logical tick-change journal.
+- Boundary command transactions while paused replay with the same world revision and do not advance simulated tick/time.
+
+## Execution and storage tests
+
+- Exactly one `WorldRunner` can hold a working transaction; server, projection, persistence, and phase workers cannot acquire mutable store access.
+- A deliberate failure in every tick phase discards private pages and leaves the prior completed root, IDs, counters, ledgers, events, locators, and hash unchanged.
+- Retained save/publication handles never observe later mutations, and pooled pages cannot be reused until every lease is released.
+- Stable entity IDs are never reused; canonical creation ordering is invariant under worker completion and dense layout.
+- Every present row and paged locator round-trips exactly after append, swap removal, death/remnant creation, migration, compaction, and save/load.
+- Rebuilding declared structural spatial indexes produces the same queries as an uninterrupted maintained instance; completed gameplay aggregates/materializations load byte-identically and validate rather than being silently rebuilt.
+- Slow/failing clients, encoders, metrics sinks, and save destinations do not alter tick scheduling or authoritative results beyond bounded capture cost.
+- Lifecycle and shutdown failure injection exposes either the old or new completed transaction, never a partial boundary.
+- Dense organism resource handles resolve to the correct stable resource/group, and no two admitted internal processes spend the same free quantum.
+- The compiled v1 internal manifest admits exactly the resources reachable through declared acquisition/reaction/transfer routes, and rejects a route without compatible storage.
+- If profiling ever justifies a bounded-width organism column, it must prove every rules/scenario maximum, match the uniform-`int64` reference under randomized valid transactions, reject overflow before mutation, and round-trip as the same logical 64-bit quantity.
+- Ephemeral tick reservations disappear after their phase, while authoritative binding cohorts preserve physical balances and reduce only free availability.
+- Resource-major tile matrices match a scalar reference for sources, sinks, transport, contention, and projection under every configured resource class.
+- Phase-specific tile effective views match direct formula evaluation and invalidate on every declared climate, stock, and fixed-access dependency.
+- Equivalent domain DNA compiles to identical typed numerical profiles, dense handles, process order, provenance, and hashes; organism ticks never traverse trait definitions.
+- Every gameplay-relevant derived field has one registered owner/dependency set; a dirty or generation-mismatched read fails rather than lazily recalculating.
+- Stored tile, organism, and species materializations match independent debug oracles, enter completed hashes/diffs/saves as declared, and survive load without silent replacement.
+- Reproduction, behavior, mutation income, autonomous evolution, events, explanations, and client projections read the same stored `endHealthQ` rather than evaluating health independently.
+
+## State synchronization tests
+
+- Applying every batch from an authorized snapshot through tick `T` equals a direct authorized projection at `T`.
+- Applying consecutive batches and applying their merged batch produce the same normalized client state; generated operation sequences cover create/patch/remove, tile replacement, keyed-history upsert, and ordered-event combinations.
+- Duplicate batches are harmless; gaps, wrong bases, wrong streams, incomplete parts, checksum failures, and structural errors fail before the visible cache changes.
+- Reduced-to-live replacement supplies a complete live tile, while live-to-reduced atomically evicts current conditions, organisms, remains, and hidden chart points.
+- Removal reasons do not turn scope loss into death or disclose a hidden death.
+- Encoded-message inspection proves that actor and subscription projection cannot leak hidden current state.
+- Save/load begins with clean dirty metadata and produces an equivalent subsequent change stream from the same commands.
 
 ## Integration and scenario tests
 
 - Founding species survives a known viable setup.
 - The sulfide square fixture reaches its first split at tick 250 with the stated first-tick ledger and dark-period reserve minimum; the generated-climate reference reaches tick `263` and accepted generated starts remain in `250..275`; the hydrogen fixture reaches its first split near tick 334.
-- The provisional mutation-income fixture reaches hydrogen's 40 MP option near tick 338 and sulfur's 60 MP option near tick 511.
+- The coupled paired-opening authoring fixture reaches hydrogen's `40 MP` landmark during hours `335..350`, sulfur's `60 MP` landmark and player speciation during hours `480..520`, and its seven-day branch check during hours `648..688`; the eight-key reference is `343 / 496 / 664` respectively.
+- The same fixture keeps at least `95%` of each root alive through first reproduction, moves exactly half the local sulfur population at speciation, retains at least 45 members in each sulfur branch through the refractory interval, reaches `700..850` total organisms by day 45, creates remnants through ordinary senescence, and exposes fixed nitrogen as a growth constraint without acute adapted-founder chemical mortality.
+- The mirrored opening-strategy authoring matrix reaches all eight player decisions and review boundaries, retains every descendant, constructs rather than grants storage, produces no energy from uptake alone, and makes intent-specific differences visible. Its first four-seed and focused 30-day landmarks are recorded in [OPENING_STRATEGY_VALIDATION.md](OPENING_STRATEGY_VALIDATION.md); production acceptance requires the larger key/generated-map pass described there.
+- Across accepted generated starts and longer opening horizons, both founders can reach a meaningful first decision, but population growth and environmental variation expose at least one causally legible limiting pressure rather than settling into indefinite unattended expansion. A no-response control should decline or materially underperform an appropriate adaptation within its authored window. No founder has or suffers predation until the required traits, eligible contact, and ordinary predation rules actually produce it.
 - Scarcity can cause starvation and recovery.
 - Reproduction, death, remains, and decomposition form a complete cycle.
 - A 100-producer stable-turnover fixture approaches `285.816` labile production/hour after structural-decay warm-up and supports only about three hydrogen-derived or two-to-three sulfur-bridge fermenters; a producer-free fermenter ecosystem eventually becomes extinct.
@@ -127,6 +176,9 @@ Define how v1 proves biological rules, mass balance, deterministic replay, proto
 - The spatial rule-pack fixture reproduces the founder-radius, discrete Brownian RMS, analytic uniform-density encounter rates, and 30-day chance-encounter bands in [SPATIAL_CALIBRATION.md](SPATIAL_CALIBRATION.md).
 - V1 directional environmental displacement is exactly zero. Active and DNA-scaled Brownian-like passive migrants preserve one organism identity and account state, record distinct movement provenance, and trigger the same occupation-based exploration transition; no dispersal path copies an organism or reveals a destination before arrival.
 - Browser resynchronizes after missing deltas.
+- Both founder choices expose at least two non-dominated, different-intent opening proposals, including one immediate proposal, and preparatory paths expose their complete remaining milestone without claiming active benefit.
+- Decision summaries, alerts, automatic pause boundaries, consequence reviews, and canonical notable events replay identically and disclose only actor-authorized evidence.
+- Every immediate opening proposal produces a relevant observable difference within its authored consequence window unless its preview identified the realized environmental blocker; the common 168-hour review still emits even where a slower intent-specific landmark remains pending.
 
 # Representative performance benchmark
 
@@ -141,6 +193,9 @@ Record:
 - Time spent by simulation phase.
 - Save size/time and load time.
 - Snapshot/delta encoding size and time.
+- Dirty-tracking cost and density, projection materialization/coalescing time, bytes by operation type, per-stream retention memory, client atomic-apply time, normalized-index repair time, PixiJS buffer upload, and React notifications per committed batch.
+- Bytes copied per transactional page group, page-pool high-water mark, locator cost, chunk occupancy/slack, tile-partition migration cost, retained-root lease overhead, and tile-partitioned versus global-SoA comparison under uniform and clustered populations.
+- Row-major versus tile-chunk resource-major organism balances, dense-core versus synthetic hybrid occupancy, mixed-row phenotype lookup versus derived tile/species cohorts, resource-major versus tile-major stock matrices, and per-organism versus once-per-tile environmental transforms.
 - Client frame time, visible entity count, and update cost.
 
 # Acceptance thresholds to define
@@ -156,9 +211,17 @@ Record:
 
 Thresholds should represent playable worlds, not isolated microbenchmarks.
 
+# Optimization gate
+
+The first vertical slice uses the documented sane defaults and gathers an end-to-end profile before implementing competing physical representations. An optimization proposal must identify a measured limiting resource, reproduce it with a representative world and client workload, report whole-system results rather than only a microbenchmark, preserve a simple reference implementation or oracle, and justify its implementation, testing, migration, and maintenance cost. Smaller fields or messages are not automatically better if they increase tick CPU, copying, allocation, encoding, client-apply cost, or design complexity elsewhere.
+
+Uniform signed-64-bit resource columns, `256`-row chunks, ordinary typed fields, and the initial Protocol Buffer patch shapes remain the baseline until this gate is met. Correctness-driven structure—stable IDs, deterministic barriers, materialized single-source values, bounded queues, and actor-authorized projections—is not optional performance tuning.
+
 # Instrumentation
 
 Every major simulation phase should expose elapsed time and processed counts. Plan debug-only resource reconciliation, per-tile hot-spot reporting, allocation and GC metrics, command queue depth, client queue depth, encoded bandwidth, and deterministic state hashes.
+
+The headless scenario runner must additionally expose stable common outcomes and intent-specific counters without becoming a simulation input. It should restore shared completed-boundary checkpoints for alternate command branches, evaluate named time/event landmarks, and emit deterministic JSON suitable for golden comparisons and balance analysis. Counterfactual branches are development fixtures, not player-visible Survival backtracking.
 
 # Continuous integration
 
@@ -172,8 +235,12 @@ C# is reconsidered only after representative profiling shows that the managed ru
 
 - [ ] Test taxonomy and project mapping.
 - [ ] Canonical small deterministic fixtures.
+- [x] Balance-mod validation, composition laws, compatibility identity, and certification boundary; concrete generated test cases remain implementation work. See [MODDABILITY.md](MODDABILITY.md).
+- [x] Closed-schema world-pack/profile validation, option, identity, deterministic-generation, and certification boundary; representative external profiles and expanded seed suites remain implementation work. See [MODDABILITY.md](MODDABILITY.md) and [WORLD_AND_CLIMATE.md](WORLD_AND_CLIMATE.md).
 - [ ] Resource-conservation oracle.
 - [ ] State-hash definition.
+- [x] State-change/projection correctness taxonomy and merge-law requirements; concrete property-test generators and performance thresholds remain open. See [STATE_CHANGE_AND_CLIENT_SYNC.md](STATE_CHANGE_AND_CLIENT_SYNC.md).
+- [x] World ownership/failure and entity identity/storage test contracts; concrete benchmark thresholds remain open. See [WORLD_EXECUTION_AND_OWNERSHIP.md](WORLD_EXECUTION_AND_OWNERSHIP.md) and [ENTITY_IDENTITY_AND_STORAGE.md](ENTITY_IDENTITY_AND_STORAGE.md).
 - [ ] Benchmark world/rule pack.
 - [ ] Reference hardware and acceptance thresholds.
 - [ ] Profiling and metric naming conventions.

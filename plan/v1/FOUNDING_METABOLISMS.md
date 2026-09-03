@@ -1,6 +1,6 @@
 # Founding Metabolisms and Survival Origins
 
-Status: founding identities, asymmetry, opening fixtures, and first generated-world light calibration decided; escape-path and representative-world tuning pending
+Status: founding identities, asymmetry, opening fixtures, escape-path rule packs, generated-light calibration, and first coupled opening validated; production generated-world and optional-package tuning remain
 
 Sources: [GAMEPLAY vision](../../vision/GAMEPLAY.md), [ORGANISMS vision](../../vision/ORGANISMS.md), [WORLD vision](../../vision/WORLD.md), [resource model](RESOURCE_MODEL.md), and [one-tile hydrogen fixture](ONE_TILE_STARTING_CONFIGURATION.md).
 
@@ -173,6 +173,7 @@ The v1 scenario's competitor policy maps each founder to the other of its two al
 - The hydrogen-to-fermentation path validates at its lower cumulative mutation price; the sulfur path cannot bypass regulation and generalized catabolism.
 - Oxygenic photosynthesis fails trait validation without its prerequisites and population expansion fails where manganese/calcium quotas cannot be reproduced.
 - A paired-region fixture initializes equal-sized populations without sharing a starting resource reservoir.
+- The coupled authoring fixture reproduces the first-reproduction, mutation-income, first player-speciation, and seven-day branch-viability bands in [SURVIVAL_OPENING_VALIDATION.md](SURVIVAL_OPENING_VALIDATION.md).
 - Neither founder receives an implicit matter, energy, mutation-point, or probability advantage outside its declared DNA and environment.
 - Repeating the paired setup reproduces initialization and simulation hashes.
 - The lineage store contains one origin event, two root species, and no false parent-child edge between the founders.
@@ -189,4 +190,5 @@ The calculated square-fixture sulfur values and ledger expectations are defined 
 
 - Representative-seed and biological validation of the first generated-world light curve and its `250..275`-tick sulfur-start band.
 - Population validation of the fixed 5-energy/hour regulation cost and 25% retained suppressible pathway upkeep.
-- Organic-resource concentration at which the hydrogen escape path becomes practically useful.
+- Coupled-world validation that the calibrated labile-organic stock and flow thresholds make the hydrogen fermentation escape path useful only after biological turnover creates its substrate.
+- Exact bounds for optional player-facing efficiency-versus-tolerance founder packages; the reference profiles are sufficient for the canonical opening scenario.

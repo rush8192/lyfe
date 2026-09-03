@@ -1,8 +1,8 @@
 # Lifecycle and Recycling
 
-Status: first complete v1 lifecycle rule pack and organic-niche population calibration; executable multi-seed validation and later ecological strategies remain pending
+Status: first complete v1 lifecycle rule pack, organic-niche calibration, paired-opening multi-key run, and terrestrial cohort fixture; server-exact recycling/digestion ecosystems and later strategies remain pending
 
-Sources: [organism mechanics](ORGANISMS.md), [simulation loop](SIMULATION_LOOP.md), [resource model](RESOURCE_MODEL.md), [organism state and health](ORGANISM_STATE_AND_HEALTH.md), [health calibration](ORGANISM_HEALTH_CALIBRATION.md), [internal storage](INTERNAL_STORAGE_AND_ALLOCATION.md), [energy storage](ENERGY_STORAGE.md), [spatial contract](SPATIAL_ORGANISMS_AND_BEHAVIOR.md), and [spatial calibration](SPATIAL_CALIBRATION.md).
+Sources: [organism mechanics](ORGANISMS.md), [simulation loop](SIMULATION_LOOP.md), [resource model](RESOURCE_MODEL.md), [organism state and health](ORGANISM_STATE_AND_HEALTH.md), [health calibration](ORGANISM_HEALTH_CALIBRATION.md), [general behavior and resource pressure](BEHAVIOR_AND_RESOURCE_PRESSURE.md), [internal storage](INTERNAL_STORAGE_AND_ALLOCATION.md), [energy storage](ENERGY_STORAGE.md), [spatial contract](SPATIAL_ORGANISMS_AND_BEHAVIOR.md), and [spatial calibration](SPATIAL_CALIBRATION.md).
 
 # Purpose
 
@@ -95,6 +95,10 @@ EvaluateLifecycleAndReproduction(organism, compiledDna, tick):
     if tick.number < reproduction_not_before_tick:
         return
 
+    if priorBehavior does not permit reproduction:
+        record BehaviorSuppressed
+        return
+
     readiness = EvaluateReproductionReadiness(
         condition,
         structure,
@@ -124,13 +128,10 @@ Reproduction has no per-tick attempt roll. Once the lifecycle, cooldown, health,
 ```text
 ScheduleReproductionCooldown(organism, completedTick, compiledProfile):
     ordinal = organism.successful_reproduction_count
-    jitter = KeyedUniformInteger(
-        worldSeed,
-        organism.id,
-        ordinal,
-        ReproductionCooldownJitter,
-        0,
-        compiledProfile.cooldownJitterMaxTicks)
+    jitter = UniformBelow(
+        RandomAddress(ReproductionCooldownJitter,
+                      organism.id, ordinal, 0, sampleIndex = 0),
+        exclusiveUpper = compiledProfile.cooldownJitterMaxTicks + 1)
 
     organism.reproduction_not_before_tick =
         completedTick
@@ -150,6 +151,7 @@ The absolute `reproduction_not_before_tick` is authoritative and persists throug
 - The primitive structural target is `1,000` units per mature result, so symmetric fission requires at least `2,000` structure before reproductive overhead.
 - The first founder rule uses a `500`-energy reproductive-work cost and targets first reproduction near tick `334` for hydrogen founders and tick `250` for sulfide founders.
 - Primitive reproduction is deterministic once all eligibility gates pass. It uses a `24 h` base cooldown plus one keyed `0..3 h` jitter draw per scheduled cooldown, not an independent chance each eligible tick.
+- Without evolved behavioral regulation, an organism reproduces whenever these ordinary gates pass. `ReproductionReadiness` may add the recent-energy and projected-runway behavior gates defined in [BEHAVIOR_AND_RESOURCE_PRESSURE.md](BEHAVIOR_AND_RESOURCE_PRESSURE.md); a failed behavior gate spends nothing and does not reroll or extend the cooldown.
 - True split divides transferable stores and reserves near evenly after reproductive work. Indivisible remainders use a deterministic keyed rule.
 - The parent's committed catalytic quotas remain with the parent; a complete additional set is promoted from free storage into the offspring's committed quotas. Nothing is copied.
 - The continuing parent stays at its position. The offspring uses the deterministic same-tile spawn distance in [SPATIAL_CALIBRATION.md](SPATIAL_CALIBRATION.md); reproduction cannot itself cause migration or fail because of crowding.

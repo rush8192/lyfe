@@ -1,8 +1,8 @@
 # Atmospheric Gas Sources, Transport, and Attrition
 
-Status: first numerical calibration
+Status: first numerical calibration for the official primordial-Earth-like world profile
 
-Sources: [WORLD vision](../../vision/WORLD.md), [NUTRIENTS vision](../../vision/NUTRIENTS.md), [resource model](RESOURCE_MODEL.md), [hydrogen fixture](ONE_TILE_STARTING_CONFIGURATION.md), and [sulfur fixture](SULFUR_TILE_STARTING_CONFIGURATION.md).
+Sources: [WORLD vision](../../vision/WORLD.md), [NUTRIENTS vision](../../vision/NUTRIENTS.md), [resource model](RESOURCE_MODEL.md), [world generation and climate](WORLD_AND_CLIMATE.md), [moddability](MODDABILITY.md), [hydrogen fixture](ONE_TILE_STARTING_CONFIGURATION.md), and [sulfur fixture](SULFUR_TILE_STARTING_CONFIGURATION.md).
 
 # Purpose
 
@@ -15,6 +15,8 @@ Define deterministic, mass-balanced gas emission, environmental attrition, and n
 - Every source, sink, transformation, and transfer remains auditable and deterministic.
 
 The tile reservoir represents locally bioavailable atmospheric or dissolved gas under LYFE's abstraction. It is not a claim that the real atmosphere above each map tile behaves as an isolated box.
+
+The gas catalogue, composition, ledger semantics, and exchange/sink algorithms belong to the biological/base rules and engine contract. Concrete atmospheric backgrounds, volcanic emission strengths/distributions, attrition and exchange coefficients, diffuse boundary sources, and tile-access initialization values below belong to the selected complete world profile. The numbers in this document calibrate the official primordial-Earth-like profile; external world packs may supply different validated values without changing the algorithms or adding gas/resource kinds.
 
 # Initial global background
 

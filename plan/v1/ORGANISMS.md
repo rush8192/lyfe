@@ -1,6 +1,6 @@
 # Organism Model and Mechanics
 
-Status: first tick-integration, predation-resolution, and internal-state pass; detailed behavior and reproduction formulas pending in [LIFECYCLE_AND_RECYCLING.md](LIFECYCLE_AND_RECYCLING.md)
+Status: first tick-integration, behavior, predation-resolution, internal-state, and lifecycle contract; numerical behavior calibration remains
 
 Sources: [ORGANISMS vision](../../vision/ORGANISMS.md), [NUTRIENTS vision](../../vision/NUTRIENTS.md), and [SIMULATION vision](../../vision/SIMULATION.md).
 
@@ -41,11 +41,11 @@ EvaluateBehavior(organism, behavior, localObservation) -> intents
 
 V1 tiles have no within-tile nutrient gradients. Sensing may still detect nearby organisms and remains, local tile conditions, and neighboring-tile suitability. Future micronutrient fields must fit without rewriting the behavior interface.
 
-The first capability-filtered observation schema, typed target invalidation rules, and separation between tile-wide chemical signals and spatial entity detection are defined in [SPATIAL_ORGANISMS_AND_BEHAVIOR.md](SPATIAL_ORGANISMS_AND_BEHAVIOR.md). Predation-specific hunting and fleeing states are defined in [PREDATION.md](PREDATION.md); the general cross-behavior selection policy remains open.
+The first capability-filtered observation schema, typed target invalidation rules, and separation between tile-wide chemical signals and spatial entity detection are defined in [SPATIAL_ORGANISMS_AND_BEHAVIOR.md](SPATIAL_ORGANISMS_AND_BEHAVIOR.md). The local pressure channels, persistent general behavior set, conservation thresholds, reproduction-readiness gate, and cross-behavior selector are defined in [BEHAVIOR_AND_RESOURCE_PRESSURE.md](BEHAVIOR_AND_RESOURCE_PRESSURE.md). Predation-specific hunting and fleeing utilities remain defined in [PREDATION.md](PREDATION.md).
 
 # Movement and space
 
-[SPATIAL_ORGANISMS_AND_BEHAVIOR.md](SPATIAL_ORGANISMS_AND_BEHAVIOR.md) fixes the first v1 spatial contract: normalized tile-local coordinates, strictly same-tile entity interactions, a derived `16 × 16` bin index, stationary remains, default zero-mean Brownian organism displacement, at most one edge crossing per tick, deterministic placement, a composed active/passive migration probability, and a position-aware extension seam for future resource gradients. [SPATIAL_CALIBRATION.md](SPATIAL_CALIBRATION.md) supplies the first body, Brownian, sensing, action-reach, placement, active-distance, movement-economy, and migration values. The general non-predation behavior policy remains later mechanics work.
+[SPATIAL_ORGANISMS_AND_BEHAVIOR.md](SPATIAL_ORGANISMS_AND_BEHAVIOR.md) fixes the first v1 spatial contract: normalized tile-local coordinates, strictly same-tile entity interactions, a derived `16 × 16` bin index, stationary remains, default zero-mean Brownian organism displacement, at most one edge crossing per tick, deterministic placement, a composed active/passive migration probability, and a position-aware extension seam for future resource gradients. [SPATIAL_CALIBRATION.md](SPATIAL_CALIBRATION.md) supplies the first body, Brownian, sensing, action-reach, placement, active-distance, movement-economy, and migration values. [BEHAVIOR_AND_RESOURCE_PRESSURE.md](BEHAVIOR_AND_RESOURCE_PRESSURE.md) owns the non-predation behavior and resource-pressure policies that consume those observations and movement capabilities.
 
 # Acquisition, energy capture, internal metabolism, and storage
 
@@ -135,10 +135,10 @@ Interactions use post-movement coordinates. Newly born organisms begin at age ze
 
 - [ ] Dense physical organism layout; logical fields are defined in [ORGANISM_STATE_AND_HEALTH.md](ORGANISM_STATE_AND_HEALTH.md).
 - [x] First health formula and numeric calibration; see [ORGANISM_STATE_AND_HEALTH.md](ORGANISM_STATE_AND_HEALTH.md) and [ORGANISM_HEALTH_CALIBRATION.md](ORGANISM_HEALTH_CALIBRATION.md).
-- [ ] General behavior-selection mechanism; observation and target contracts are fixed, and the first information-bounded terrestrial `MoistureConservation` phase policy is specified in [TERRESTRIAL_ADAPTATION.md](TERRESTRIAL_ADAPTATION.md), but cross-behavior state/utility rules remain open.
+- [x] First general behavior-selection mechanism, local pressure memory, persistence, reproduction readiness, observation boundaries, and aggregate visibility contract; see [BEHAVIOR_AND_RESOURCE_PRESSURE.md](BEHAVIOR_AND_RESOURCE_PRESSURE.md). Numerical population and performance calibration remains.
 - [x] First spatial-index, interaction-locality, and numerical-radius contract; see [SPATIAL_ORGANISMS_AND_BEHAVIOR.md](SPATIAL_ORGANISMS_AND_BEHAVIOR.md) and [SPATIAL_CALIBRATION.md](SPATIAL_CALIBRATION.md).
 - [x] First movement integration, Brownian magnitude, active-speed ceiling, movement energy/turning, one-edge migration transaction, active/passive probability composition, and failure behavior. See [SPATIAL_ORGANISMS_AND_BEHAVIOR.md](SPATIAL_ORGANISMS_AND_BEHAVIOR.md) and [SPATIAL_CALIBRATION.md](SPATIAL_CALIBRATION.md).
-- [ ] Acquisition/capture/internal-metabolism intent interfaces; shared processing is specified in [COMPLEX_CELLS.md](COMPLEX_CELLS.md), and first energy-storage enforcement semantics and values are fixed in [ENERGY_STORAGE.md](ENERGY_STORAGE.md).
+- [ ] Concrete acquisition/capture/internal-metabolism intent data structures; phase ownership, coupled-claim semantics, shared processing, and first energy-storage enforcement rules are specified in [SIMULATION_LOOP.md](SIMULATION_LOOP.md), [COMPLEX_CELLS.md](COMPLEX_CELLS.md), and [ENERGY_STORAGE.md](ENERGY_STORAGE.md).
 - [x] Temporary metabolic-resource binding and DNA priority/holdback semantics; see [INTERNAL_STORAGE_AND_ALLOCATION.md](INTERNAL_STORAGE_AND_ALLOCATION.md).
 - [x] First founder and evolved reproduction gates, cooldown/jitter, work cost, allocation, offspring transaction, and lifecycle modifiers in [LIFECYCLE_AND_RECYCLING.md](LIFECYCLE_AND_RECYCLING.md); an initial terrestrial cohort/population fixture now exists, while full server-exact multi-ecology validation remains.
 - [x] First v1 predation success, defense, contention, and remnant policy.

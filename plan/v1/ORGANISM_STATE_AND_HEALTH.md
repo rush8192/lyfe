@@ -15,8 +15,8 @@ Health therefore:
 - Is never independently damaged, healed, transferred, or consumed.
 - Is not an additional store of mass or energy.
 - Cannot disagree with the concrete conditions meant to explain it.
-- May be cached for performance, but the cache is disposable and reproducible.
-- May be sent to clients and recorded in aggregates as a projection of authoritative state.
+- Is materialized and stored once at each named health barrier by the sole health builder.
+- Is the numerical value consumed by downstream gameplay, aggregates, events, saves, and client projections; none of those consumers recomputes it.
 
 This keeps the model biology-inspired and internally legible. Predation reduces concrete structure or reserves, starvation depletes stored energy, and a future toxin mechanic would increase a named toxic burden. Health reflects those changes without introducing unexplained damage or healing.
 
@@ -71,6 +71,10 @@ OrganismState
         current_behavior
         optional_target
         selected_at_tick
+        minimum_dwell_until_tick
+        optional_pressure_memory
+            recent_energy_coverage_q
+            recent_acquisition_coverage_q
 
     capability_state
         cooldowns[capability_id]
@@ -117,11 +121,15 @@ The v1 starting configuration may use only a single generic reserve-organic reso
 
 ## Behavior and capability state
 
-- The selected behavior is authoritative because it influences future movement and action selection.
+- The selected behavior and its ordinary dwell boundary are authoritative because they influence future movement, action selection, optional growth, and reproduction permission.
 - An optional target may reference an organism, remains entity, position, tile edge, or other type permitted by that behavior.
+- Organisms whose compiled traits use recent resource experience retain fixed-point energy-coverage and acquisition-coverage moving averages. Organisms without a history-using behavior do not require those optional columns.
+- Composite resource pressure, behavior utilities, next-tick directives, observations, and candidate lists are derived from concrete state, pressure memory, compiled DNA, and capability-filtered observation; they are not independently writable organism attributes.
 - Cooldowns or counters exist only for capabilities whose effects persist across ticks.
 - Metabolic binding cohorts authoritatively encumber stored resources until their release tick as defined in [INTERNAL_STORAGE_AND_ALLOCATION.md](INTERNAL_STORAGE_AND_ALLOCATION.md).
 - Transient intents, claim weights, death risks, and action reservations are phase-local scratch data, not organism state.
+
+The full behavior-state, initialization, speciation-invalidation, pressure-memory, and next-tick directive contract is defined in [BEHAVIOR_AND_RESOURCE_PRESSURE.md](BEHAVIOR_AND_RESOURCE_PRESSURE.md).
 
 # Derived condition record
 
@@ -294,24 +302,24 @@ Concrete state changes during a tick, so there is not one timeless health value 
 | `reproduction_health` | External interaction plus internal metabolism and maintenance | Reproduction eligibility and allocation |
 | `end_health` | Reproduction resolution | Behavior update, species average health, mutation income, snapshots, and client display |
 
-Health may be recomputed only for organisms whose relevant inputs changed between snapshots. The named phase still determines what state is visible when a cached value is reused.
+The health builder updates only organisms whose declared dependencies changed between snapshots, stores the result and dependency generation, then seals it for consumers. The named phase determines which materialized value is visible.
 
 The default, unqualified meaning of `health` in saved snapshots, telemetry, and gameplay documentation is `end_health`.
 
-# Caching and performance
+# Materialization and performance
 
 Derived health does not require repeated expensive object-graph evaluation.
 
 - Compile DNA into dense capacities, targets, and response-curve parameters once per species revision.
-- Cache environmental response factors per species, tile, environment version, and relevant lifecycle modifier.
-- Compute organism-local factors in dense batches only for phases that consume them.
-- Tag a cached condition with tick, phase, organism-state version, species-DNA revision, and tile-environment version.
-- Treat a tag mismatch as a cache miss.
-- Never use the cache as the source of truth for save/load or deterministic replay.
+- Materialize shared environmental response inputs once per tile, or per occupied tile/species cohort only when multiple phases reuse the combined response.
+- Compute organism-local factors in dense batches at the named health barriers and store the operational result.
+- Tag materialized condition state with tick, phase, organism-state generation, compiled-phenotype revision, and tile-effective-state generation.
+- Treat a tag mismatch or dirty read as an invariant failure; authoritative consumers never lazily recalculate.
+- Include completed materialized health in saves and authoritative hashes. Debug/load oracles may recompute and reject a mismatch but never silently heal it.
 
-The server may include `end_health` and its compact factor breakdown in a client projection. A saved snapshot may include it as non-authoritative diagnostic data, but load must recompute and verify or discard it.
+The server includes the stored `end_health` and its compact materialized factor breakdown in a client projection. Explanation reads the same value used by reproduction, behavior, species averaging, and mutation income.
 
-This provides the main practical advantage of a stored health field without creating another mutable simulation resource.
+This provides the practical advantage of a stored health field without creating another mutable simulation resource: only the health builder can write it, and it can do so only from declared primary/compiled/materialized dependencies. See [MATERIALIZED_DERIVED_STATE.md](MATERIALIZED_DERIVED_STATE.md).
 
 # Species aggregation
 
