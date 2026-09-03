@@ -156,7 +156,7 @@ BasalAquaticTolerance                                   Foundation
 ├── HeatSpecialization                                  Early
 │   └── ExtremeHeatSpecialization                       Middle
 ├── ColdSpecialization                                  Middle
-├── ShallowWaterTolerance                               Middle
+├── WetSurfaceColonization                              Middle
 │   └── IntermittentDesiccationTolerance                Late
 ├── VolcanicSulfurToleranceI                            Opening/Early
 │   ├── VolcanicSulfurToleranceII                       Middle
@@ -168,7 +168,7 @@ BasalAquaticTolerance                                   Foundation
 - Breadth lowers environmental stress across a wider band but raises baseline maintenance or reduces peak metabolic efficiency.
 - Heat and cold resilience improve independently and are not incompatible. Their total burden is convex and includes a coupling term, making simultaneous extreme heat and extreme cold resilience substantially more expensive than either specialization alone.
 - Heat and cold specialization shift the preferred envelope and increase performance near an extreme while worsening performance toward the opposite extreme.
-- Shallow-water and desiccation traits enable occupation of seasonally moist terrestrial tiles while surface moisture is present, but impose protective structure and reduced exchange throughput. Survival through a dry interval requires dormancy, migration, or another later adaptation; continuously dry land remains outside v1.
+- `WetSurfaceColonization` is the explicit terrestrial-occupation gate and additionally requires `SelectiveMembrane`. Its first `120 MP / complexity 2` profile has `0.70/0.30` preferred/hard moisture minima, `1.10×` structure, `10/hour` maintenance, and `0.90×` passive-acquisition throughput. `IntermittentDesiccationTolerance` is `180/3`, shifts the active minima to `0.40/0.10`, adds `1.15×` structure and `15/hour` maintenance, and replaces passive acquisition with `0.80×`. Dormancy may extend inactive survival but grants no land access. The branch can exploit ordinary surface-light, atmospheric-gas, and patchy geological opportunities but grants no land-wide yield bonus; the exact occupation, activity, resource-access, succession, movement, and future weather rules are in [TERRESTRIAL_ADAPTATION.md](TERRESTRIAL_ADAPTATION.md).
 - Sulfur tolerance modifies H₂S and SO₂ independently. Substrate use may contribute a small relevant tolerance but never replaces explicit toxin handling.
 - Oxygen tolerance pays detoxification upkeep before oxygen respiration or oxygenic photosynthesis can exploit oxygen-rich niches. The paired first bands are `30m/100m` for `OxygenToleranceI` and `100m/300m` for `OxygenToleranceII`, with respective `10` and additional `15` energy/hour upkeep.
 
@@ -276,9 +276,11 @@ PrimitiveOrganicReserve                                 Foundation
             └── DenseReserveHandling                    Future
 ```
 
-- Incremental capacity lengthens survival through poor periods but is empty when acquired, increases reproduction provisioning needs, and may add modest structure.
-- `CompartmentalizedReserve` requires `CompartmentalizedCell`, provides a step increase, and adds maintenance and material quota.
+- `ReserveCapacityI` is `40 MP / complexity 1`, compiles a `25,000` maximum, a `60` storage-structure target, and `2/hour` phase-scalable storage upkeep. `ReserveCapacityII` is `80/2`, replaces those targets with `50,000` and `160`, and raises cumulative upkeep to `5/hour`.
+- `CompartmentalizedReserve` is `160/3` and genetically requires acquired `ReserveCapacityII` and `CompartmentalizedCell`. It replaces the targets with `150,000` capacity and `560` storage structure while raising cumulative upkeep to `13/hour`; capacity above `50,000` remains materially inactive until the organization is complete. It adds no second micronutrient quota beyond its organization's existing requirements.
+- Capacity is commissioned at `250` units per completed aggregate storage-structure assignment rather than granted by mutation. Incremental capacity lengthens survival through poor periods but dilutes reserve-relative health while empty and increases reproduction provisioning.
 - Storage never increases energy density or creates reserve. A genuinely denser reserve would require a future resource and reaction set, not a scalar trait.
+- The fully costed final tier's terrestrial seasonal-isolation draw under the observable dormancy policy is approximately `130,362`, leaving `19,638` reserve at full capacity. Exact commissioning, health, reproduction, dormancy, overflow, and calibration rules are in [ENERGY_STORAGE.md](ENERGY_STORAGE.md).
 
 ## `NutrientStorage`
 
@@ -309,7 +311,7 @@ DirectLifecycle                                         Foundation
 ```
 
 - Regulated growth avoids committing matter under poor conditions but delays reproduction when its control signals are conservative.
-- Dormancy sharply lowers maintenance and increases some tolerances while disabling growth, reproduction, and most active capabilities. Entry and exit consume energy.
+- Dormancy sharply lowers maintenance and increases some tolerances while disabling growth, reproduction, and most active capabilities. Entry and exit consume energy. In v1, `DormantPhase` has the cross-family hard prerequisite `ResourceConservation`, ensuring that acquiring the phase also supplies a usable automatic transition policy; `ResistantDormantPhase` inherits that requirement.
 - Resistant dormancy requires protective structure and enables passage through hostile seasons or tiles at a high construction cost.
 - A motile dispersal phase requires locomotion, sensing, and regulation. It improves colonization but diverts early-life energy from growth.
 
@@ -379,7 +381,7 @@ EnvironmentalSpread                                    Foundation profile
 - Active motility enables DNA-controlled velocity layered over the default Brownian random walk and carries energy per active distance.
 - Flagellar propulsion improves speed and tile-edge access but adds upkeep and movement cost; v1 represents its construction in ordinary organization structure rather than a separate micronutrient quota.
 - Cruising lowers cost per distance at modest speed; burst propulsion raises acceleration and escape/capture performance at high peak cost.
-- Surface gliding is efficient on suitable mineral or biological surfaces but weak in open water.
+- `SurfaceGliding` requires `ActiveMotility` and `WetSurfaceColonization`. It uses the efficient gliding profile on every terrestrial tile in v1, without another terrain tag, and falls back to inherited basal motility in water while retaining its higher total upkeep. Slope, roughness, and biological-surface distinctions are future modifiers.
 - Advanced propulsion requires complex organization and supports larger cells at correspondingly higher upkeep.
 - The first active profiles range from `4 R₀/hour`, `5` energy per `R₀`, and `5/hour` upkeep for basal motility through `24 R₀/hour`, `10` energy per `R₀`, and `15/hour` upkeep for burst propulsion. Distance energy scales with current `radius²`; acceleration, turning, advanced propulsion, and exact composition are defined in [SPATIAL_CALIBRATION.md](SPATIAL_CALIBRATION.md).
 - `EnvironmentalSpread` is a sibling strategy, not a child upgrade to active motility. Every organism has the inherent free-suspension profile at `1.0x` passive RMS. `EnvironmentalAnchoring` (`40 MP / complexity 1`, `2` upkeep/hour) replaces it with `0.25x` passive RMS and `0.50x` active speed; `EnvironmentalDrifting` (`60 MP / complexity 1`, `3` upkeep/hour) replaces it with `1.50x` passive RMS. The acquired profiles are mutually incompatible and constitutive in v1. Exact spatial landmarks are defined in [SPATIAL_CALIBRATION.md](SPATIAL_CALIBRATION.md).
@@ -423,6 +425,7 @@ StochasticActivity                                      Foundation
 - State gating reduces waste when reserve or health is low but adds control upkeep and can miss brief opportunities.
 - Directed behavior requires a matching sense and locomotion capability; without both it cannot activate.
 - Conservation may suppress movement, acquisition, or reproduction while preserving baseline maintenance.
+- With `DormantPhase`, `ResourceConservation` compiles the first `MoistureConservation` transition policy. It uses only current and trailing moisture plus internal reserve, with a warning lead, trend confirmation, hysteresis, and minimum dwell; the exact v1 profile is defined in [TERRESTRIAL_ADAPTATION.md](TERRESTRIAL_ADAPTATION.md). The behavior trait does not itself grant dormancy or terrestrial survival.
 - Metabolic coordination complements, but does not replace, the internal `MetabolicRegulation` trait.
 - `DirectedForaging` is `80 MP / complexity 1 / 5 upkeep`; `HuntingBehavior` is `120 / 2 / 8`. Together with the two sensing nodes, the directed-hunting information/behavior layer costs `360 MP`, change complexity `6` across multiple events, and `23` energy/hour before locomotion and capture.
 
@@ -503,6 +506,8 @@ These paths are the primary reason to evolve beyond opening efficiency. They als
 | Sulfide heterotroph | `MetabolicRegulation` → `GeneralizedOrganicCatabolism` plus the path above | Variable or post-volcanic organic habitats | Higher 220 MP bridge and retained sulfide machinery upkeep |
 | Oxygenic producer | `ComplexPhotosystem` → `ManganeseCalciumWaterOxidation` + `OxygenToleranceI` → `OxygenicPhotosynthesis` | Widespread shallow water with light | Mn/Ca quotas, oxygen stress, complex photosystem maintenance |
 | Seasonal survivor | `ResourceConservation` + reserve/storage improvements + `DormantPhase` | Tiles with recurring poor seasons | Lost growth while dormant, entry/exit and storage costs |
+| Wet-surface colonizer | `SelectiveMembrane` + `WetSurfaceColonization` | Seasonally wet terrestrial tiles | Larger body target, maintenance, reduced passive acquisition, moisture stress |
+| Dry-interval survivor | wet-surface path + `IntermittentDesiccationTolerance` or dormancy | Terrestrial tiles with longer dry intervals | Higher constitutive cost or loss of activity while dormant |
 | Directed colonizer | active locomotion + directional sensing + `DirectedForaging` or `StressAvoidance` | Patchy neighboring tiles | Continuous sensing and movement cost |
 | Scavenger | remnant detection + scavenging access + organic uptake + catabolism | Dead-remain concentrations | Biological-resource dependence and processing cost |
 | Active predator | sensing + locomotion + capture + ingestion + catabolism | Dense prey populations | High complexity, target dependence, counter-defense |
@@ -532,7 +537,7 @@ Each hypothesis needs a paired deterministic fixture comparing otherwise identic
 3. Descendants may acquire the other founding metabolism, but doing so has a major mutation price and change-complexity burden, retains both pathways' costs, and normally makes regulation and additional tolerance desirable.
 4. Heat and cold resilience improve independently. Their convex individual costs and breadth-coupling cost make simultaneous extreme resilience expensive without declaring the traits incompatible.
 5. Complex-cell sensitivity begins with higher structure, maintenance, reproduction, and micronutrient dependencies plus a modest soft-stress multiplier. The fixture values above are explicitly provisional and should move with biology-guided balance evidence.
-6. Intermittent desiccation adaptation permits late-v1 occupation of seasonally moist terrestrial tiles. Continuously dry land remains future content.
+6. `WetSurfaceColonization` permits late-v1 occupation of seasonally moist terrestrial tiles; intermittent desiccation tolerance and dormancy extend the viable interval. Continuously dry active land life remains future content.
 7. Late branches may remain planning placeholders until their mechanics and balance are ready; placeholders are not selectable rule-pack nodes.
 8. `ProtoEukaryoticOrganization` requires the complete `OxygenRespiration` path in v1 and includes an abstract integrated energy organelle; no donor encounter, lineage merger, or separate selectable endosymbiosis node is modeled.
 9. Rigid walls remain compatible with complex organization but permanently exclude v1 engulfment for that descendant. Physical cell scale remains an independent trait axis.

@@ -2,7 +2,7 @@
 
 Status: first v1 milestone, prerequisite, benefit, liability, activation, processing-load, scale, ingestion, and analytical calibration rules fixed; executable population validation remains
 
-Sources: [trait catalogue](TRAIT_CATALOGUE.md), [trait system](TRAIT_SYSTEM.md), [organism health calibration](ORGANISM_HEALTH_CALIBRATION.md), [internal storage and allocation](INTERNAL_STORAGE_AND_ALLOCATION.md), [aerobic respiration](AEROBIC_RESPIRATION.md), [lifecycle and recycling](LIFECYCLE_AND_RECYCLING.md), [spatial calibration](SPATIAL_CALIBRATION.md), [predation](PREDATION.md), and [evolution](EVOLUTION.md).
+Sources: [trait catalogue](TRAIT_CATALOGUE.md), [trait system](TRAIT_SYSTEM.md), [organism health calibration](ORGANISM_HEALTH_CALIBRATION.md), [internal storage and allocation](INTERNAL_STORAGE_AND_ALLOCATION.md), [energy storage](ENERGY_STORAGE.md), [aerobic respiration](AEROBIC_RESPIRATION.md), [lifecycle and recycling](LIFECYCLE_AND_RECYCLING.md), [spatial calibration](SPATIAL_CALIBRATION.md), [predation](PREDATION.md), and [evolution](EVOLUTION.md).
 
 # Purpose
 
@@ -146,7 +146,7 @@ Scale multipliers use current radius for baseline maintenance and movement, but 
 
 `ProtoEukaryoticOrganization` exceeds the founder change-complexity limit of `3`, so acquiring it also requires an already compiled capacity of at least `4`; the existing `ExpandedChangeCapacityI` supplies `5`. This is an ordinary proposal limit, not an extra biological prerequisite.
 
-The mature-structure multipliers are organization density and machinery, not radius multipliers. `CellScale` alone controls mature radius and `compiledGeometricStructureTarget`; total `compiledMatureStructure` additionally includes organization overhead. The one conserved structural resource has explicit geometric and organization assignments so later scale mutations cannot reinterpret existing organelle matter as newly constructed body volume. A compartmentalized organism can therefore require more biomass and reproduction matter without becoming physically larger or receiving a larger contact range. Exact assignment and radius rules are defined in [COMPLEX_CELL_CALIBRATION.md](COMPLEX_CELL_CALIBRATION.md) and [SPATIAL_CALIBRATION.md](SPATIAL_CALIBRATION.md).
+The mature-structure multipliers are organization density and machinery, not radius multipliers. `CellScale` alone controls mature radius and `compiledGeometricStructureTarget`; total `compiledMatureStructure` additionally includes organization and storage overhead. The one conserved structural resource has explicit geometric, organization, and storage assignments so later scale mutations cannot reinterpret existing internal machinery as newly constructed body volume. A compartmentalized organism can therefore require more biomass and reproduction matter without becoming physically larger or receiving a larger contact range. Exact assignment, storage-commissioning, and radius rules are defined in [COMPLEX_CELL_CALIBRATION.md](COMPLEX_CELL_CALIBRATION.md), [ENERGY_STORAGE.md](ENERGY_STORAGE.md), and [SPATIAL_CALIBRATION.md](SPATIAL_CALIBRATION.md).
 
 With both organization nodes and no scale increase, a primitive mature target of `1,000` becomes:
 
@@ -211,7 +211,7 @@ On reaching the new mature structure target and complete new constitutive quota,
 
 The new baseline maintenance multiplier should scale with achieved organization during maturation rather than charging the full completed machinery cost immediately. The `InternalMembraneScaffolding` additive upkeep begins immediately because it represents the construction and control system required for the transition. This interpolation must use fixed-point values and be a function of authoritative structure/quota state, not persisted progress.
 
-If scale and organization increase in the same speciation event, one combined maturation target and the stricter inherited hard-floor rule apply. The organism does not enter nested lifecycle states.
+If scale, organization, and/or storage increase in the same speciation event, one combined maturation target and the stricter inherited hard-floor rule apply. The organism does not enter nested lifecycle states. Storage capacity may commission continuously from its own completed structural assignment, but organization-gated capacity above `50,000` remains inactive until the compartmentalized-cell target is complete as defined in [ENERGY_STORAGE.md](ENERGY_STORAGE.md).
 
 # Respiration, oxygen, and endosymbiosis
 

@@ -1,6 +1,6 @@
 # Spatial Organisms and Behavior
 
-Status: first v1 spatial semantics, entity-placement, indexing, movement-boundary contract, numerical scale, and active-movement economics; migration odds and general behavior policy pending
+Status: first v1 spatial semantics, entity-placement, indexing, movement-boundary and migration contract, numerical scale, and active-movement economics; general behavior policy pending
 
 Sources: [organism mechanics](ORGANISMS.md), [simulation loop](SIMULATION_LOOP.md), [organism state](ORGANISM_STATE_AND_HEALTH.md), [world and climate](WORLD_AND_CLIMATE.md), [trait catalogue](TRAIT_CATALOGUE.md), [spatial calibration](SPATIAL_CALIBRATION.md), and [WORLD vision](../../vision/WORLD.md).
 
@@ -175,10 +175,44 @@ An organism migrates across at most one edge per tick in v1. Compiled v1 active 
 
 Migration has two layers:
 
-1. Hard eligibility rejects absent neighbors and habitat transitions the organism cannot physically occupy, such as an aquatic founder entering dry land without a matching capability.
-2. A rule-pack probability may combine edge compatibility, crossing class, movement capability, lifecycle, health, and environmental stress. A nonzero admitted active component uses the active-attempt curve; a purely Brownian crossing uses the passive-permeability curve. Each actual boundary attempt receives one keyed draw.
+1. Hard eligibility rejects absent neighbors and habitat transitions the organism cannot physically occupy, such as an aquatic founder entering any terrestrial tile without a matching capability.
+2. One rule-pack probability combines genuine outward active control, medium transition, and predicted destination compatibility. Current health is not a second multiplier: reserve already caps affordable active distance, lifecycle modifies movement, and destination stress is represented by the compatibility term.
 
-Failure leaves the organism in the source tile. A failed purely Brownian crossing reflects the unused normal component back into the source tile so unbiased random motion does not accumulate organisms against an impermeable boundary. An active failed attempt stops just inside the boundary and retains only permitted tangential movement. Realized active distance—including distance spent reaching a failed boundary attempt—pays the movement-energy rule in [SPATIAL_CALIBRATION.md](SPATIAL_CALIBRATION.md). Exact migration probabilities, any additional active crossing cost, and environmental compatibility curves remain later numerical decisions. Direct interactions use the organism's final post-movement tile and position.
+For the first crossed edge, use outward-positive normal projections measured over the traced segment:
+
+```text
+activeOutwardQ  = max(0, dot(realizedActiveDisplacement, edgeNormal))
+passiveOutwardQ = max(0, dot(realizedBrownianDisplacement, edgeNormal))
+                 # environmental displacement is zero in v1
+
+crossingControlQ = activeOutwardQ
+                 / max(1, activeOutwardQ + passiveOutwardQ)
+
+baseCrossingQ = lerp(0.10, 0.80, crossingControlQ)
+
+mediumTransitionQ = 0.75 if source.isAquatic != destination.isAquatic
+                  | 1.00 otherwise
+
+destinationCompatibilityQ = clamp(
+    min(predictedDestinationEnvironmentalFactor,
+        predictedDestinationActiveHabitatFactor),
+    0.02,
+    1.00)
+
+migrationProbabilityQ = baseCrossingQ
+                      * mediumTransitionQ
+                      * destinationCompatibilityQ
+```
+
+`predictedDestinationEnvironmentalFactor` evaluates the organism's compiled temperature, moisture, and chemical response curves against the destination's current phase-1 condition view without changing state. `predictedDestinationActiveHabitatFactor` is `1.0` in a compatible aquatic habitat and uses `TerrestrialActivityFactor` for land. Hard habitat rejection happens before the `0.02` compatibility floor, so the floor cannot authorize a missing neighbor, bounded-world crossing, dormant active movement, or terrestrial entry without `WetSurfaceColonization`.
+
+The interpolation matters. A purely Brownian attempt has `crossingControlQ = 0` and at most `10%` success. A completely active outward attempt has `crossingControlQ = 1` and at most `80%` success. Mixed displacement receives only its measured share of control; adding a negligible active vector cannot upgrade an otherwise Brownian crossing to the active rate. A maximally favorable aquatic/terrestrial crossing is `7.5%` passive or `60%` active because it crosses the `0.75` medium boundary.
+
+Each actual boundary attempt receives exactly one keyed draw from `(worldSeed, tick, organismId, MigrationAttempt, sourceTileId, destinationTileId)`. Success is `drawQ < migrationProbabilityQ`. Probability construction uses fixed-point multiplication in the written order above, with round-down after each product, so platform reassociation cannot change the result.
+
+Failure leaves the organism in the source tile. The Brownian remainder's unused normal component reflects into the source tile so unbiased random motion does not accumulate organisms against an impermeable boundary. Any outward active normal velocity is set to zero; permitted tangential active velocity remains. The organism ends at the closest representable source-side coordinate rather than exactly outside the tile. It may try again on a later tick if its behavior continues to target the edge.
+
+V1 charges no separate migration-attempt cost or cooldown. Realized active distance—including distance spent reaching a failed boundary attempt—pays the ordinary movement-energy rule in [SPATIAL_CALIBRATION.md](SPATIAL_CALIBRATION.md); discarded outward distance is neither realized nor charged. This is sufficient because a fully active compatible attempt succeeds at `80%`, while repeated failures still pay movement and locomotion upkeep. Purely passive attempts remain limited by rare boundary intersections and the `10%` ceiling. Direct interactions use the organism's final post-movement tile and position.
 
 # Brownian and other passive movement
 
@@ -286,7 +320,7 @@ In v1, the first call resolves the tile-wide pool, the second returns no gradien
 - Indexed queries return exactly the same eligible set as an exhaustive same-tile scan for randomized entity layouts and radii.
 - Different dense layouts, worker counts, and save/reload produce identical candidate ordering, targets, movement, and hashes.
 - Same-tile entities interact at exactly the configured inclusive range; entities in different tiles never interact directly even when adjacent across an edge.
-- Every migration begins with an actual active or Brownian boundary intersection, crosses only an edge-sharing neighbor, wraps only in `x`, and crosses at most one edge per tick.
+- Every migration begins with an actual active or Brownian boundary intersection, crosses only an edge-sharing neighbor, wraps only in `x`, and crosses at most one edge per tick. Pure passive, pure active, and mixed attempts reproduce their `0.10`, `0.80`, and interpolated base probabilities before compatibility.
 - A failed or ineligible migration remains in the source tile and never occupies an invalid coordinate.
 - Over the complete direction table, Brownian displacement has exactly zero signed expectation on each axis; pinned-seed populations show diffusion without systematic preferred direction.
 - Brownian outcomes are identical across dense iteration orders, worker counts, save/load, and client observation, and consume no active-movement energy.
@@ -308,15 +342,15 @@ In v1, the first call resolves the tile-wide pool, the second returns no gradien
 - [x] Deterministic setup, offspring, speciation, death, and remnant-placement semantics.
 - [x] Stationary remnants and DNA-scaled zero-mean Brownian-like organism displacement in v1; no coherent directional drift or current.
 - [x] At most one edge migration per organism-tick, with `x` corner tie-break and bounded `y`.
+- [x] First active/passive migration probability composition, `0.75` medium-transition factor, `0.02` risky-destination floor after hard gates, keyed draw, failure response, and no separate attempt cost/cooldown.
 - [x] Position-aware resource interface retained for future localized fields without enabling gradients in v1.
 - [x] First founder body radius, structure-to-radius curve, Brownian RMS, interaction/sensing ranges, reproduction placement, and active-distance ceilings; see [SPATIAL_CALIBRATION.md](SPATIAL_CALIBRATION.md).
 - [x] First constitutive environmental-spread profiles: baseline suspension, anchoring, and drifting; profile choice changes passive RMS and may constrain active speed without changing direction or crossing admission.
 
 # Next decisions
 
-1. Migration hard gates, active and passive compatibility curves, attempt cost, and final probability bounds.
-2. Baseline non-predation behavior states and the cross-behavior deterministic/stochastic selection model; hunting and fleeing are specified in [PREDATION.md](PREDATION.md).
-3. Target selection within sensed candidates, including whether organisms prefer nearest, weakest, richest, or a weighted keyed sample.
-4. Final capture-reach upgrades, scavenging size compatibility, and non-founder remnant packing profiles; first predation size rules are specified in [PREDATION.md](PREDATION.md).
-5. Spatial performance acceptance at clustered—not merely uniform—100,000-organism workloads.
-6. Post-v1 directional environmental transport fields and regulated or lifecycle-specific successors to the first constitutive passive-spread traits.
+1. Baseline non-predation behavior states and the cross-behavior deterministic/stochastic selection model; hunting and fleeing are specified in [PREDATION.md](PREDATION.md), and the first terrestrial `MoistureConservation` lifecycle selector is fixed in [TERRESTRIAL_ADAPTATION.md](TERRESTRIAL_ADAPTATION.md).
+2. Target selection within sensed candidates, including whether organisms prefer nearest, weakest, richest, or a weighted keyed sample.
+3. Final capture-reach upgrades, scavenging size compatibility, and non-founder remnant packing profiles; first predation size rules are specified in [PREDATION.md](PREDATION.md).
+4. Spatial performance acceptance at clustered—not merely uniform—100,000-organism workloads.
+5. Post-v1 directional environmental transport fields and regulated or lifecycle-specific successors to the first constitutive passive-spread traits.

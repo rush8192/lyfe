@@ -1,6 +1,6 @@
 # Population Ecosystem Validation
 
-Status: first v1 mortality-balanced organic-niche, competitive-uptake, and autonomous material-opportunity calibrations fixed; executable multi-seed population validation remains
+Status: first v1 mortality-balanced organic-niche, competitive-uptake, autonomous material-opportunity, and executable terrestrial-dormancy cohort calibrations fixed; server-exact coupled multi-seed ecosystem validation remains
 
 Sources: [lifecycle and recycling](LIFECYCLE_AND_RECYCLING.md), [organic uptake and fermentation](ORGANIC_UPTAKE_AND_FERMENTATION.md), [organism health calibration](ORGANISM_HEALTH_CALIBRATION.md), [evolution](EVOLUTION.md), and [world/climate calibration](WORLD_CLIMATE_CALIBRATION.md).
 
@@ -295,6 +295,34 @@ The authoritative explanation records, for every material-dependent candidate co
 
 The client filters tile detail through ordinary knowledge rules, but hidden information never changes the server decision.
 
+# Executable terrestrial dormancy probe
+
+[terrestrial_population_validation.py](calibration/terrestrial_population_validation.py) is the first executable individual-based authoring fixture to combine reserve caps, finite CO2, oxygenic capture, optional structure assembly, the growth floor, deterministic fission with keyed cooldown jitter, biological aging, independent keyed moisture/senescence death draws, maintenance failure, and lifecycle phase transitions. It processes organisms in stable ID order, resolves scarce CO2 proportionally with a keyed whole-unit remainder, and asserts zero error in its reduced carbon ledger across initial CO2, geological source, living reserve/structure, remnants, and spent carrier waste.
+
+It is deliberately not server-equivalent. Oxygenic success uses the deterministic expected `0.90` result instead of the final keyed binomial; favorable non-energy nutrients and activation quotas are assumed; bodies remain in one tile; and remnants do not decay or feed consumers. The fixture's results constrain the policy and reveal integration risks, but they are not golden population counts for the eventual engine.
+
+## Dry-season cohort
+
+The isolation cohort begins on synthetic year day 100, before the selected early-warning crossing; ends on day 270, after the recovery crossing; and contains 128 age-zero, fully charged organisms. It disables reproduction and optional structure growth, holds enough CO2 for active recovery, and retains normal maintenance, reserve capacity, biological aging, environmental stress, and death. Eight keys (`0..7`) give:
+
+| Policy/phenotype | Final cohort, median | Seed range | Principal result |
+| --- | ---: | ---: | --- |
+| Wet-surface, always active | `0 / 128` | `0..0` | Reserve exhaustion through the dry interval |
+| Wet-surface dormancy, no added storage | `0 / 128` | `0..0` | Dormant maintenance exhausts `10,000` capacity |
+| Final storage, current-hard entry/exit | `16 / 128` | `12..21` | Energy bridge succeeds, but excess active aging causes high senescence |
+| Final storage, selected observable policy | `121 / 128` | `119..126` | Early entry and hysteretic exit preserve energy and biological life |
+| Final storage, next-tick-hindsight hard threshold | `16 / 128` | `12..21` | Avoids hard-moisture draws but is not a lifespan-aware upper bound |
+
+The selected `0.35` falling-trend entry and `0.45` rising-trend exit keep the full final-tier expected-value reserve draw at `130,362`, leaving `19,638` of `150,000`. A nearby narrower `0.32/0.40` band lowers the modeled draw to approximately `123,532` but accumulates about 12.6 more active biological days across the year. A wider `0.38/0.50` band lowers biological age by about 12.2 days but raises draw to approximately `138,607`, leaving too little weather margin. The middle profile is therefore the first balance point: it materially improves lifespan without spending nearly the entire reserve ceiling.
+
+The hindsight comparator may inspect only the next moisture value in this authoring program and is forbidden in runtime behavior. It exists to explain why the earlier hard-threshold "oracle" was misleading: minimizing dormant time is an energy comparison, not a population-survival optimum once dormant biological aging is slower.
+
+## Resource-limited population stress
+
+The same program contains a deliberately harsh two-year stress fixture with 12 full mature founders, one source-day of initial CO2, the `20,004/hour` geological source, growth, reproduction, and the complete primitive senescence curve. Across the first eight seeds, every seasonal profile eventually becomes extinct, whereas the permanently wet lean and final-storage controls finish at medians `84` and `4.5`. All runs reconcile their reduced carbon ledger.
+
+This is a diagnostic, not a default-world prediction: the initial CO2 stock is intentionally far below the historical background in the world plan. It demonstrates that continuous optional growth plus deterministic reproduction can synchronize resource overshoot, and that the costly final storage/organization phenotype has little replacement margin under primitive senescence when oxygenic photosynthesis is its only capture path. The next coupled fixture must vary realistic background stock, resource-aware growth/reproduction regulation, complementary metabolisms, migration, and lineage size. It must not make the discrepancy disappear by disabling senescence, giving free offspring matter, or adding an undocumented land yield multiplier.
+
 # Required executable fixtures
 
 - The primitive senescence curve reproduces the `1,399.50 h` expected lifetime within fixed-point tolerance.
@@ -312,9 +340,11 @@ The client filters tile detail through ordinary knowledge rules, but hidden info
 - Changing client visibility or subscriptions cannot alter any stock, flow, pressure, opportunity, candidate, or tile-selection result.
 - The isolated reference oxygenic producer reproduces the daily light curve, `7,772` CO2/reserve/O2 extents, `90/hour` upkeep, and `446.9 h` expected capital landmark.
 - The paired oxygen fixture spans producer-only, basal-anaerobe, direct-respirer, and reduced-product-respirer populations; it verifies source/sink conservation, the revised tolerance bands, and whether realized oxygen and organic-resource carrying capacities match the authoring ratios.
+- The observable terrestrial-dormancy cohort reproduces the `119..126` survivor range and exact zero reduced-ledger error for keys `0..7`; its no-storage cohort goes extinct, and neither client visibility nor future calendar/weather values enter the selected decision.
+- The generated-climate successor keeps phase-8 timing, affordability, trend, hysteresis, and dwell semantics while checking abrupt weather, threshold chatter, realistic gas stocks, resource-regulated growth, and advanced-phenotype replacement.
 
 # Recalibration triggers
 
 Rerun the complete population and autonomy suite after changing fermentation yield, success, throughput, upkeep, regulation suppression, biomass-assembly cost, reserve floor/capacity, reproduction allocation or cost, senescence, structural or labile decay, dissolved exchange, speciation fractions, autonomous priors, or resource-history windows.
 
-Direct scavenging, particulate digestion, predation, complex cells, and terrestrial adaptation require additional coupled population fixtures. Aerobic respiration and oxygenic photosynthesis now have paired reaction, cost, quota, light, carrier, gas-source/sink, and replacement-demand landmarks in [AEROBIC_RESPIRATION.md](AEROBIC_RESPIRATION.md) and [OXYGENIC_PHOTOSYNTHESIS.md](OXYGENIC_PHOTOSYNTHESIS.md), but still need the coupled producer/anaerobe/respirer executable fixture. Every finite-material trait uses the same opportunity-profile interface.
+Direct scavenging, particulate digestion, predation, complex cells, and terrestrial succession require additional coupled population fixtures. Terrestrial dormancy has the bounded executable probe above but still needs generated climate and the complete server rule pack. Aerobic respiration and oxygenic photosynthesis now have paired reaction, cost, quota, light, carrier, gas-source/sink, and replacement-demand landmarks in [AEROBIC_RESPIRATION.md](AEROBIC_RESPIRATION.md), [OXYGENIC_PHOTOSYNTHESIS.md](OXYGENIC_PHOTOSYNTHESIS.md), and the new authoring program, but still need the coupled producer/anaerobe/respirer executable fixture. Every finite-material trait uses the same opportunity-profile interface.

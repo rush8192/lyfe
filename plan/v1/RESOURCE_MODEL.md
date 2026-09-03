@@ -212,7 +212,7 @@ LedgerAccountKey:
 - `InorganicPool`: generic inorganic CHNOPS resources.
 - `MicronutrientPool`: bioavailable micronutrients.
 
-Ocean water and terrestrial surface moisture are boundary reservoirs, not finite tile accounts. Geological material that is not currently bioavailable is likewise outside the tracked tile inventory until introduced by a declared source.
+Ocean water and terrestrial surface moisture are boundary reservoirs, not finite tile accounts. Geological material that is not currently bioavailable is likewise outside the tracked tile inventory until introduced by a declared source. V1 has no runtime geological-material account: terrestrial lithology redistributes initial tracked pools, and moisture changes claim access to those pools without changing their balance or biological form.
 
 ## Organism accounts
 
@@ -336,7 +336,7 @@ Energy opportunities are not finite nutrient pools:
 
 A successful metabolism produces `ReserveOrganic` or another energy-bearing product. The product's amount determines stored chemical energy. If a reaction yields more usable energy than its products can hold, the remainder dissipates. If storage capacity is nearly full, reaction extent must be reduced or excess products must follow an explicit non-energy-bearing output path.
 
-The v1 storage mechanism is `PrimitiveOrganicReserve` in the organism's `EnergyReserve` account. Incremental capacity traits and a later compartmentalized-storage trait still hold the same `ReserveOrganic` resource. Changing capacity never changes current balances or energy density; adding a chemically denser store later requires a new resource definition and balanced synthesis/mobilization reactions.
+The v1 storage mechanism is `PrimitiveOrganicReserve` in the organism's `EnergyReserve` account. Incremental capacity traits and a later compartmentalized-storage trait still hold the same `ReserveOrganic` resource. Maximum capacity changes only as a DNA target; current capacity is commissioned from conserved `StorageStructure`, never changes current balances or energy density, and is shared with retained spent carriers. Adding a chemically denser store later requires a new resource definition and balanced synthesis/mobilization reactions. Exact tier and commissioning rules are defined in [ENERGY_STORAGE.md](ENERGY_STORAGE.md).
 
 Maintenance and actions consume energy-bearing resources through balanced reactions:
 
@@ -524,7 +524,7 @@ The first decay cohorts, hourly coefficients, environmental multiplier, and slow
 Each source or sink has a rule-pack definition, owning subsystem, rate, eligibility conditions, and persisted fractional remainder where needed.
 
 - Volcanism may introduce H₂, H₂S, SO₂, CO₂, methane, and mineral nutrients.
-- Weathering may introduce inorganic phosphorus and micronutrients.
+- A future explicit weathering rule may introduce inorganic phosphorus and micronutrients from a finite geological boundary or reservoir; v1 has no ongoing weathering source.
 - Water contributes H or O only through a reaction that explicitly crosses the water boundary.
 - Oxygenic photosynthesis may consume boundary water and produce O₂.
 - Atmospheric escape, chemical attrition, and geological burial are explicit sinks or transformations.
@@ -533,6 +533,8 @@ Each source or sink has a rule-pack definition, owning subsystem, rate, eligibil
 Neighbor exchange is calculated from a stable pre-exchange view. Each edge proposes paired outbound flows; all proposals are scaled if their combined demand exceeds a source tile balance, then applied after a barrier. Opposite directions are netted only for performance after debug accounting can reconstruct the gross flows.
 
 Atmospheric gases use the concrete ordering and coefficients in [GAS_TRANSPORT_AND_ATTRITION.md](GAS_TRANSPORT_AND_ATTRITION.md). Volcanic emissions scale with tile activity, environmental attrition declares either an elemental transformation destination or an explicit external boundary, and signed per-edge fixed-point remainders preserve sub-quantum exchange. Gas exchange itself is a transfer and conserves the named compound globally.
+
+Terrestrial organism claims against tile `InorganicPool` and `MicronutrientPool` accounts multiply their ordinary request ceiling by the current physiological activity factor and `0.20 + 0.80 * surfaceMoisture`, as fixed in [TERRESTRIAL_ADAPTATION.md](TERRESTRIAL_ADAPTATION.md). This is an accessibility constraint at claim construction, not a source, transformation, reservation, or distinct micronutrient form. Contention still resolves against the full concrete requests and debits only granted quantities.
 
 # History and player explanation
 
@@ -660,7 +662,7 @@ ReconcileResourceLedger(world, tickRange)
 These do not prevent implementing the ledger and first fixture, but must be resolved before representative gameplay balancing:
 
 - [x] Gas accessibility equations for aquatic and terrestrial organisms; see [GAS_TRANSPORT_AND_ATTRITION.md](GAS_TRANSPORT_AND_ATTRITION.md).
-- [ ] Remaining non-gas source, sink, exchange, decay, and attrition rates for resources not in the organic-path fixture. Organic-substrate production, 14-/90-day passive loss, and dissolved biological-compound exchange are fixed in [ORGANIC_UPTAKE_AND_FERMENTATION.md](ORGANIC_UPTAKE_AND_FERMENTATION.md) and [WORLD_CLIMATE_CALIBRATION.md](WORLD_CLIMATE_CALIBRATION.md). First atmospheric-gas rates are fixed in [GAS_TRANSPORT_AND_ATTRITION.md](GAS_TRANSPORT_AND_ATTRITION.md).
+- [ ] Remaining non-gas source, sink, exchange, decay, and attrition rates for resources not in the organic-path fixture. Organic-substrate production, 14-/90-day passive loss, and dissolved biological-compound exchange are fixed in [ORGANIC_UPTAKE_AND_FERMENTATION.md](ORGANIC_UPTAKE_AND_FERMENTATION.md) and [WORLD_CLIMATE_CALIBRATION.md](WORLD_CLIMATE_CALIBRATION.md). Terrestrial initial endowment and moisture-access rules are fixed in [TERRESTRIAL_ADAPTATION.md](TERRESTRIAL_ADAPTATION.md); ongoing geological weathering is deferred. First atmospheric-gas rates are fixed in [GAS_TRANSPORT_AND_ATTRITION.md](GAS_TRANSPORT_AND_ATTRITION.md).
 - [x] The v1 sulfur founder uses the worked H₂S anoxygenic-phototrophy recipe; a separate sulfur chemotrophy is not required for the founding choice.
 - [x] Temporary metabolic binding, default sharing, and DNA-defined priority/holdback semantics; see [INTERNAL_STORAGE_AND_ALLOCATION.md](INTERNAL_STORAGE_AND_ALLOCATION.md).
 - [x] Founder waste release timing and retention policy; advanced retention and recycling trait values remain to be calibrated.

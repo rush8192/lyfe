@@ -1,6 +1,6 @@
 # Internal Storage, Binding, and Allocation
 
-Status: first semantic, founder-capacity, primitive-uptake, retained-energy-carrier, and coupled-claim pass; later advanced capacity traits remain to be calibrated
+Status: first semantic, founder-capacity, primitive-uptake, retained-energy-carrier, and coupled-claim pass; advanced energy-capacity ladder is defined separately
 
 Sources: [resource model](RESOURCE_MODEL.md), [organism model](ORGANISMS.md), [simulation loop](SIMULATION_LOOP.md), [trait system](TRAIT_SYSTEM.md), and [trait catalogue](TRAIT_CATALOGUE.md).
 
@@ -67,7 +67,7 @@ The first groups are:
 | `FreeMicronutrientStore` | Uncommitted quantities of the fourteen v1 micronutrients | `64` matter-load units |
 | `IngestedMatterBuffer` | Undigested prey/remnant biomass and other particulate biological compounds | `0`; unlocked by later ingestion capabilities |
 
-`EnergyReserve` remains a separate compartment with its existing founder capacity of `10,000` energy units. `Structure` uses compiled viable and mature targets rather than an `AvailableStore` capacity group.
+`EnergyReserve` remains a separate compartment with its existing founder capacity of `10,000` energy units. Its commissioned `25,000`, `50,000`, and `150,000` evolved tiers, shared charged/spent carrier capacity, and storage-structure rules are defined in [ENERGY_STORAGE.md](ENERGY_STORAGE.md). `Structure` uses compiled viable and mature targets rather than an `AvailableStore` capacity group.
 
 The initial groups are intentionally broad. Dissolved organic feedstock shares the macronutrient group with inorganic and simple named compounds after a capability makes it acquirable. Particulate material remains separate because it requires ingestion and digestion and may be orders of magnitude larger per resource quantum.
 

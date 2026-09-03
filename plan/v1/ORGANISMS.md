@@ -45,7 +45,7 @@ The first capability-filtered observation schema, typed target invalidation rule
 
 # Movement and space
 
-[SPATIAL_ORGANISMS_AND_BEHAVIOR.md](SPATIAL_ORGANISMS_AND_BEHAVIOR.md) fixes the first v1 spatial contract: normalized tile-local coordinates, strictly same-tile entity interactions, a derived `16 × 16` bin index, stationary remains, default zero-mean Brownian organism displacement, at most one edge crossing per tick, deterministic placement, and a position-aware extension seam for future resource gradients. [SPATIAL_CALIBRATION.md](SPATIAL_CALIBRATION.md) supplies the first body, Brownian, sensing, action-reach, placement, and active-distance values. Active movement energy/turning, final migration probability, and non-predation behavior policy remain balance/mechanics work.
+[SPATIAL_ORGANISMS_AND_BEHAVIOR.md](SPATIAL_ORGANISMS_AND_BEHAVIOR.md) fixes the first v1 spatial contract: normalized tile-local coordinates, strictly same-tile entity interactions, a derived `16 × 16` bin index, stationary remains, default zero-mean Brownian organism displacement, at most one edge crossing per tick, deterministic placement, a composed active/passive migration probability, and a position-aware extension seam for future resource gradients. [SPATIAL_CALIBRATION.md](SPATIAL_CALIBRATION.md) supplies the first body, Brownian, sensing, action-reach, placement, active-distance, movement-economy, and migration values. The general non-predation behavior policy remains later mechanics work.
 
 # Acquisition, energy capture, internal metabolism, and storage
 
@@ -56,10 +56,10 @@ The organism pipeline must preserve five boundaries:
 1. `ResourceAcquisition` transfers permitted external matter into `AvailableStore`.
 2. `ExternalEnergyCapture` uses environmental substrates and energy opportunities to create `ReserveOrganic` or another declared energy-bearing product.
 3. `InternalMetabolism` transforms acquired or stored matter, assembles biomass, mobilizes reserve for maintenance/actions, and routes spent matter or waste.
-4. `EnergyStorage` limits eligible reserve resources and capacity but never credits reserve.
+4. `EnergyStorage` compiles reserve eligibility and maximum capacity; current capacity is commissioned from conserved storage structure and never credits reserve.
 5. `NutrientStorage` caps non-reserve matter held in `AvailableStore` but never supplies it.
 
-Internal resources may be consumed, temporarily bound by an admitted metabolic process, or protected from lower-priority use by an evolved DNA holdback. These are distinct operations. Default DNA shares free material evenly among same-tier processes, while later regulation traits can add weights, priority tiers, and bounded holdbacks. The complete semantic contract is defined in [INTERNAL_STORAGE_AND_ALLOCATION.md](INTERNAL_STORAGE_AND_ALLOCATION.md).
+Internal resources may be consumed, temporarily bound by an admitted metabolic process, or protected from lower-priority use by an evolved DNA holdback. These are distinct operations. Default DNA shares free material evenly among same-tier processes, while later regulation traits can add weights, priority tiers, and bounded holdbacks. The complete general semantic contract is defined in [INTERNAL_STORAGE_AND_ALLOCATION.md](INTERNAL_STORAGE_AND_ALLOCATION.md); commissioned energy-capacity tiers and their health/lifecycle effects are defined in [ENERGY_STORAGE.md](ENERGY_STORAGE.md).
 
 Internal processes also contend for one DNA-compiled processing budget after satisfying their own reaction-specific gates and ceilings. Each process declares an integer load per extent; organization traits raise the shared budget without increasing reaction yield or external acquisition. The first tiers, resolution rule, maturation behavior, and validation fixtures are defined in [COMPLEX_CELLS.md](COMPLEX_CELLS.md).
 
@@ -135,16 +135,16 @@ Interactions use post-movement coordinates. Newly born organisms begin at age ze
 
 - [ ] Dense physical organism layout; logical fields are defined in [ORGANISM_STATE_AND_HEALTH.md](ORGANISM_STATE_AND_HEALTH.md).
 - [x] First health formula and numeric calibration; see [ORGANISM_STATE_AND_HEALTH.md](ORGANISM_STATE_AND_HEALTH.md) and [ORGANISM_HEALTH_CALIBRATION.md](ORGANISM_HEALTH_CALIBRATION.md).
-- [ ] Behavior-selection mechanism; observation and target contracts are fixed, but state/utility rules remain open.
+- [ ] General behavior-selection mechanism; observation and target contracts are fixed, and the first information-bounded terrestrial `MoistureConservation` phase policy is specified in [TERRESTRIAL_ADAPTATION.md](TERRESTRIAL_ADAPTATION.md), but cross-behavior state/utility rules remain open.
 - [x] First spatial-index, interaction-locality, and numerical-radius contract; see [SPATIAL_ORGANISMS_AND_BEHAVIOR.md](SPATIAL_ORGANISMS_AND_BEHAVIOR.md) and [SPATIAL_CALIBRATION.md](SPATIAL_CALIBRATION.md).
-- [x] First movement integration, Brownian magnitude, active-speed ceiling, and one-edge migration contract; energy/turning and final migration odds remain open. See [SPATIAL_ORGANISMS_AND_BEHAVIOR.md](SPATIAL_ORGANISMS_AND_BEHAVIOR.md) and [SPATIAL_CALIBRATION.md](SPATIAL_CALIBRATION.md).
-- [ ] Acquisition/capture/internal-metabolism intent interfaces and energy-storage enforcement; the shared internal-processing-budget contract is specified in [COMPLEX_CELLS.md](COMPLEX_CELLS.md).
+- [x] First movement integration, Brownian magnitude, active-speed ceiling, movement energy/turning, one-edge migration transaction, active/passive probability composition, and failure behavior. See [SPATIAL_ORGANISMS_AND_BEHAVIOR.md](SPATIAL_ORGANISMS_AND_BEHAVIOR.md) and [SPATIAL_CALIBRATION.md](SPATIAL_CALIBRATION.md).
+- [ ] Acquisition/capture/internal-metabolism intent interfaces; shared processing is specified in [COMPLEX_CELLS.md](COMPLEX_CELLS.md), and first energy-storage enforcement semantics and values are fixed in [ENERGY_STORAGE.md](ENERGY_STORAGE.md).
 - [x] Temporary metabolic-resource binding and DNA priority/holdback semantics; see [INTERNAL_STORAGE_AND_ALLOCATION.md](INTERNAL_STORAGE_AND_ALLOCATION.md).
-- [x] First founder and evolved reproduction gates, cooldown/jitter, work cost, allocation, offspring transaction, and lifecycle modifiers in [LIFECYCLE_AND_RECYCLING.md](LIFECYCLE_AND_RECYCLING.md); numeric population validation remains.
+- [x] First founder and evolved reproduction gates, cooldown/jitter, work cost, allocation, offspring transaction, and lifecycle modifiers in [LIFECYCLE_AND_RECYCLING.md](LIFECYCLE_AND_RECYCLING.md); an initial terrestrial cohort/population fixture now exists, while full server-exact multi-ecology validation remains.
 - [x] First v1 predation success, defense, contention, and remnant policy.
 - [x] First primitive senescence, age-throughput, environmental-death curves, and evolved lifecycle age multipliers; later longevity/repair traits are future work.
 - [x] First simple-remnant-scavenging transfer caps, action cost, contention, and organism-local handling cooldown.
 - [ ] Tests for zero-sum reproduction and complete remnant transfer.
-- [ ] Tests proving storage capacity changes never credit reserves or nutrients and that newly expanded capacity affects derived reserve fraction as specified.
+- [ ] Tests proving storage commissioning never credits reserves or nutrients and that each constructed capacity increment affects derived reserve fraction as specified.
 - [ ] Tests proving founder dissolved/micronutrient capacities, composition-derived load, needs-only staging, single-quota targeting, and direct founder waste routing.
 - [ ] Tests for multi-cause death and deterministic target contention.

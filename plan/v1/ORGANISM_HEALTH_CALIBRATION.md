@@ -124,7 +124,7 @@ The first spatial calibration makes mature structure scale with the cube of matu
 
 The table's mature hard floor is `ceil(0.5 × mature target)`. An organism acquiring a higher scale enters an explicit `ScaleMaturation` lifecycle phase: it retains its ancestor phase's hard floor, cannot reproduce, and receives higher-scale benefits only in proportion to built structure or after their declared activation threshold. Its condition target is the new mature structure target, so the transition is costly without becoming an immediate deterministic death. Reaching the target enters the ordinary mature phase and activates the new mature hard floor.
 
-The condition formula remains `viableStructure / currentPhaseStructureTarget`; only the DNA-compiled target and lifecycle gates change. Speciation grants no structure: an organism retains its concrete matter and initially remains physically near its prior radius. Growth, storage, ingestion, maintenance, and reproductive throughput for these tiers require dedicated balance fixtures before the traits become selectable. Radius derivation and encounter implications are defined in [SPATIAL_CALIBRATION.md](SPATIAL_CALIBRATION.md).
+The condition formula remains `viableStructure / currentPhaseStructureTarget`; only the DNA-compiled target and lifecycle gates change. Speciation grants no structure: an organism retains its concrete matter and initially remains physically near its prior radius. Growth, ingestion, maintenance, and reproductive throughput for larger body tiers still require their dedicated fixtures; the separate energy-storage ladder now has its first commissioned-capacity calibration in [ENERGY_STORAGE.md](ENERGY_STORAGE.md). Radius derivation and encounter implications are defined in [SPATIAL_CALIBRATION.md](SPATIAL_CALIBRATION.md).
 
 V1 predation remains all-or-nothing and does not inflict persistent wounds. Until asymmetric budding or another structure-changing mechanic is enabled, a living primitive founder will therefore normally have `structureFactor = 1`.
 
@@ -318,7 +318,7 @@ For later terrestrial-capable traits, assume the world's normalized surface-mois
 
 | Active phenotype | Preferred minimum | Hard minimum |
 | --- | ---: | ---: |
-| `ShallowWaterTolerance` | `0.70` | `0.30` |
+| `WetSurfaceColonization` | `0.70` | `0.30` |
 | `IntermittentDesiccationTolerance` | `0.40` | `0.10` |
 
 Below the preferred minimum, the common water/moisture curve applies. Dormancy compiles separate phase thresholds rather than letting an active-cell tolerance imply dry survival:
@@ -328,7 +328,7 @@ Below the preferred minimum, the common water/moisture curve applies. Dormancy c
 | `DormantPhase` | `0.20` | `0.05` |
 | `ResistantDormantPhase` | `0.05` | `0.01` |
 
-These thresholds apply only to organisms that already possess the terrestrial or surface-associated capability needed to occupy the tile. Dormancy does not by itself confer terrestrial access, change temperature or toxin curves, or permit survival at zero surface moisture.
+These thresholds apply only to organisms that already possess `WetSurfaceColonization`, the terrestrial-occupation capability. Dormancy does not by itself confer terrestrial access, change temperature or toxin curves, or permit survival at zero surface moisture. The landfall gate, trait liabilities, and migration interaction are defined in [TERRESTRIAL_ADAPTATION.md](TERRESTRIAL_ADAPTATION.md).
 
 ## Founder sulfur example
 
@@ -431,6 +431,7 @@ The next executable fixtures should establish:
 8. Multiplication, species aggregation, save/load, replay, and different worker counts remain bit-identical.
 9. The founder population fixtures are rerun through first speciation, and the mutation-income denominator is retuned only if decisions no longer occur within the intended fastest-speed cadence.
 10. Representative seasonal worlds confirm that common simultaneous soft stresses do not make broad tolerance mandatory or universally optimal.
+11. Fully commissioned storage tiers at a fixed `10,000` charged reserve produce reserve factors `1.0`, `0.4`, `0.2`, and `0.066667`; gradual commissioning is monotone and never credits reserve.
 
 # Expected revision points
 
@@ -442,5 +443,6 @@ The values most likely to move after simulation are:
 - Direct environmental penalty coefficients versus maintenance costs.
 - Product composition if several mild simultaneous stresses become too punitive.
 - Condition-delta thresholds and how much factor detail is affordable for large live tiles.
+- Storage-capacity health dilution and recovery during real speciation/construction trajectories.
 
 The fixed-point scale and derived-not-stored health decision should be substantially more stable than these balance values.

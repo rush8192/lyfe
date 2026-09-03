@@ -66,6 +66,7 @@ TileFixedState
     latitude
     elevation_meters
     terrain_tags
+    lithology_profile_id
     ocean_distance
     volcanic_province_id?
     volcanic_activity_baseline_q
@@ -107,10 +108,11 @@ GenerateWorld(seed, scenario, rulePack):
         volcanism = GenerateVolcanicProvinces(attemptSeed, elevation, terrain)
         climate = GenerateClimateBaselines(attemptSeed, elevation,
                                            terrain, volcanism)
-        resources = GenerateNonGasResources(attemptSeed, terrain,
+        lithology = GenerateCorrelatedLithology(attemptSeed, terrain)
+        resources = GenerateNonGasResources(attemptSeed, terrain, lithology,
                                             volcanism, climate)
-        worldCandidate = ComposeCandidate(elevation, terrain, volcanism,
-                                          climate, resources)
+        worldCandidate = ComposeCandidate(elevation, terrain, lithology,
+                                          volcanism, climate, resources)
         candidate = worldCandidate
 
         startReport = EvaluateStartingRegions(candidate, scenario)
@@ -279,7 +281,7 @@ nextMoisture = clamp01(
 )
 ```
 
-Precipitation may raise moisture quickly; evaporation and drainage return it toward a generated baseline more slowly. The response must allow a terrestrial tile to be wet for only part of a year. Initialization runs the recurrence for two no-biology calendar years, or another bounded configured spin-up, over `climateEpochHour = -17,280..-1` for the first calendar. Weather-key derivation accepts this signed prehistory domain while authoritative gameplay tick IDs begin at zero. This prevents tick zero from giving every land tile an arbitrary identical moisture state and keeps the result consistent with the selected local-dawn offset.
+Precipitation may raise moisture quickly; evaporation and drainage return it toward a generated baseline more slowly. The response must allow a terrestrial tile to be wet for only part of a year. Initialization runs the recurrence for two no-biology calendar years, or another bounded configured spin-up, over `climateEpochHour = -17,280..-1` for the first calendar. Weather-key derivation accepts this signed prehistory domain while authoritative gameplay tick IDs begin at zero. The last 48 spin-up moisture samples initialize the two-window history used by `MoistureConservation`; gameplay does not fabricate a zero-filled trend. This prevents tick zero from giving every land tile an arbitrary identical moisture state and keeps the result consistent with the selected local-dawn offset.
 
 # Environmental resources and cross-tile movement
 
@@ -295,6 +297,8 @@ Non-gas resources use transport classes rather than bespoke engine code:
 | `BoundaryAvailable` | Water/surface moisture opportunity, never a finite tile debit |
 
 Micronutrients and generic elemental organic/inorganic macronutrient pools default to `TileBound` in the first slice. This preserves well-mixed access inside a tile without making scarce nutrients or spent organic matter rapidly homogenize globally. `LabileDissolvedOrganic` and `ReducedFermentationProducts` are the first resources assigned to `DissolvedMobile`.
+
+Terrestrial tiles also receive a spatially correlated `lithology_profile_id`. It redistributes their initial inorganic macronutrient and micronutrient endowments according to [TERRESTRIAL_ADAPTATION.md](TERRESTRIAL_ADAPTATION.md), after which each resource is reconciled to its configured whole-world target. Lithology does not create an ongoing source. Current surface moisture independently limits organism claims against tracked terrestrial inorganic and micronutrient pools; it does not transform their single v1 biological form or alter their ledger balances.
 
 The first dissolved profile uses `1,500` per million, or `0.15%`, of the stable stock difference per fully compatible undirected edge per simulated hour. Edge compatibility is symmetric:
 
@@ -344,7 +348,7 @@ Further exchange work remains for:
 - Optional weather-dependent or directional atmospheric transport after v1.
 - Classification and coefficients for any additional dissolved or mobile nutrient resources.
 - Solid or poorly transported nutrient resources.
-- Passive organism transport if present in v1.
+- Directional wind, runoff, and storm transport after v1; v1 organism environmental spread is zero-mean and uses the fixed terrestrial medium multiplier in [TERRESTRIAL_ADAPTATION.md](TERRESTRIAL_ADAPTATION.md).
 
 Exchange must be symmetric or explicitly directional, mass-balanced, stable for the selected tick duration, and independent of worker ordering. Generated worlds initialize gas fields from the equilibrium of the complete source graph rather than assigning every volcanic tile its isolated plateau.
 
@@ -402,7 +406,7 @@ Reduced neighbor summaries should be derived from generated fixed attributes and
 - [x] First exact eligibility ranges, repair weights/budget, four-pair target, fairness diagnostics, and bounded biological smoke test; see [WORLD_CLIMATE_CALIBRATION.md](WORLD_CLIMATE_CALIBRATION.md).
 - [x] First generated-world light calibration: `11,394` reference daily extents, tick-`263` reproduction, and `250..275` acceptance band; see [WORLD_CLIMATE_CALIBRATION.md](WORLD_CLIMATE_CALIBRATION.md).
 - [x] First temperature, precipitation, cloud, moisture, turbidity, and volcanic coefficient set; representative-map validation and revision remain open.
-- [ ] Dissolved non-gas exchange; micronutrients are tile-bound initially. Remnant decay and passive mineralization rates are fixed in [LIFECYCLE_AND_RECYCLING.md](LIFECYCLE_AND_RECYCLING.md).
+- [x] First dissolved non-gas exchange and terrestrial tile-bound access rules; micronutrients remain tile-bound and use moisture-dependent claim access on land. Remnant decay and passive mineralization rates are fixed in [LIFECYCLE_AND_RECYCLING.md](LIFECYCLE_AND_RECYCLING.md).
 - [ ] Reduced tile-summary schema and coarse-band thresholds.
 - [ ] Player-knowledge update algorithm and visibility transition tests.
 - [ ] Maps and plots demonstrating representative generated worlds.
@@ -419,6 +423,7 @@ Reduced neighbor summaries should be derived from generated fixed attributes and
 - Generated sulfur starts match the fixture's daily energy/growth opportunity within a configured tolerance; generated hydrogen starts remain meaningfully dimmer.
 - Temperature, precipitation, cloud, moisture, turbidity, and volcanism remain inside configured numeric bounds under long runs.
 - Terrestrial moisture responds to precipitation with lag, can dry seasonally, and reproduces exactly after save/load.
+- Correlated terrestrial lithology produces resource-specific strengths and shortages, preserves configured world totals, and exposes no universally rich land profile.
 - Atmospheric initialization and every non-gas exchange conserve matter against declared boundaries.
 - The default scenario produces the required number of eligible paired regions or a deterministic explicit generation failure—never a silently invalid world.
 - Repaired starts pass actual founder smoke simulations, preserve missing advanced-pathway micronutrient gates, and expose their repair deltas in diagnostics.

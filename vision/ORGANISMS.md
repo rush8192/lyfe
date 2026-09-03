@@ -63,7 +63,7 @@ In the initial simulation, every species has a single ancestor and is reproducti
 
 Every organism stores a limited reserve of chemical energy in organic compounds. Its DNA defines a maximum energy-storage capacity, which starts with a relatively low ceiling. Mutations may increase this ceiling through incremental improvements, while major metabolic or cellular capabilities may produce larger step-function increases.
 
-An organism's relative health score is grounded in its current stored energy as a proportion of its maximum storage capacity, then adjusted by other internal state and current environmental conditions. Relevant factors may include stored nutrients, viable structure, age, lifecycle phase, and environmental stress. This normalized score allows health to be compared across organisms and species with different capacities. A species' average health is the mean relative health of all its living organisms across the world and is one of the inputs to its mutation-point generation rate.
+An organism's relative health score is grounded in its current stored energy as a proportion of its currently constructed and usable storage capacity, then adjusted by other internal state and current environmental conditions. Relevant factors may include stored nutrients, viable structure, age, lifecycle phase, and environmental stress. This normalized score allows health to be compared across organisms and species with different capacities. A species' average health is the mean relative health of all its living organisms across the world and is one of the inputs to its mutation-point generation rate.
 
 Stored energy is consumed by baseline maintenance and by capabilities such as movement and reproduction. Environmental stress may increase this expenditure. A larger storage capacity provides a longer buffer against poor conditions, but it does not create energy and may carry its own metabolic or reproductive costs.
 
@@ -131,7 +131,11 @@ To start, environmental conditions and nutrients are well-mixed within each tile
 
 ## Moisture tolerance
 
-Some organisms must live in water and therefore require either an aquatic tile or a high-moisture terrestrial tile.
+Aquatic organisms cannot enter a terrestrial tile merely because it is currently wet. A lineage must first evolve an explicit wet-surface colonization capability, paying structural and metabolic costs before any member can make landfall. Current surface moisture then acts as a continuous pressure: favorable wet conditions permit ordinary activity, drying increases energy expenditure and reduces condition, and severe dryness adds an increasing chance of death. Further desiccation tolerance and dormancy can extend survival, but do not create water or make continuously dry land freely habitable.
+
+Terrestrial surfaces initially produce less passive random displacement than aquatic environments, increasing the importance of active locomotion or an evolved drifting strategy. Future precipitation, surface moisture, wind, and storms may alter passive transport; coherent wind or runoff should remain distinct from zero-mean Brownian-like agitation.
+
+Land compatibility is worthwhile only where the organism can exploit real opportunities. Surface phototrophs avoid aquatic light attenuation, atmosphere-using metabolisms gain direct gas access, and different land regions expose different finite nutrient endowments. Those advantages compete with adaptation upkeep, reduced passive acquisition, seasonal activity loss, temperature variability, and desiccation risk; there is no universal land productivity bonus. A successful producer lineage may gradually create the organic resources and prey base that let scavengers, heterotrophs, and predators follow.
 
 ## Temperature tolerance
 
@@ -195,11 +199,11 @@ All v1 organisms store chemical energy as `ReserveOrganic` in an `EnergyReserve`
 
 Energy-storage evolution has three conceptual axes:
 
-- **Capacity:** incremental `ReserveCapacity` traits raise the maximum quantity that may be stored.
-- **Organization:** a later `CompartmentalizedReserve` trait provides a larger step increase and may serve as a prerequisite for still larger storage, but requires suitable cellular organization.
+- **Capacity:** incremental `ReserveCapacity` traits raise the maximum quantity that may be stored after the necessary storage-supporting biomass has been constructed.
+- **Organization:** a later `CompartmentalizedReserve` trait provides a larger step increase and may serve as a prerequisite for still larger storage, but requires suitable materially completed cellular organization.
 - **Handling:** synthesis, retention, and mobilization efficiency may be improved through cross-family internal-metabolism traits rather than creating free stored energy.
 
-Greater capacity does not add reserve matter when a species mutates. Founding members of the descendant retain their existing reserve quantity, so their reserve fraction—and therefore their initial health contribution from energy—may fall until the new capacity is filled. Storage structures may also increase mature structural requirements, maintenance cost, or the resources that must be transferred during reproduction.
+Greater capacity does not add reserve matter or finished storage machinery when a species mutates. Founding members of the descendant retain their existing reserve quantity and structural assignments. As they construct storage-supporting biomass, their usable capacity rises; their reserve fraction—and therefore their health contribution from energy—may fall until the increment is filled. Storage structures increase mature structural requirements, ongoing maintenance, and material that must be provisioned during reproduction.
 
 V1 does not require multiple energy-bearing reserve compounds. A future dense reserve chemistry, such as a lipid-inspired store, would require its own composition, energy density, synthesis and mobilization reactions, and resource-ledger validation rather than being represented as a capacity multiplier on `ReserveOrganic`.
 

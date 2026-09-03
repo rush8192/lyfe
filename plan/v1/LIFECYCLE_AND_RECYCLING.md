@@ -2,7 +2,7 @@
 
 Status: first complete v1 lifecycle rule pack and organic-niche population calibration; executable multi-seed validation and later ecological strategies remain pending
 
-Sources: [organism mechanics](ORGANISMS.md), [simulation loop](SIMULATION_LOOP.md), [resource model](RESOURCE_MODEL.md), [organism state and health](ORGANISM_STATE_AND_HEALTH.md), [health calibration](ORGANISM_HEALTH_CALIBRATION.md), [internal storage](INTERNAL_STORAGE_AND_ALLOCATION.md), [spatial contract](SPATIAL_ORGANISMS_AND_BEHAVIOR.md), and [spatial calibration](SPATIAL_CALIBRATION.md).
+Sources: [organism mechanics](ORGANISMS.md), [simulation loop](SIMULATION_LOOP.md), [resource model](RESOURCE_MODEL.md), [organism state and health](ORGANISM_STATE_AND_HEALTH.md), [health calibration](ORGANISM_HEALTH_CALIBRATION.md), [internal storage](INTERNAL_STORAGE_AND_ALLOCATION.md), [energy storage](ENERGY_STORAGE.md), [spatial contract](SPATIAL_ORGANISMS_AND_BEHAVIOR.md), and [spatial calibration](SPATIAL_CALIBRATION.md).
 
 # Purpose
 
@@ -62,11 +62,14 @@ LifecycleState:
 
 - Active mature direct lifecycle.
 - Juvenile maturation after asymmetric budding.
-- `ScaleMaturation` after acquisition of a larger cellular organization.
+- `ScaleMaturation` after acquisition of a larger body-scale target.
+- `StorageMaturation` after acquisition of a larger commissioned storage target, or one combined maturation phase when multiple structural axes change together.
 - Ordinary and resistant dormancy when the corresponding traits exist.
 - A later motile dispersal phase without changing the core state shape.
 
 Each phase declares its mature or condition structure target, hard viability floor, biological-aging multiplier, maintenance multiplier, allowed actions, growth eligibility, and reproduction eligibility. Behavior may choose among DNA-permitted transitions, but cannot bypass a phase's hard gates.
+
+The first automatic phase selector is the `MoistureConservation` profile compiled by `ResourceConservation + DormantPhase`; the behavior trait is a v1 cross-family hard prerequisite of the phase, so no acquired phase is unreachable. It compares current surface moisture and two trailing 24-hour tile-history windows, uses active-hard-relative `0.05` entry lead and `0.10` exit hysteresis, requires a 24-hour minimum dwell, and checks reserve affordability before requesting entry or exit. Exact thresholds, pseudocode, history ownership, and executable cohort results are normative in [TERRESTRIAL_ADAPTATION.md](TERRESTRIAL_ADAPTATION.md). Lifecycle resolution remains the owner of transition costs and admission. Behavior cannot change the phase before the current tick's intrinsic-death evaluation or use future weather to do so.
 
 # Ordered organism lifecycle evaluation
 
@@ -143,7 +146,7 @@ The absolute `reproduction_not_before_tick` is authoritative and persists throug
 
 ## Already fixed
 
-- Primitive fission requires two complete inherited micronutrient quota sets and sufficient geometric and organization structure assignments for two viable results. Founder organization structure is zero, preserving the existing arithmetic.
+- Primitive fission requires two complete inherited micronutrient quota sets and sufficient geometric, organization, and storage structure assignments for two viable results. Founder organization and storage structure are zero, preserving the existing arithmetic.
 - The primitive structural target is `1,000` units per mature result, so symmetric fission requires at least `2,000` structure before reproductive overhead.
 - The first founder rule uses a `500`-energy reproductive-work cost and targets first reproduction near tick `334` for hydrogen founders and tick `250` for sulfide founders.
 - Primitive reproduction is deterministic once all eligibility gates pass. It uses a `24 h` base cooldown plus one keyed `0..3 h` jitter draw per scheduled cooldown, not an independent chance each eligible tick.
@@ -171,13 +174,15 @@ all other capacity and composition invariants pass
 
 The health gate uses the ordinary post-maintenance derived health rather than a reproduction-only opaque score. The named reserve and structure gates remain separate because total health alone could hide a specific shortage behind strong values in other factors.
 
-After the `500`-energy work reaction, `PrimitiveFission` allocates each structure assignment, energy reserve, and divisible available-store balance as close to `50/50` as integer quantities allow. The continuing parent receives the deterministic remainder for structure required to retain its stable identity; other indivisible remainders use the keyed allocation rule. Each result must meet its compiled geometric and organization minima. The parent's existing committed micronutrient set stays with it and the complete additional set becomes the offspring's committed set.
+After the `500`-energy work reaction, `PrimitiveFission` allocates each structure assignment, energy reserve, spent carrier, and divisible available-store balance as close to `50/50` as integer quantities allow. The continuing parent receives the deterministic remainder for structure required to retain its stable identity; other indivisible remainders use the keyed allocation rule. Each result must meet its compiled geometric, organization, and storage minima. The parent's existing committed micronutrient set stays with it and the complete additional set becomes the offspring's committed set. Evolved capacity and asymmetric storage-assignment minima are defined in [ENERGY_STORAGE.md](ENERGY_STORAGE.md).
 
 At a full `10,000` reserve, the work reaction leaves `9,500`, or `4,750` per result. The sulfur fixture reaches division near `9,012`; after work it leaves `4,256` per result. Both therefore begin above the common `4,000` growth-protection floor. Although each result has fewer reserves than the pre-split parent, the species gains a second mature resource-gathering organism and one age-zero lineage member without creating matter.
 
 The first `AsymmetricBudding` profile requires at least `1,600` structure and `0.65` reproduction health. Its reproductive-work cost is `650`, its base cooldown is `18 h` with `0..2 h` jitter, and it allocates `1,000` structure to the continuing parent and `600` to an immature offspring. After work it allocates divisible reserve and stores `60/40` to parent/offspring. Reserve before work must be at least `8,150`, leaving at least `4,500` and `3,000` under the limiting allocation; the parent and offspring hard minima remain `4,000` and `3,000`. The offspring may restore reserve immediately but cannot reproduce and cannot commit structural growth until the ordinary growth gate admits it.
 
 `ProvisionedOffspring` replaces that budding profile with a `1,800`-structure gate, `0.70` health gate, `800` work cost, `24 h + 0..2 h` cooldown, `1,000/800` structure allocation, and `55/45` divisible-store allocation. It requires at least `9,700` reserve before work and at least `4,000` in both results. At the founder `10,000` capacity, the transaction leaves `5,060` with the continuing parent and `4,140` with the offspring. This improves juvenile survival while making a birth slower and materially harder to fund. A future rules version may expose a broader allocation spectrum; v1 uses these discrete profiles.
+
+The `1,600`, `1,800`, and `1,000/600/800` structural figures are the primitive non-storage base. Compiled organization, scale, protection, and storage assignments add their own parent and offspring minima; they are not squeezed into those same totals. In particular, evolved storage uses complete/60%/80% offspring storage-target fractions for fission, asymmetric budding, and provisioned offspring as defined in [ENERGY_STORAGE.md](ENERGY_STORAGE.md). Reserve safety minima remain the absolute profile values above.
 
 An invalid transaction rejects atomically with no cost and does not change the cooldown. A future explicitly risky reproduction trait may declare an attempt cost, but ordinary fission and budding do not spend resources merely because a gate failed.
 
@@ -211,7 +216,7 @@ The growth resolver reduces the admitted whole assembly extents until projected 
 
 This floor reserves energy; it does not create or permanently lock a second energy account. The organism may still spend protected reserves on later mandatory maintenance, emergency lifecycle transitions, or another explicitly higher-priority process. DNA regulation may change the protection fraction within compiled bounds. A later hysteresis trait or rule is justified only if simulations reveal harmful one-tick oscillation that the whole-extent cap does not already absorb.
 
-The `4,000` value preserves roughly 80 hours of founder base maintenance at `50` energy/hour, or about 71 hours under the sulfur fixture's `56`-energy maintenance-plus-stress load. It also matches the already validated sulfur and generated-climate calculations. For other reserve capacities, the default compiled floor is `40%` rounded upward unless a DNA trait explicitly supplies another bounded policy. Acquiring capacity never fills the new capacity, and acquiring a larger body scale never grants the additional structure needed for maturation.
+The `4,000` value preserves roughly 80 hours of founder base maintenance at `50` energy/hour, or about 71 hours under the sulfur fixture's `56`-energy maintenance-plus-stress load. It also matches the already validated sulfur and generated-climate calculations. For other reserve capacities, the default floor is `40%` of current commissioned capacity rounded upward unless a DNA trait explicitly supplies another bounded policy. Building storage structure never fills the commissioned increment, and acquiring a larger body scale never grants the additional structure needed for maturation. The growth floor is not a post-reproduction minimum; profile-specific result minima remain absolute as defined above and in [ENERGY_STORAGE.md](ENERGY_STORAGE.md).
 
 # Biological age and senescence
 

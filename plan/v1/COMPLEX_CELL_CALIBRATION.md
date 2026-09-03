@@ -1,6 +1,6 @@
 # Complex-Cell Numerical Calibration
 
-Status: first analytical processing-load, structure-assignment, assembly-throughput, body-scale, particulate-acquisition, and hunting-economy values selected; executable multi-seed population validation remains
+Status: first analytical processing-load, three-role structure-assignment, assembly-throughput, body-scale, particulate-acquisition, and hunting-economy values selected; executable multi-seed population validation remains
 
 Sources: [complex cellular organization](COMPLEX_CELLS.md), [founder fixture](ONE_TILE_STARTING_CONFIGURATION.md), [sulfur founder fixture](SULFUR_TILE_STARTING_CONFIGURATION.md), [organic uptake and fermentation](ORGANIC_UPTAKE_AND_FERMENTATION.md), [aerobic respiration](AEROBIC_RESPIRATION.md), [lifecycle and recycling](LIFECYCLE_AND_RECYCLING.md), [predation](PREDATION.md), and [spatial calibration](SPATIAL_CALIBRATION.md).
 
@@ -21,7 +21,7 @@ The calibration is deliberately constrained by existing values rather than selec
 
 Calibration of an organization-dense cell followed by a scale increase exposes information that cannot be derived from one undifferentiated structure total. A mature primitive-radius proto-eukaryotic cell contains `2,188` structure, but only `1,000` supports its external scale. If it later acquires Scale I, treating all `2,188` as geometric matter would enlarge it instantly despite mutation granting no matter.
 
-V1 therefore keeps one `StructuralBiomass` resource but assigns every committed quantum to one of two roles:
+V1 therefore keeps one `StructuralBiomass` resource but assigns every committed quantum to one of three aggregate physical roles:
 
 ```text
 geometricStructure
@@ -31,20 +31,25 @@ organizationStructure
     supports walls, internal membranes, compartments, organelles,
     and other same-scale machinery
 
-viableStructure = geometricStructure + organizationStructure
+storageStructure
+    supports commissioned energy-reserve capacity
+
+viableStructure = geometricStructure
+                + organizationStructure
+                + storageStructure
 ```
 
 These are assignments within the organism's committed `Structure` reservoir, analogous to committed micronutrient quotas. They are not distinct chemical resources and do not change elemental accounting. Reproduction, death, digestion, and decay conserve the sum exactly.
 
 The first mature targets are:
 
-| Phenotype | Geometric target | Organization target | Total mature structure |
-| --- | ---: | ---: | ---: |
-| Primitive | `1,000` | `0` | `1,000` |
-| `CompartmentalizedCell` | `1,000` | `250` | `1,250` |
-| `ProtoEukaryoticOrganization` | `1,000` | `1,188` | `2,188` |
-| Proto-eukaryotic + Scale I | `3,375` | `4,008` | `7,383` |
-| Proto-eukaryotic + Scale II | `11,391` | `13,527` | `24,918` |
+| Phenotype | Geometric target | Organization target | Storage target | Total mature structure |
+| --- | ---: | ---: | ---: | ---: |
+| Primitive | `1,000` | `0` | `0` | `1,000` |
+| `CompartmentalizedCell` | `1,000` | `250` | `0` | `1,250` |
+| `ProtoEukaryoticOrganization` | `1,000` | `1,188` | `0` | `2,188` |
+| Proto-eukaryotic + Scale I | `3,375` | `4,008` | `0` | `7,383` |
+| Proto-eukaryotic + Scale II | `11,391` | `13,527` | `0` | `24,918` |
 
 The totals preserve the already selected `1.25×` and additional `1.75×` organization multipliers with one final ceiling. Organization target is the exact remainder after the geometric target is removed; it is not independently rounded from a percentage.
 
@@ -57,13 +62,18 @@ geometricDeficitQ = max(0, targetGeometric - currentGeometric)
 organizationDeficitQ = max(0, targetOrganization - currentOrganization)
                      / max(1, targetOrganization)
 
+storageDeficitQ = max(0, targetStorage - currentStorage)
+                / max(1, targetStorage)
+
 targetRole = role with greatest normalized deficit
-tie order  = GeometricStructure, then OrganizationStructure
+tie order  = GeometricStructure,
+             OrganizationStructure,
+             StorageStructure
 ```
 
-Each admitted assembly extent credits one assigned `StructuralBiomass` quantum. This keeps both dimensions near the destination phenotype's proportions during a combined scale-and-organization transition. Ordinary health continues to use total viable structure over total phase target. Radius uses only geometric structure.
+Each admitted assembly extent credits one assigned `StructuralBiomass` quantum. This keeps all required roles near the destination phenotype's proportions during a combined scale, organization, and storage transition. Ordinary health continues to use total viable structure over total phase target. Radius uses only geometric structure, while commissioned energy capacity uses only storage structure.
 
-Symmetric fission requires two complete geometric targets and two complete organization targets. The near-even split allocates each assignment independently, with the continuing parent receiving the stable-ID remainder. Asymmetric reproduction profiles must likewise name minimum assignments for both results. A remnant may retain the assignments for visual explanation, but every digestion or decay reaction accepts the common `StructuralBiomass` identity.
+Symmetric fission requires two complete geometric, organization, and storage targets. The near-even split allocates each assignment independently, with the continuing parent receiving the stable-ID remainder. Asymmetric reproduction profiles must likewise name minimum assignments for both results. A remnant may retain the assignments for visual explanation, but every digestion or decay reaction accepts the common `StructuralBiomass` identity. Energy-storage-specific commissioning and offspring minima are defined in [ENERGY_STORAGE.md](ENERGY_STORAGE.md).
 
 # Processing-work unit
 
@@ -387,8 +397,8 @@ Demand denied because a resource, catalyst, store, behavior, prey encounter, or 
 1. Existing hydrogen, sulfur, fermentation, and simple-cell respiratory authoring outputs remain byte-for-byte unchanged when the work budget is enabled.
 2. Opportunity work is reserved before success draws; changing the success outcome cannot give another process same-tick extra work.
 3. Enumeration, priority, worker, and save/load changes preserve all admitted work, denied work, reaction draws, claims, and state hashes.
-4. Structure assignments conserve exactly, preserve radius on organization or scale speciation, and sum to the existing viable-structure health input.
-5. Combined organization-and-scale maturation fills assignments deterministically and never grants mature radius or processing capacity immediately.
+4. Geometric, organization, and storage structure assignments conserve exactly, preserve radius on organization, scale, or storage speciation, and sum to the existing viable-structure health input.
+5. Combined organization, scale, and storage maturation fills assignments deterministically and never grants mature radius, processing capacity, or reserve capacity without its required physical assignment.
 6. The compartmentalized and Scale-I demand tables above reproduce exactly with whole extents.
 7. Primitive-radius proto-eukaryotic direct respiration remains near the senescence boundary with current organic uptake; a supplied second carbon path makes it materially faster.
 8. A complete maximum-search Scale-I predator below approximately `1.11` fully recovered primitive prey/day cannot replace itself indefinitely; a base hunter reaches that landmark near `350` uniform primitive prey per tile under the analytical encounter fixture.

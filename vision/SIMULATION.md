@@ -29,7 +29,7 @@ In the initial simulation, every organism references the single shared DNA of it
 - Its current behavior or behavioral goal.
 - Any small capability state that must persist across ticks.
 
-Maximum energy-storage capacity, current environmental stress, and available behaviors are derived from species DNA together with the organism's state and surroundings. Relative health is a derived score grounded primarily in stored energy relative to capacity, then adjusted by internal state and current environmental conditions. Cosmetic differences between members of a species do not affect simulation state. Heritable individual genetic variation and recombination are possible future extensions rather than initial requirements.
+Genetic maximum and currently commissioned energy-storage capacity, current environmental stress, and available behaviors are derived from species DNA together with the organism's structural state and surroundings. Relative health is a derived score grounded primarily in stored energy relative to current usable capacity, then adjusted by internal state and current environmental conditions. Cosmetic differences between members of a species do not affect simulation state. Heritable individual genetic variation and recombination are possible future extensions rather than initial requirements.
 
 Behavior represents the organism's current response to its condition and surroundings rather than direct player instructions. More advanced DNA may provide additional behaviors or more effective selection among them. For example, an organism low on a required resource might seek a detectable gradient, hunt eligible prey, scavenge, conserve energy, or move toward a more favorable environment depending on its capabilities.
 

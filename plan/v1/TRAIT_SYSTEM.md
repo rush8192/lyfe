@@ -91,6 +91,9 @@ TraitEffect:
     EnableReaction(reactionId)
     ModifyReaction(reactionIdOrTag, parameter, operation, value)
     ModifyCapacity(compartmentOrResourceTag, operation, value)
+    SetCommissionedCapacity(compartment, foundationValue,
+                             structureRole, unitsPerStructure,
+                             maximumValue, optionalActivationCap)
     AddMinimumQuota(resourceId, amount)
     AddActivationRequirement(capabilityId, requirement)
     EnableSense(signalId, rangeAndPrecision)
@@ -100,6 +103,8 @@ TraitEffect:
 ```
 
 Arbitrary callbacks and embedded scripts are excluded. If a desired trait cannot be represented by a typed effect, the engine effect vocabulary is extended deliberately and versioned rather than smuggling code into rule data.
+
+`SetCommissionedCapacity` is the bounded physical-capacity profile used by the energy-storage ladder. Linear descendants supersede the exact ancestor profile; they do not stack separate commissioning slopes. Its current value is derived from the named conserved structural assignment and optional material activation gate, while `maximumValue` remains DNA-compiled. Available-store capacity groups that have no physical commissioning step continue to use ordinary `ModifyCapacity`.
 
 ## Direct and indirect effects
 
@@ -327,7 +332,7 @@ The following are normative v1 policies:
 
 1. **Explicit exclusivity:** siblings are compatible unless a rule explicitly marks them incompatible. An exclusive choice is irreversible within that descendant lineage.
 2. **Multi-node speciation:** one event may acquire multiple explicitly selected nodes, subject to mutation-point price, change-complexity limits, prerequisites, and incompatibilities.
-3. **Derived activation:** acquired DNA applies immediately, while material- or environment-dependent capabilities activate from current organism state. V1 does not track per-trait construction progress.
+3. **Derived activation:** acquired DNA applies immediately, while material- or environment-dependent capabilities activate from current organism state. V1 does not track per-trait construction progress. Aggregate conserved assignments such as geometric, organization, and storage structure may commission typed effects continuously; these are physical organism state rather than mutable progress on a trait node.
 4. **No environmental genetic unlocks:** current or observed world conditions affect activation and usefulness, but are not hard prerequisites for acquiring a trait.
 5. **Explicit effect supersession:** advanced nodes may retire exact ancestor effects or upkeep contributions while the ancestor remains acquired and visible in lineage history.
 6. **Scoped efficiency:** efficiency effects must identify named reaction or cost channels. V1 has no unrestricted global efficiency multiplier.

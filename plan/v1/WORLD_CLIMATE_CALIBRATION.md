@@ -2,11 +2,11 @@
 
 Status: provisional v1 numerical rule-pack candidate; representative-seed maps and population smoke tests required before freezing
 
-Sources: [world and climate algorithms](WORLD_AND_CLIMATE.md), [gas transport](GAS_TRANSPORT_AND_ATTRITION.md), [hydrogen founder fixture](ONE_TILE_STARTING_CONFIGURATION.md), [sulfur founder fixture](SULFUR_TILE_STARTING_CONFIGURATION.md), and [organism health calibration](ORGANISM_HEALTH_CALIBRATION.md).
+Sources: [world and climate algorithms](WORLD_AND_CLIMATE.md), [gas transport](GAS_TRANSPORT_AND_ATTRITION.md), [hydrogen founder fixture](ONE_TILE_STARTING_CONFIGURATION.md), [sulfur founder fixture](SULFUR_TILE_STARTING_CONFIGURATION.md), [terrestrial adaptation](TERRESTRIAL_ADAPTATION.md), and [organism health calibration](ORGANISM_HEALTH_CALIBRATION.md).
 
 # Purpose
 
-Assign a coherent first set of numerical values to world generation, climate, aquatic light, terrestrial moisture, volcanism, and paired-start eligibility. These values turn the algorithm contract into a reproducible rule-pack candidate; they remain balance data, not engine constants.
+Assign a coherent first set of numerical values to world generation, climate, aquatic light, terrestrial moisture and resource access, volcanism, and paired-start eligibility. These values turn the algorithm contract into a reproducible rule-pack candidate; they remain balance data, not engine constants.
 
 # Calibration priorities
 
@@ -31,6 +31,8 @@ Assign a coherent first set of numerical values to world generation, climate, aq
 | Start phase | Day-zero equinox; selected tile at local dawn |
 | Moisture spin-up | Two calendar years, `17,280` hourly steps |
 | Dynamic CO₂/CH₄ greenhouse feedback | Deferred from v1; gas histories retained for a later forcing model |
+| Terrestrial lithology endowment | Correlated `30% / 30% / 40%` mafic/silicic/mixed profiles with `1.75x / 1.25x / 1.00x / 0.50x` coefficients, reconciled to world totals |
+| Terrestrial geological access | `0.20 + 0.80 * currentSurfaceMoisture` |
 | Required paired starts | `4` non-overlapping pairs on the default map |
 | Minimum pair separation | Toroidal Manhattan distance `4` between pair centers |
 | Pair repair budget | Maximum weighted deficit `0.55` |
@@ -177,6 +179,29 @@ Representative terrestrial maps should contain, after spin-up:
 
 If these three niches cannot coexist across the seed corpus, tune precipitation-field distribution and drainage before changing the moisture thresholds used by organisms.
 
+# Terrestrial lithology and wetting access
+
+Terrestrial lithology is generated from a named spatial field independent of weather and resource-claim randomness. Exact rank classification targets `30%` `MaficExposedRock`, `30%` `SilicicExposedRock`, and `40%` `MixedWeatheredSurface`, with stable coordinate order breaking boundary ties. The profile field should form contiguous regions with a first correlation wavelength of four to eight tiles; the mixed profile's secondary trace choices use a separate field with a two-to-four-tile wavelength. Exact resource assignments are in [TERRESTRIAL_ADAPTATION.md](TERRESTRIAL_ADAPTATION.md).
+
+For each affected resource, generation multiplies the provisional terrestrial starting allocation by the profile coefficient, then reconciles all tiles to the configured whole-world total using deterministic largest remainders. The first coefficients are `1.75`, `1.25`, `1.00`, and `0.50`. These are balance contrasts, not literal crustal abundance ratios.
+
+Across 128 accepted default worlds:
+
+- Each landmass of at least eight tiles should contain at least two lithology profiles unless its narrow geometry makes that impossible.
+- At least `20%` of terrestrial tiles should be enriched in one relevant resource and depleted in another.
+- Profile shares match `30% / 30% / 40%` within one tile of rank rounding in each accepted default world.
+- No terrestrial tile may receive enriched coefficients for every resource.
+- Per-resource world totals before and after profile assignment must be identical.
+
+Current terrestrial access to already tracked inorganic and micronutrient pools is:
+
+```text
+geologicalAccessQ = 200,000
+                    + floor(800,000 * currentSurfaceMoistureQ / 1,000,000)
+```
+
+The fixed-point implementation rounds once after multiplication and clamps to `[0.20, 1.00]`. This access factor is evaluated from the same immutable phase-1 condition view used for the organism's physiological terrestrial-activity factor. It modifies claim ceilings only and creates no source, transfer, or new micronutrient form. At the reference wet-coast moisture of `0.85`, access is `0.88`; at moisture `0.40`, it is `0.52`; and at zero moisture it is `0.20`, although physiological activity then reduces ordinary active acquisition to zero.
+
 # Solar and aquatic-light calibration
 
 ## Deterministic sampling
@@ -237,6 +262,22 @@ The six-extent difference is `0.053%` and is accepted as deterministic integer r
 ```
 
 Oxygenic photosynthesis reads this same already-attenuated aquatic-light value, applies its own `0.75` saturation cap once, and never reapplies cloud, depth, or turbidity. Its reference coefficient yields 7,772 daily extents and is defined in [OXYGENIC_PHOTOSYNTHESIS.md](OXYGENIC_PHOTOSYNTHESIS.md).
+
+## Terrestrial landfall comparison
+
+The paired wet-coast fixture uses the same equatorial/equinox solar geometry and `0.10` cloud. Its terrestrial side has no depth or turbidity attenuation; its aquatic side uses `20 m` depth and `0.10` turbidity:
+
+```text
+surfaceDailyLight = 7.6612975755 * 0.94
+                  = 7.2016197210 opportunity-hours
+
+coastalAquaticDailyLight = 7.2016197210
+                          * 0.80
+                          * (1 - 0.75 * 0.10)
+                          = 5.3291985935 opportunity-hours
+```
+
+Because oxygenic photosynthesis saturates at `0.75` hourly light, daily reaction opportunity does not scale directly with those unsaturated sums. A floating-point authoring estimate gives approximately `8,904` successful terrestrial extents versus `7,184` in the representative coastal water, or `1.239x`; a zero-turbidity aquatic control gives approximately `7,766`, or a `1.147x` terrestrial ratio. The authoritative 64-key fixed-point fixture in [TERRESTRIAL_ADAPTATION.md](TERRESTRIAL_ADAPTATION.md) owns the accepted `1.20..1.35` representative band. These estimates must not replace its keyed-binomial result or alter the established `7,772` zero-turbidity aquatic reference.
 
 With the existing 5,000 reserve, 4,000 growth floor, maintenance, reserve cap, and four-extent assembly limit, the realistic curve reaches 2,000 structure at tick `263` rather than square-fixture tick `250`. It remains `21.3%` faster than hydrogen's tick `334`. The square fixture remains a reaction/accounting isolation test; `250..275` ticks is the generated sulfur-start acceptance band.
 
@@ -430,5 +471,6 @@ Rerun the complete seed and biological suite after changing:
 
 - Validate or revise every distribution target against actual 128-seed generated maps.
 - Decide exact coarse bands exposed in reduced exploration views.
-- Decide whether any additional non-gas resources need passive mobility. Dissolved-organic exchange is fixed; directional runoff remains deferred. Remnant decay and passive mineralization are owned by [LIFECYCLE_AND_RECYCLING.md](LIFECYCLE_AND_RECYCLING.md).
+- Decide whether any additional non-gas resources need passive mobility. Dissolved-organic exchange is fixed; terrestrial wetting changes claim access but does not move matter, and directional runoff remains deferred. Remnant decay and passive mineralization are owned by [LIFECYCLE_AND_RECYCLING.md](LIFECYCLE_AND_RECYCLING.md).
+- Run the terrestrial paired-coast and representative-map fixtures before freezing lithology frequencies, profile coefficients, or the geological-access slope.
 - Decide whether volcanic pulses need an opening grace rule after real Survival playtests; the first candidate has no artificial grace but starts with no active pulse.

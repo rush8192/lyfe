@@ -112,13 +112,20 @@ Mutation grants no catalyst matter. At the next phase-5 pre-external barrier, ma
 
 # Light response and throughput
 
-The reaction reads `aquaticLightQ` already derived from solar geometry, cloud, depth, and turbidity in [WORLD_CLIMATE_CALIBRATION.md](WORLD_CLIMATE_CALIBRATION.md). It does not independently reapply any attenuation.
+The reaction reads one habitat light value already derived from solar geometry and cloud in [WORLD_CLIMATE_CALIBRATION.md](WORLD_CLIMATE_CALIBRATION.md). Aquatic habitats additionally apply depth and turbidity there; terrestrial habitats require `WetSurfaceColonization`, use surface light without those aquatic terms, and use the current terrestrial activity factor from [TERRESTRIAL_ADAPTATION.md](TERRESTRIAL_ADAPTATION.md). The reaction never reapplies any of those inputs.
 
 ```text
 baseSaturationLightQ = 0.75
-effectiveLightQ = min(aquaticLightQ, baseSaturationLightQ)
+habitatLightQ = aquaticLightQ
+              | surfaceSolarQ
+effectiveLightQ = min(habitatLightQ, baseSaturationLightQ)
 
-requestedOpportunities = floor(1,500 * effectiveLightQ)
+habitatActivityQ = 1.00
+                 | terrestrialActivityFactorQ
+
+baseRequestedOpportunities = floor(1,500 * effectiveLightQ)
+requestedOpportunities = MulIntByQ(baseRequestedOpportunities,
+                                   habitatActivityQ)
 successfulExtents = KeyedBinomial(
     requestedOpportunities,
     idealSuccessQ = 0.90)
@@ -130,12 +137,13 @@ The hourly parameter compiles proportionally if tick duration changes, while the
 
 ## Shared photosynthetic budget
 
-An organism with both sulfide and oxygenic reactions receives one current `aquaticLightQ` budget:
+An organism with both sulfide and oxygenic reactions receives one current `habitatLightQ` budget:
 
 ```text
-BuildPhotosyntheticPlan(organism, tileView, lightQ):
-    calculate whole sulfide extents supportable by lightQ, H2S, outputs, and quota
-    calculate whole oxygenic extents supportable by lightQ, CO2, outputs, and quota
+BuildPhotosyntheticPlan(organism, tileView, lightQ, habitatActivityQ):
+    calculate the one shared activity-limited photosynthetic opportunity budget
+    calculate whole sulfide extents supportable by that budget, H2S, outputs, and quota
+    calculate whole oxygenic extents supportable by that budget, CO2, outputs, and quota
 
     rank enabled reactions by expected admitted ReserveOrganic per light unit
     break ties by canonical reaction ID
@@ -299,7 +307,7 @@ Recent H2S shortage, poor volcanic access, or energy-starvation deaths may favor
 
 A live tile/species view should expose:
 
-- Current aquatic light and its solar, cloud, depth, turbidity, and saturation components.
+- Current habitat light and its solar, cloud, optional aquatic depth/turbidity, terrestrial activity, and saturation components.
 - Potential, requested, granted, and executed oxygenic extents.
 - CO2 accessibility, requests, grants, and limiting pressure.
 - Reserve output, water-boundary input, and O2 production by species.
@@ -314,7 +322,7 @@ Reduced tiles retain only authorized coarse or last-observed values under the or
 
 - Every extent debits `1 CO2 + 1 H2O`, credits `1 CH2O + 1 O2`, stores one energy, and conserves CHO exactly.
 - No O2 is produced when fixed carbon lacks a reserve, same-tick use, or other declared destination.
-- Zero light, inaccessible CO2, missing Mn/Ca, or missing oxygen tolerance produces zero active extents.
+- Zero light, zero terrestrial activity, inaccessible CO2, missing Mn/Ca, or missing oxygen tolerance produces zero active extents.
 - Quota commissioning promotes existing Mn/Ca without duplication, cannot use same-tick acquisition, and leaves a newly oxygenic sulfur organism targeting the complete 60-unit free reproduction set.
 - The base light curve saturates at `0.75`, never becomes negative, and reproduces `7,772` daily reference extents.
 - Oxygenic and sulfide phototrophy cannot each consume the full light budget in one tick.
@@ -334,7 +342,7 @@ The baseline is sufficiently specified for implementation and coupled simulation
 
 1. Exact `LowLightPhotosystem` and `HighFluxPhotosystem` modifiers, including whether the latter introduces explicit photoinhibition/repair costs.
 2. Whether later world chemistry replaces the linear O2 sink with finite reducing reservoirs, methane oxidation, or threshold behavior. V1 retains the linear sink.
-3. The terrestrial moisture gate and light response once terrestrial adaptation is specified. V1 oxygenic photosynthesis is aquatic.
+3. Executable terrestrial calibration. A `WetSurfaceColonization` organism uses surface solar opportunity without depth or turbidity attenuation, receives full CO2 accessibility, and multiplies requested photosynthetic throughput by its terrestrial activity factor. Boundary water remains inexhaustible but becomes unavailable at zero activity. The paired wet-coast target and seasonal fixtures are normative in [TERRESTRIAL_ADAPTATION.md](TERRESTRIAL_ADAPTATION.md).
 4. Whether a later independent photosystem ancestry should let hydrogen descendants approach water oxidation without first acquiring the sulfide-photo lineage. The v1 adjacency is game-native because scientific reconstructions of the earliest reaction-center and water-oxidation path remain uncertain.
 5. Executable multi-seed producer/anaerobe/respirer validation, which may tune the `1,500`, `0.90`, `0.75`, upkeep, or revised oxygen thresholds together rather than changing one coefficient in isolation.
 
