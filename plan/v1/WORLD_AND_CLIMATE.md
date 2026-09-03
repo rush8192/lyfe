@@ -40,7 +40,7 @@ This separation lets the same biology run on multiple coherent worlds—such as 
 
 The profile owns both one-time generation inputs and ongoing environmental coefficients where the two must remain coherent. For example, atmospheric starting backgrounds, volcanic province frequency, emission rates, attrition, and pulse distributions belong together; so do precipitation normals, initial moisture spin-up, evaporation, and seasonal variability. The compiled profile therefore remains part of immutable `CompiledWorldRules` after generation even though generated fixed tiles become authoritative state.
 
-A profile declares a bounded setup surface using stable typed world-parameter IDs. Initial candidates include dimensions, target aquatic fraction, broad climate volatility, volcanic prevalence/activity, and initial resource richness. Each option has an authored default and allowed range or choice set; the engine applies no hidden fallback. Scenario rules may narrow those choices or require capabilities such as viable paired volcanic-ocean starts.
+A profile declares a bounded setup surface using stable namespaced world-parameter keys. Initial candidates include dimensions, target aquatic fraction, broad climate volatility, volcanic prevalence/activity, and initial resource richness. Each option has an authored default and allowed range or choice set; the engine applies no hidden fallback. Scenario rules may narrow those choices or require capabilities such as viable paired volcanic-ocean starts.
 
 # Numeric and coordinate contract
 
@@ -51,7 +51,7 @@ A profile declares a bounded setup surface using stable typed world-parameter ID
 | Elevation | Signed integer meters | Generated tile centers never use exactly zero: `> 0` land, `< 0` aquatic |
 | Water depth | Derived nonnegative integer meters | `max(0, -elevationMeters)` |
 | Tile-local position | Unsigned normalized `LocalCoordQ` in `[0, 2^32)` | No physical-distance claim in v1 |
-| Tile-local velocity | Signed fixed-point tile fractions per hour | Exact encoding belongs to the movement pass |
+| Tile-local velocity | Signed 64-bit `LocalCoordQ` units per simulated hour | Movement applies configurable tick duration with checked wide intermediates |
 | Temperature | Signed milli-degrees Celsius | Environmental curves convert explicitly to `RatioQ` |
 | Precipitation | Nonnegative integer micrometers of water per hour | A rate, distinct from surface moisture |
 | Moisture, cloud, turbidity, volcanism, insolation | `RatioQ`, normally `[0, 1]` | Any domain permitted above one must declare that separately |
@@ -288,7 +288,7 @@ UpdateCurrentConditions(world, nextTick):
     publish one immutable current-condition view for phases 2 through 10
 ```
 
-Current-condition derivation consumes no mutable global random stream and is independent of worker count. Completed saves retain the materialized current condition values and generation used by downstream phases, in addition to the seed, tick, baselines, rule version, moisture state, and active volcanic pulses. Load validates rather than silently replaces those values; see [MATERIALIZED_DERIVED_STATE.md](MATERIALIZED_DERIVED_STATE.md).
+Current-condition derivation consumes no mutable global random stream and is independent of worker count. Saves retain the seed, tick, baselines, rule version, moisture history/state, active volcanic pulses, and other non-reconstructable inputs. Current-condition tables remain stored runtime materializations: a save may carry a compatible cache, or the sole climate owner rebuilds the complete table before load validation and publication; see [MATERIALIZED_DERIVED_STATE.md](MATERIALIZED_DERIVED_STATE.md).
 
 Current raw/stateful conditions are held in dense field-major tile columns. After climate/resource phases establish their inputs, the engine builds compact tile-only physiology, acquisition, and movement views once per affected tile and reuses them for all organisms there. DNA- or organism-specific stress, health, and opportunity remain organism-kernel calculations rather than a species-by-tile cache. The storage layout and invalidation contract are defined in [RESOURCE_STORAGE_AND_EVALUATION.md](RESOURCE_STORAGE_AND_EVALUATION.md).
 

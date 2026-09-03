@@ -50,7 +50,7 @@ Design a versioned envelope containing message type, request/correlation ID wher
 - Clock/status updates.
 - Errors, backpressure warnings, and graceful shutdown.
 
-Resource and energy quantities are authoritative signed 64-bit integers. Protocol schemas must preserve their exact values; JavaScript clients must not coerce them into an unsafe IEEE-754 `number`. The protocol/code-generation decision must establish whether these fields arrive as `bigint`, strings, or generated long wrappers.
+Resource, energy, ID, tick, revision, and other authoritative 64-bit quantities must preserve exact values. Protocol Buffer bindings expose them as C# `long`/`ulong` and TypeScript `bigint`; JavaScript clients must not coerce them into an unsafe IEEE-754 `number`. JSON diagnostics or HTTP shapes encode unbounded 64-bit quantities as canonical decimal strings. Presentation code may convert a separately range-checked/scaled display value to `number`.
 
 Connection/world metadata carries the base pack, ordered balance-mod package identities, mod-set hash, world-pack/profile/options identity, compiled-world-profile hash, final mechanics/presentation/world-rules hashes, certification status, and engine-vocabulary compatibility required by the client. Definition/explanation metadata is scoped by that final identity. A client never assumes that official balance or world-profile values remain valid merely because stable definition IDs match.
 
@@ -83,8 +83,10 @@ ReceiveCommand(connection, message):
     validate mode, control, and expected state
     assign command ID and deterministic order
     enqueue for a safe simulation boundary
-    acknowledge accepted application tick or rejection
+    acknowledge queue admission, then publish applied or rejected boundary result
 ```
+
+Queue admission is not authoritative application. An applied result identifies the command, application tick, resulting world revision, and current durability state. Under the v1 persistence contract it means the running world accepted the command, not that a write-ahead log or save already made it crash-durable. Retries use an actor-scoped client command ID; the exact retention window and duplicate-result cache are fixed with the first command schema.
 
 The first speciation command carries ancestor species ID, expected evolution revision, expected genome hash, explicit new trait IDs, one to four selected tile IDs, and the permitted sandbox follow-descendant preference. Its preview and rejection payloads expose the typed reasons defined in [EVOLUTION.md](EVOLUTION.md), exact founder counts, price, complexity, cooldown boundary, activation warnings, and resulting attribute/cost provenance. For a material-dependent proposal, the preview also exposes the authorized named-resource stock/flow inputs, replacement demand, local opportunity, and whether the selected founding cohort materially overshoots the estimated niche; this remains a warning rather than a validity gate. Autonomous phase-10 decisions enqueue the same semantic command for next-boundary application rather than mutating species state through a private path.
 

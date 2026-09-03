@@ -1,6 +1,6 @@
 # Validation, Testing, and Performance
 
-Status: test taxonomy and extensive subsystem invariants defined; benchmark contract, state hash, CI policy, and production scenario implementations remain
+Status: test taxonomy, subsystem invariants, state-hash contract, and staged benchmark approach defined; CI policy, benchmark thresholds, and production scenario implementations remain
 
 Sources: all vision documents, [technology decisions](TECHNOLOGY.md), [rule-pack authoring and compilation](RULE_PACK_AUTHORING_AND_COMPILATION.md), and [moddability](MODDABILITY.md).
 
@@ -13,7 +13,7 @@ Define how v1 proves biological rules, mass balance, deterministic replay, proto
 ## Unit tests
 
 - Strict rule parsing, source-mapped diagnostics, typed registries/tombstones, reference resolution, normalization, canonical hashes, and full deterministic phenotype compilation.
-- Mod-parameter registry generation, policy/shape/unit checks, expected-base-value checks, canonical disjoint-overlay composition, dependency validation, and duplicate-writer rejection.
+- Mod-parameter catalogue generation, stable-key uniqueness, policy/shape/unit checks, expected-base-value checks, canonical disjoint-overlay composition, dependency validation, and duplicate-writer rejection.
 - World-pack manifest/profile parsing, closed algorithm/reference validation, world-parameter option bounds, scenario/profile constraint intersection, canonical profile hashing, and complete-record enforcement.
 - Trait validation and compiled effects.
 - Resource composition expansion, transfers, and statically balanced reactions.
@@ -108,12 +108,12 @@ Define how v1 proves biological rules, mass balance, deterministic replay, proto
 
 ## Execution and storage tests
 
-- Exactly one `WorldRunner` can hold a working transaction; server, projection, persistence, and phase workers cannot acquire mutable store access.
-- A deliberate failure in every tick phase discards private pages and leaves the prior completed root, IDs, counters, ledgers, events, locators, and hash unchanged.
-- Retained save/publication handles never observe later mutations, and pooled pages cannot be reused until every lease is released.
+- Exactly one `WorldRunner` can own phase/tick mutation; server, projection, persistence, and phase workers cannot acquire mutable store access.
+- A deliberate preflight failure in every tick phase applies no phase mutation. A deliberate unexpected failure after mutation begins faults the in-memory world and never publishes or saves the partial boundary; restart from the last durable checkpoint is deterministic.
+- Detached save/publication snapshots never observe later mutations, and background consumers cannot retain mutable simulation arrays.
 - Stable entity IDs are never reused; canonical creation ordering is invariant under worker completion and dense layout.
-- Every present row and paged locator round-trips exactly after append, swap removal, death/remnant creation, migration, compaction, and save/load.
-- Rebuilding declared structural spatial indexes produces the same queries as an uninterrupted maintained instance; completed gameplay aggregates/materializations load byte-identically and validate rather than being silently rebuilt.
+- Every present row and standard typed locator round-trips exactly after append, swap removal, death/remnant creation, migration, compaction, and save/load.
+- Rebuilding declared locators and structural spatial indexes produces the same queries as an uninterrupted maintained instance; pure gameplay materializations accepted from a compatible cache or rebuilt through their owners produce identical values and state hashes.
 - Slow/failing clients, encoders, metrics sinks, and save destinations do not alter tick scheduling or authoritative results beyond bounded capture cost.
 - Lifecycle and shutdown failure injection exposes either the old or new completed transaction, never a partial boundary.
 - Dense organism resource handles resolve to the correct stable resource/group, and no two admitted internal processes spend the same free quantum.
@@ -124,7 +124,7 @@ Define how v1 proves biological rules, mass balance, deterministic replay, proto
 - Phase-specific tile effective views match direct formula evaluation and invalidate on every declared climate, stock, and fixed-access dependency.
 - Equivalent domain DNA compiles to identical typed numerical profiles, dense handles, process order, provenance, and hashes; organism ticks never traverse trait definitions.
 - Every gameplay-relevant derived field has one registered owner/dependency set; a dirty or generation-mismatched read fails rather than lazily recalculating.
-- Stored tile, organism, and species materializations match independent debug oracles, enter completed hashes/diffs/saves as declared, and survive load without silent replacement.
+- Stored tile, organism, and species materializations match independent debug oracles, enter completed hashes/diffs as declared, and produce identical values/hashes whether load accepts a compatible cache or invokes the sole owner rebuild.
 - Reproduction, behavior, mutation income, autonomous evolution, events, explanations, and client projections read the same stored `endHealthQ` rather than evaluating health independently.
 
 ## State synchronization tests
@@ -180,9 +180,9 @@ Define how v1 proves biological rules, mass balance, deterministic replay, proto
 - Decision summaries, alerts, automatic pause boundaries, consequence reviews, and canonical notable events replay identically and disclose only actor-authorized evidence.
 - Every immediate opening proposal produces a relevant observable difference within its authored consequence window unless its preview identified the realized environmental blocker; the common 168-hour review still emits even where a slower intent-specific landmark remains pending.
 
-# Representative performance benchmark
+# Staged performance validation
 
-Begin with the workload defined in [TECHNOLOGY.md](TECHNOLOGY.md): approximately 100,000 organisms across several hundred tiles with metabolism, movement, reproduction, death, remains, atmospheric exchange, resource histories, save/reload, state hashing, and representative protocol encoding.
+Begin with the Stage-A walking skeleton defined in [TECHNOLOGY.md](TECHNOLOGY.md), then grow the same executable path rather than building a separate microbenchmark. Stage B uses the default grid and approximately `10,000` organisms with opening-game systems and a real client synchronization path. Stage C adds clustered `50,000` and `100,000` organism workloads, parallel execution, representative histories, save/reload, and protocol encoding. The largest case validates headroom; it is not prerequisite ceremony before the architecture can receive useful feedback.
 
 Record:
 
@@ -194,7 +194,7 @@ Record:
 - Save size/time and load time.
 - Snapshot/delta encoding size and time.
 - Dirty-tracking cost and density, projection materialization/coalescing time, bytes by operation type, per-stream retention memory, client atomic-apply time, normalized-index repair time, PixiJS buffer upload, and React notifications per committed batch.
-- Bytes copied per transactional page group, page-pool high-water mark, locator cost, chunk occupancy/slack, tile-partition migration cost, retained-root lease overhead, and tile-partitioned versus global-SoA comparison under uniform and clustered populations.
+- Boundary snapshot-copy bandwidth, dictionary-locator cost, chunk occupancy/slack, tile-partition migration cost, and tile-partitioned versus global-SoA comparison under uniform and clustered populations.
 - Row-major versus tile-chunk resource-major organism balances, dense-core versus synthetic hybrid occupancy, mixed-row phenotype lookup versus derived tile/species cohorts, resource-major versus tile-major stock matrices, and per-organism versus once-per-tile environmental transforms.
 - Client frame time, visible entity count, and update cost.
 
@@ -238,7 +238,7 @@ C# is reconsidered only after representative profiling shows that the managed ru
 - [x] Balance-mod validation, composition laws, compatibility identity, and certification boundary; concrete generated test cases remain implementation work. See [MODDABILITY.md](MODDABILITY.md).
 - [x] Closed-schema world-pack/profile validation, option, identity, deterministic-generation, and certification boundary; representative external profiles and expanded seed suites remain implementation work. See [MODDABILITY.md](MODDABILITY.md) and [WORLD_AND_CLIMATE.md](WORLD_AND_CLIMATE.md).
 - [ ] Resource-conservation oracle.
-- [ ] State-hash definition.
+- [x] `WorldStateHashV1` algorithm, logical inclusion/exclusion rules, canonical ordering, load verification, and cadence; concrete field tags and golden vectors remain scaffold work. See [PERSISTENCE_AND_REPLAY.md](PERSISTENCE_AND_REPLAY.md).
 - [x] State-change/projection correctness taxonomy and merge-law requirements; concrete property-test generators and performance thresholds remain open. See [STATE_CHANGE_AND_CLIENT_SYNC.md](STATE_CHANGE_AND_CLIENT_SYNC.md).
 - [x] World ownership/failure and entity identity/storage test contracts; concrete benchmark thresholds remain open. See [WORLD_EXECUTION_AND_OWNERSHIP.md](WORLD_EXECUTION_AND_OWNERSHIP.md) and [ENTITY_IDENTITY_AND_STORAGE.md](ENTITY_IDENTITY_AND_STORAGE.md).
 - [ ] Benchmark world/rule pack.

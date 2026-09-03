@@ -157,7 +157,7 @@ A scenario references founding genomes, available setup choices, deadline, tick 
 
 # Moddable source boundary
 
-The official base pack is ordinary rule data, not a hard-coded exception. Authoring members opt into `BalanceOverride` or `PresentationOverride` through permanent generated mod-parameter identities; unmarked fields default to full-pack-only. A `RuleSourceSet` flattens disjoint, exact-base-targeted replacements before semantic validation, normalization, hashing, global compilation, and DNA compilation. The final compiled value remains the single runtime truth, whether or not an overlay supplied it.
+The official base pack is ordinary rule data, not a hard-coded exception. Authoring members opt into `BalanceOverride` or `PresentationOverride` through stable generated namespaced keys; unmarked fields default to full-pack-only. A `RuleSourceSet` flattens disjoint, exact-base-targeted replacements before semantic validation, normalization, hashing, global compilation, and DNA compilation. The final compiled value remains the single runtime truth, whether or not an overlay supplied it.
 
 The complete overlay and world-pack schemas, conflict rejection, certification split, save/protocol identity, client requirements, and future content/code-mod boundary are defined in [MODDABILITY.md](MODDABILITY.md).
 
@@ -421,6 +421,7 @@ SimulationCompatibility:
     worldRulesHash
     rngAlgorithmId
     rngSchemaVersion
+    rngDomainManifestHash
 ```
 
 `worldRulesHash` combines the final flattened mechanics identity with the normalized scenario, selected world-package/profile identity, compiled world-profile semantics, and player-selected options. A load also verifies the base/mod and world-package provenance. A matching display version string is insufficient. There is no silent recompile-and-continue under changed semantics. Explicit migration tools may be designed later and must create an auditable new compatibility boundary.
@@ -527,7 +528,7 @@ run-fixtures <pack>
 
 The server loads one validated immutable flattened rule set—an official base pack plus zero or more installed balance mods—and discovers compatible installed world packs before creating/loading a world. World creation binds a scenario, exactly one complete world profile, and normalized options. The `WorldRunner` receives only `CompiledWorldRules` and immutable phenotype handles; it cannot access source, overlay, or world-pack files or reload content.
 
-V1 release bundles include the base source JSON, the official world pack/profile, generated schemas, `rules.lock.json`, engine-vocabulary/mod/world-parameter locks, and manifest hashes. Local balance-mod and world-pack bundles carry their own source and package identity. A compiled binary cache is unnecessary initially. If startup compilation later becomes material, a cache must be tagged with every base/mod/world-profile/final compatibility identity, validated against the logical compiled hash, and remain disposable.
+V1 release bundles include the base source JSON, the official world pack/profile, generated schemas, `rules.lock.json`, engine-vocabulary locks, generated mod/world-parameter catalogues, and manifest hashes. Local balance-mod and world-pack bundles carry their own source and package identity. A compiled binary cache is unnecessary initially. If startup compilation later becomes material, a cache must be tagged with every base/mod/world-profile/final compatibility identity, validated against the logical compiled hash, and remain disposable.
 
 # Rule-pack diff and author workflow
 
@@ -607,24 +608,22 @@ Formatting may reorder object properties consistently but cannot reorder semanti
 
 # Initial implementation sequence
 
-1. Add typed definition IDs/stable keys, the explicit active/tombstoned registry lock model, and permanent mod-parameter identities/policies.
-2. Define the base-pack, balance-mod, and world-pack manifests; strict serializer options; source-map reader; core authoring records; and closed tagged unions.
-3. Generate and commit the first JSON schemas; add schema/contract drift tests.
-4. Implement canonical diagnostics, typed registry construction, reference resolution, lock checking, and immutable disjoint-field mod-set composition.
-5. Implement normalization and the versioned canonical hash writer with golden vectors.
-6. Implement the first vertical registry slice: core resources, reservoirs/capacity groups, one founding reaction, required attributes/cost channels, and one founder genome.
-7. Compile global dense manifests, reactions, trait DAG/effects, curves, and bounds for that slice.
-8. Implement full deterministic phenotype compilation and explanation provenance.
-9. Expand the rule files and validators subsystem by subsystem until both current founders and the complete opening rule set compile.
-10. Load and validate one complete world profile against the compiled rules, then bind scenario/profile/options into `CompiledWorldRules`, save its compatibility identity, and run existing authoring fixtures through compiled values.
-11. Add `validate`, `lock`, `describe-mod-surface`, `validate-mod`, `validate-world-pack`, `diff`, `diff-world-profile`, `generate-preview`, `explain-genome`, and `run-fixtures` CLI workflows.
-12. Only then begin the representative tick vertical slice, so kernels consume real compiled contracts rather than temporary hard-coded constants.
+1. Add typed definition IDs/stable keys for the minimum slice, the active/tombstoned definition lock model, and stable namespaced mod/world-parameter keys and policies.
+2. Define strict serializers and the smallest base-pack/world-pack records needed for one resource set, one founding reaction, one founder genome, one tile, and one scenario.
+3. Implement normalization, canonical diagnostics, definition-reference resolution, the versioned rule/world hash writers, and golden vectors for that slice.
+4. Compile those records into real dense resource/reaction handles and one complete `CompiledPhenotype`; do not introduce temporary kernel constants that bypass compilation.
+5. Build a scalar one-tile tick walking skeleton that loads those compiled artifacts, applies one mass-balanced reaction, advances one organism, emits a logical change set, and produces a canonical world-state hash.
+6. Add detached save/load and a direct authorized projection snapshot to prove the persistence and server boundaries before either format is made elaborate.
+7. Expand schemas, registries, validators, phenotype profiles, and kernels together one subsystem at a time, keeping each new vertical slice executable and deterministic.
+8. Add balance-overlay and alternate-world-package composition through the already-defined source-selection seam after the official source path works; mod/world packages remain first-class inputs, but polished tooling is not a prerequisite for the first tick.
+9. Grow CLI workflows as their underlying capability lands: begin with `validate` and `run-fixtures`, then add lock/diff/describe/mod/world-preview commands.
+10. Reach both founders and the complete opening rule set before calling the biological foundation complete, then run the existing authoring fixtures entirely through compiled values.
 
 # Remaining implementation inputs
 
-- Concrete permanent numeric assignments for the current definition, RNG-domain, outcome, creation, event, and journal registries.
-- Concrete permanent assignments and policies for the first mod-parameter registry.
-- Concrete permanent assignments for the closed world-parameter/algorithm registry and the first official world-pack manifest/profile key.
+- Concrete permanent numeric assignments for definitions and those RNG, creation, command/event, protocol, and hash vocabularies that cross durable compatibility boundaries. Internal-only evaluator outcomes and change-journal discriminators begin as ordinary code enums.
+- Concrete stable namespaced keys and policies for the first mod-parameter catalogue.
+- Concrete stable namespaced keys for the closed world-option catalogue, numeric IDs only for registered generator algorithms that enter persisted engine semantics, and the first official world-pack manifest/profile key.
 - Exact C# authoring/runtime record shapes as the first catalogue slice is encoded.
 - Pack parser byte/depth/count/string limits and the diagnostic ceiling.
 - Canonical hash record/field tag assignments and initial golden vectors.

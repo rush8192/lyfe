@@ -45,7 +45,7 @@ After the representative profile exists:
 - prefer tile-level work because resources, spatial interactions, and organisms are tile-owned;
 - retain owner-thread resolution/commit initially;
 - introduce parallel reducers or disjoint-page commit only if those exact steps become bottlenecks and equivalence tests remain exhaustive;
-- keep world-level command admission, stable ID assignment, root swap, and publication sealing owner-only.
+- keep world-level command admission, stable ID assignment, boundary sealing, and publication capture owner-only.
 
 The runtime worker count and partition size are operational configuration, not authoritative state. They do not enter saves, RNG addresses, events, state hashes, or protocol values.
 
@@ -104,7 +104,7 @@ PhaseViewStamp:
     rulesHash
 ```
 
-`SealPhaseReadView` exposes immutable pages and completed materializations valid for that phase. A worker cannot acquire writable spans, retain a view after the barrier, load newer working state, or ask a projector/client for data.
+`SealPhaseReadView` exposes read-only spans/tables and completed materializations valid for that phase. The owner does not mutate their backing arrays until all evaluators return. A worker cannot acquire writable spans, retain a view after the barrier, load newer working state, or ask a projector/client for data.
 
 Every outcome repeats the minimum view stamp needed to reject stale or cross-phase buffers. Release builds may validate one shared buffer stamp rather than each record; debug builds can validate both.
 
@@ -321,7 +321,7 @@ Examples remain:
 - predation remnant: external-resolution phase, tile, prey organism;
 - descendant species: accepted command replay order, ancestor species, speciation ordinal.
 
-A failed or rejected creation consumes no ID. A later failed phase discards the entire tick fork, including tentative counter changes, so replay from the prior completed root assigns the same IDs.
+A failed or rejected creation consumes no ID. If a later unexpected defect faults a partially committed tick, none of its IDs are published or saved; replay from the last durable checkpoint assigns the same IDs. V1 does not preserve a rollback root solely to reclaim them in the invalid in-memory instance.
 
 # Preflight and authoritative commit
 
@@ -358,13 +358,13 @@ The initial commit is single-owner and applies records in canonical semantic cat
 
 Each successful internal phase seals a phase-local journal in canonical logical order. Journals from phases `0..11` merge in phase order into the tick journal. The journal identifies what changed; it is not a replay log and cannot substitute for primary state or events.
 
-Only after the full working tick validates and its root swaps atomically does the server expose the completed view and sealed `TickChangeSet`. Projection and client batching may lag or coalesce without altering reduction or commit.
+Only after the full tick validates and the owner seals its boundary does the server expose a detached publication snapshot and sealed `TickChangeSet`. Projection and client batching may lag or coalesce without altering reduction or commit.
 
 # Errors, cancellation, and diagnostics
 
 - A worker catches/returns a structured failure tagged with its logical work key. The runner reports the failure with the smallest canonical key as primary and may retain the others diagnostically; completion time does not choose the visible cause.
-- Any worker, coverage, stale-view, reduction, preflight, materialization, conservation, or commit failure discards the entire working tick.
-- Shutdown/cancellation during worker evaluation discards the working tick and stops at the prior completed root. Retrying the tick evaluates the same addresses and outcomes.
+- A failure before the current phase commits changes no state for that phase. Any failure after earlier phases committed faults and invalidates the in-memory world; no partial tick is published or saved.
+- Graceful shutdown/cancellation is honored before a tick or during an evaluation phase before any phase commit. After mutation begins, the tick finishes or the process is forcibly terminated and later recovers from its last durable checkpoint.
 - Operational deadlines may report that the configured speed cannot be sustained, but they cannot skip work or partially commit a phase.
 - Diagnostic counters merge separately from semantic outputs and may vary in timing/partition detail; canonical outcome totals must not.
 - Logs, tracing, and metrics receive no writable state and invoke no RNG.
@@ -400,7 +400,7 @@ Per phase record:
 - buffer capacity/high-water mark and allocations;
 - bytes sorted and number/size of conflict groups;
 - exact-reduction and keyed-rank counts;
-- copied transactional pages and dirty fields;
+- dirty fields plus save/publication snapshot-copy bytes when captured;
 - scalar versus enabled-worker speedup and total server throughput under projection load.
 
 Do not enable complex reducers merely because evaluation scales in a microbenchmark. The relevant result is end-to-end tick capacity with server/client synchronization active.
@@ -418,7 +418,7 @@ Do not enable complex reducers merely because evaluation scales in a microbenchm
 - Mutual/multiple predation produces the same deaths, feeding exclusions, grants, triggers, and single remnants under every schedule.
 - Movement/migration preserves identity and balances under arbitrary swap-removal/append slots.
 - Rejected creations consume no IDs; accepted IDs follow creation-key order and survive save/load replay.
-- A failure injected in evaluation, reduction, preflight, commit, materialization, or final validation publishes nothing and restores the prior completed root.
+- A failure injected in evaluation, reduction, preflight, commit, materialization, or final validation publishes nothing; pre-commit failures leave that phase untouched, while post-mutation failures fault the in-memory world and require checkpoint recovery.
 - Client subscriptions, projection load, save activity, logging, and metrics do not change any semantic result.
 - Parallel activation can be disabled without changing a save's future or RNG outcomes.
 

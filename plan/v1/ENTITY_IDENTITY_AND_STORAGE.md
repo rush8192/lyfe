@@ -1,18 +1,18 @@
 # Entity Identity and Authoritative Storage
 
-Status: first v1 physical-layout contract with sane starting defaults; alternate chunk sizes and dense-versus-sparse specializations are gated on representative profiling
+Status: first v1 physical-layout contract with simple owner-mutable storage defaults; copy-on-write, custom locators, alternate chunk sizes, and dense-versus-sparse specializations are gated on representative profiling
 
 Sources: [authoritative data model](DATA_MODEL.md), [world execution and ownership](WORLD_EXECUTION_AND_OWNERSHIP.md), [state change and client synchronization](STATE_CHANGE_AND_CLIENT_SYNC.md), [resource model](RESOURCE_MODEL.md), [resource storage and evaluation](RESOURCE_STORAGE_AND_EVALUATION.md), [organism state and health](ORGANISM_STATE_AND_HEALTH.md), and [spatial organisms](SPATIAL_ORGANISMS_AND_BEHAVIOR.md).
 
 # Purpose
 
-Define stable identity, physical state layout, lookup and compaction, transactional world versions, tile/spatial indexes, optional organism state, and the boundary between primary state, stored gameplay materializations, rebuildable structural indexes, saves, and client projections.
+Define stable identity, physical state layout, lookup and compaction, tile/spatial indexes, optional organism state, detached boundary snapshots, and the boundary between primary state, stored gameplay materializations, rebuildable structural indexes, saves, and client projections.
 
 # Design priorities
 
 In order:
 
-1. preserve deterministic and atomic world semantics;
+1. preserve deterministic computation and boundary-atomic external visibility;
 2. make whole-population and tile-local hot loops contiguous and allocation-light;
 3. preserve stable identity across movement, compaction, save/load, and protocol sync;
 4. make state mutation and change capture inseparable;
@@ -43,7 +43,7 @@ EntityRef:
     uint64 value
 ```
 
-Protocol fields remain typed wherever possible. A generic reference carries both kind and value. JavaScript bindings must preserve `uint64` exactly as `bigint`, string, or a generated long wrapper.
+Protocol fields remain typed wherever possible. A generic reference carries both kind and value. TypeScript Protocol Buffer bindings preserve `uint64` exactly as native `bigint`; JSON-only representations use canonical decimal strings.
 
 ## ID rules
 
@@ -69,41 +69,15 @@ AssignIds(intents):
         intent.id = ++counterFor(intent.entityType)
 ```
 
-# Transactional world versions
+# Owner-mutable world and boundary snapshots
 
-The authoritative root is a directory of page/chunk handles plus small scalar state:
+V1 stores one ordinary mutable world behind the exclusive `WorldRunner`. Tile columns, organism/remnant chunks, species records, histories, and indexes may use separate arrays by access pattern, but they are not required to participate in a generic page-root or copy-on-write framework.
 
-```text
-WorldVersionRoot:
-    worldMetadataPage
-    tilePages
-    organismPartitionsByTile
-    remnantPartitionsByTile
-    speciesPages
-    genomePages
-    locatorPagesByEntityType
-    resourceAndEdgePages
-    historyPages
-    actorKnowledgePages
-    eventAndLineagePages
-    nextIdCounters
-    completedTick
-    worldRevision
-```
+Parallel evaluators receive sealed read-only phase views and return isolated outcomes. The owner resolves and preflights a complete phase plan before mutating arrays. No server projector, persistence worker, metrics consumer, or client can access those arrays directly, and nothing is published until finalization validates the completed boundary.
 
-At a completed boundary, pages reachable from the completed root are immutable. `BeginTransactionalFork` shallow-copies the root directory and shares pages. The first write to a shared page obtains a pooled page, copies its contents, and updates the working root; further writes during the same transaction mutate that private page.
+Publication and save requests copy their required logical values into detached immutable snapshots while the owner is at a boundary. Background work owns those copies, never a lease on mutable simulation memory. This preserves external atomicity and asynchronous I/O without imposing whole-world MVCC, page pooling, or rollback machinery on the first storage slice.
 
-Success freezes the working pages and atomically replaces the completed root. Failure releases private working pages and leaves the old root untouched. Save/publication handles retain immutable page references with bounded leases.
-
-This coarse copy-on-write transaction is the initial choice because it simultaneously provides:
-
-- true failed-tick discard without a fragile inverse/undo path;
-- immutable save and publication views;
-- cheap sharing of cold state and rule definitions;
-- mutation-local dirty metadata;
-- a clear single-writer implementation.
-
-Hot organism/resource pages may be copied nearly every tick. Pages therefore come from typed pools, avoid per-row objects, and are sized through the representative benchmark. If copy bandwidth prevents the target tick rate, the comparison must include double-buffered hot columns and a checked undo journal before weakening atomicity.
+An unexpected failure after a phase commits invalidates the in-memory world and faults the runner. V1 recovers from the latest durable save/checkpoint rather than rolling back in process. A copy-on-write root, double buffering, or checked undo journal is a future option only if measured snapshot pauses or a concrete availability requirement justify it.
 
 # Tile storage
 
@@ -111,10 +85,10 @@ The generated world has a fixed tile count and topology. `TileId` is the stable 
 
 Tile data is split by update behavior:
 
-- `TileFixedPage`: coordinate, elevation/depth, substrate/lithology, climate baselines, neighbor IDs, and other generation-fixed facts.
-- `TileConditionPage`: current temperature, precipitation, moisture, insolation, cloud/turbidity, volcanism, and condition remainders.
-- `TileResourcePage`: dense resource-major matrices indexed by compiled tile-reservoir slot and `TileId`, physically paged/grouped by reservoir and measured mutation behavior.
-- `TileHistoryPage`: fixed rings/rolling totals required by simulation decisions.
+- `TileFixedColumns`: coordinate, elevation/depth, substrate/lithology, climate baselines, neighbor IDs, and other generation-fixed facts.
+- `TileConditionColumns`: current temperature, precipitation, moisture, insolation, cloud/turbidity, volcanism, and condition remainders.
+- `TileResourceColumns`: dense resource-major matrices indexed by compiled tile-reservoir slot and `TileId`, grouped by reservoir and access behavior.
+- `TileHistoryColumns`: fixed rings/rolling totals required by simulation decisions.
 - `TileMembershipDirectory`: handles for living-organism and remnant partitions.
 
 Frequently iterated tile properties use columns indexed by `TileId`, not a graph of tile objects. The four canonical neighbor IDs are compiled once; wrapped `x`, bounded `y`, and edge compatibility are not rediscovered in hot loops.
@@ -162,7 +136,7 @@ The benchmark must compare this to one global chunked SoA plus tile membership v
 
 # Locator tables and dense slots
 
-Monotonic world-local IDs permit a paged direct locator rather than a large object dictionary:
+V1 begins with standard typed dictionaries from live stable IDs to dense locations:
 
 ```text
 EntityLocation:
@@ -171,14 +145,14 @@ EntityLocation:
     chunkIndex
     rowIndex
 
-PagedLocator<OrganismId, EntityLocation>
-PagedLocator<RemnantId, EntityLocation>
-PagedLocator<SpeciesId, DenseLocation>
+Dictionary<OrganismId, EntityLocation>
+Dictionary<RemnantId, EntityLocation>
+Dictionary<SpeciesId, DenseLocation>
 ```
 
-The ID value selects a locator page and offset. Unallocated/dead IDs retain an absent sentinel. Locator pages are part of the transactional runtime root and use the same copy-on-write rules. They are logically redundant in the durable format: a save may serialize and verify them as an acceleration structure or omit them and deterministically rebuild them from entity rows before publication.
+Locators contain only currently live/present entities, are never enumerated for semantic order, and are logically redundant in the durable format. Loads deterministically rebuild them from entity rows. A segmented/direct locator is considered only if measured lookup CPU or dictionary memory materially limits the representative workload; monotonically increasing IDs alone do not justify allocating entries for every historical dead organism.
 
-Dense slots are ephemeral locations. Every move, append, and swap removal updates the relevant locator in the same typed transaction.
+Dense slots are ephemeral locations. Every move, append, and swap removal updates the relevant locator in the same owner-only structural operation.
 
 ```text
 RemoveOrganism(id):
@@ -191,7 +165,7 @@ RemoveOrganism(id):
         organismLocator.Set(tail.id, victim.location)
 
     partition.RemoveLast()
-    organismLocator.SetAbsent(id)
+    organismLocator.Remove(id)
     changes.RecordRemove(id)
 ```
 
@@ -238,7 +212,7 @@ The first prototype keeps the bounded common v1 slots dense per compatible group
 
 # Optional and capability-specific organism state
 
-Do not place every possible late-game field in every organism row. Optional state uses typed component stores keyed by stable organism ID, each with its own dense rows and paged locator:
+Do not build a generic optional-component framework for the first vertical slice. Keep confirmed compact v1 fields in the ordinary organism column groups. When a concrete capability has genuinely large, rare state—and representative profiles show that widening every row is material—add one explicit typed side store keyed by stable organism ID. Likely candidates are:
 
 - history-using behavior pressure memory;
 - bounded metabolic-binding cohorts when the common inline representation is wasteful;
@@ -246,7 +220,7 @@ Do not place every possible late-game field in every organism row. Optional stat
 - advanced predation/hunting state beyond common behavior target fields;
 - future reproduction or multicellular state.
 
-An optional component may exist only when the compiled DNA/lifecycle capability requires it. Trait activation, speciation, and lifecycle transitions create/remove/migrate components through canonical commit operations. Component absence is a typed logical state, not a null object reference followed in a hot loop.
+Such a side record may exist only when the compiled DNA/lifecycle capability requires it. Trait activation, speciation, and lifecycle transitions create/remove/migrate it through canonical commit operations. Absence is typed logical state, not a null object reference followed in a hot loop. Each concrete store may use the standard organism locator first; it does not require a miniature ECS lifecycle or its own custom paged locator.
 
 Small fields used by nearly all founders remain in the core chunk even if conceptually optional; the benchmark, not aesthetic purity, sets this boundary.
 
@@ -304,29 +278,28 @@ Every non-primary structure declares an owner, dependencies, and lifetime. Gamep
 | Protocol projection | Per stream revision | Server-only from change journal and immutable publication values |
 | Save locator/index validation | Load boundary | Rebuild/verify from canonical rows |
 
-Completed gameplay materializations enter save/hash/change capture according to [MATERIALIZED_DERIVED_STATE.md](MATERIALIZED_DERIVED_STATE.md). Scratch arenas and pooled buffers belong to the runner/phase worker slot, are cleared deterministically, and never enter save, hash, or protocol state. Their capacity may differ without changing outcomes.
+Completed gameplay materializations enter hash/change capture and the explicit save-or-rebuild classification in [MATERIALIZED_DERIVED_STATE.md](MATERIALIZED_DERIVED_STATE.md). Scratch arenas and pooled buffers belong to the runner/phase worker slot, are cleared deterministically, and never enter save, hash, or protocol state. Their capacity may differ without changing outcomes.
 
 # Mutation and change capture
 
 Stores expose typed mutators rather than writable collections. A mutator:
 
 1. resolves the stable ID and validates presence/type;
-2. obtains a private transactional page on first write;
-3. validates arithmetic, capacity, ownership, and phase rules;
-4. changes the authoritative columns;
-5. records the stable ID or dirty chunk under a logical field group;
-6. records resource ledger/event facts where required;
-7. returns no mutable reference that can escape the commit.
+2. validates arithmetic, capacity, ownership, and phase rules already proved by phase preflight;
+3. changes the authoritative columns;
+4. records the stable ID or dirty chunk under a logical field group;
+5. records resource ledger/event facts where required;
+6. returns no mutable reference that can escape the owner.
 
-Structural operations update rows, locators, owner counts, and the `PhaseChangeSet` together. Debug builds compare page mutation epochs/hashes with dirty coverage. This implements [STATE_CHANGE_AND_CLIENT_SYNC.md](STATE_CHANGE_AND_CLIENT_SYNC.md) without making Protocol Buffer fields part of storage.
+Structural operations update rows, locators, owner counts, and the `PhaseChangeSet` together. Debug builds compare store mutation epochs/hashes with dirty coverage. This implements [STATE_CHANGE_AND_CLIENT_SYNC.md](STATE_CHANGE_AND_CLIENT_SYNC.md) without making Protocol Buffer fields part of storage.
 
 # Publication and saves
 
-The completed root is canonical; client projections are not. For a due publication, the runner copies only required authorized-source values into immutable typed publication pages while it holds the completed version. Background projectors transform those pages into actor-specific Protocol Buffer batches.
+The authoritative world is canonical; client projections are not. For a due publication, the runner copies only required authorized-source values into an immutable typed `PublicationSnapshot` at a completed boundary. Background projectors transform that snapshot into actor-specific Protocol Buffer batches.
 
-A full save handle retains the complete completed root. The persistence worker serializes logical stable-ID records and compiled dense resource arrays, never raw C# object memory, page-pool addresses, padding, or transient dirty bits. Save schema order is canonical by entity type and stable ID, so different dense compaction histories yield equivalent saves/hashes.
+A save request copies complete logical stable-ID records and compiled dense resource arrays into a save-owned snapshot. The persistence worker serializes that snapshot, never raw C# object memory, padding, locators, or transient dirty bits. Save schema order is canonical by entity type and stable ID, so different dense compaction histories yield equivalent saves/hashes.
 
-Holding a save/publication version increments page leases. Pools may reuse a page only after every root/handle releases it. Bounded handle counts prevent slow I/O or encoding from retaining unbounded memory.
+Snapshot counts, bytes, and synchronous copy time are bounded. If a save snapshot is already outstanding, additional requests coalesce or fail retryably rather than accumulating copies.
 
 # Memory and range planning
 
@@ -334,12 +307,11 @@ The prototype records at minimum:
 
 - bytes per living organism core row and per optional component;
 - bytes per remnant, species, tile, edge, history, locator entry, and actor;
-- page/chunk occupancy and slack by tile;
-- bytes copied on first write per tick and per phase;
-- pooled page high-water marks and lease age;
+- chunk occupancy and slack by tile;
+- save/publication snapshot bytes and synchronous copy time;
 - spatial scratch and intent/outcome buffer sizes;
 - dirty density by logical field group;
-- save/publication retained-version overhead;
+- save/publication snapshot overhead;
 - GC allocations per tick after warmup.
 
 Large object heap thresholds, array headers, alignment, and generated-code layout must be measured in .NET rather than estimated only from field widths. Pooled arrays are cleared according to data-sensitivity and correctness needs before reuse.
@@ -350,21 +322,19 @@ Large object heap thresholds, array headers, alignment, and generated-code layou
 - No removed ID is ever reallocated.
 - Canonical allocation yields identical IDs across worker counts and dense compaction histories.
 - Swap removal and migration update locators and change journals atomically.
-- Transaction failure leaves the prior completed root, counters, locators, ledgers, events, and hashes unchanged.
-- A retained completed/save/publication handle never observes later mutations.
-- Page pooling cannot reuse a leased page or expose stale live rows.
+- A phase plan is completely preflighted before owner mutation; unexpected post-mutation failure faults the world and publishes/saves none of the partial boundary.
+- A detached save/publication snapshot never observes later mutations.
 - Dense resource vectors conserve the same matter as the logical ledger and never alias charged and spent carriers.
-- Rebuilding declared structural locators and spatial indexes produces identical logical results; stored gameplay materializations are instead loaded and validated against their generations.
+- Rebuilding declared structural locators and spatial indexes produces identical logical results; each gameplay materialization either accepts a complete compatible cache or is rebuilt through its sole owner and produces the same state hash.
 - Save/load and canonical hashing are independent of chunk capacity, page addresses, slack rows, dirty bits, and dense row order where order is not logical.
 - The 100,000-organism benchmark stays within the eventual memory, allocation, copy-bandwidth, tick, save, and publication budgets.
 
 # Prototype decisions still requiring measurements
 
 - Organism/remnant chunk capacity starts at `256` rows; compare another size only if chunk-related measurements justify the experiment.
-- Page granularity for hot spatial, resource, lifecycle, and behavior column groups.
 - Core versus optional placement of behavior memory and metabolic-binding cohorts.
 - Tile-partitioned SoA versus global SoA plus tile membership under uniform and highly clustered populations.
 - Dense resource-vector crossover if the compiled catalogue grows.
-- Locator page size and whether locators are serialized or rebuilt on load.
-- Copy-on-write bandwidth versus double-buffered hot columns under the fastest target speed.
-- Exact pool, retained-version, and background save/publication memory limits.
+- Standard dictionary locator cost versus a segmented/direct locator, only if lookup or memory profiles justify it.
+- Snapshot-copy cost and whether evidence justifies copy-on-write or double-buffered capture later.
+- Exact snapshot, scratch-buffer, and background save/publication memory limits.

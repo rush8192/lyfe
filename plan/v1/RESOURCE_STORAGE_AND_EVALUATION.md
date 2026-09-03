@@ -124,7 +124,7 @@ If that gate is reached, the prototype compares the uniform-`int64` reference ag
 
 ## Chunk and copy behavior
 
-Resource columns share the organism chunk's logical row index but may live in separate copy-on-write page groups from spatial and behavior columns. This lets movement copy/fork spatial pages without automatically copying every micronutrient page, and lets metabolism mutate balance pages without dirtying identity data.
+Resource columns share the organism chunk's logical row index but may live in separate arrays from spatial and behavior columns. This lets movement touch spatial arrays without pulling every micronutrient column into cache, and lets metabolism mark balance fields without dirtying identity data.
 
 Migration copies the organism's complete logical resource row once to the destination tile partition. Whole-tick metabolism greatly outnumbers cross-tile migration, so local hot access is favored over zero-copy migration.
 
@@ -208,7 +208,7 @@ Debug ledger entries are reconstructed from applied transfers. Production does n
 | --- | --- | --- | --- |
 | Map per tile | Flexible | Unnecessary overhead at 544 tiles; poor gas sweeps | Reject |
 | Tile-major dense `[tile][resource]` | Good when consuming many stocks for one tile | Strided world-wide gas/source/transport sweeps | Viable benchmark fallback |
-| Resource-major dense `[resource][tile]` | Excellent source/sink/transport and resource projection; compact COW pages | A tile kernel touches several columns | Selected |
+| Resource-major dense `[resource][tile]` | Excellent source/sink/transport and resource projection; compact contiguous columns | A tile kernel touches several columns | Selected |
 | Blocked 2D/AoSoA | Balances both access directions | More addressing/code complexity | Revisit only if measured catalogue/tiles justify it |
 
 Tile stocks use separate resource-major matrices by reservoir and transport behavior:
@@ -237,7 +237,7 @@ Tile data falls into three categories:
 | Category | Examples | Storage |
 | --- | --- | --- |
 | Fixed/generated | coordinate, elevation/depth, substrate, climate normals, neighbor IDs | Immutable dense columns |
-| Stateful authoritative | surface moisture, volcanic pulse state, source/sink and weather remainders, retained condition histories | Copy-on-write dense columns/rings |
+| Stateful authoritative | surface moisture, volcanic pulse state, source/sink and weather remainders, retained condition histories | Owner-mutable dense columns/rings |
 | Current materialized | temperature, precipitation, cloud, insolation, aquatic light, access factors, phase opportunities | Stored deterministic columns/tables produced once at their named barrier |
 
 Raw/current fields are stored field-major by `TileId`, which is simple for climate generation, transport, projection, and change tracking:
@@ -376,13 +376,13 @@ If dispatch overhead is measurable, reactions may be grouped by kind within a ph
 
 - Saves store logical balances by stable resource ID under a rules hash, not raw dense slot numbers alone. A compact save may include the manifest once and then dense values in its declared canonical slot order.
 - Loading validates the manifest and rebuilds runtime handles/compiled phenotypes before the world can run.
-- Completed gameplay materializations—tile climate/resource-effective state, organism condition/capacity values, and species aggregates—are saved with dependency generations. Tick reservations, claim arenas, tile/species row cohorts, and worker buffers are never saved.
+- Completed gameplay materializations—tile climate/resource-effective state, organism condition/capacity values, and species aggregates—are hashed and may be serialized as complete compatible cache sections; otherwise their sole owners rebuild them before load completes. Historical recurrence inputs are primary and always saved. Tick reservations, claim arenas, tile/species row cohorts, and worker buffers are never saved.
 - Client projections use stable resource IDs and actor-authorized values, never dense internal slot IDs.
 - Reordering compiled runtime slots in a later compatible engine must not change logical state hashes or replay arithmetic; changing the rules manifest/hash is an explicit rules-version decision.
 
 # Measurement and targeted experiments
 
-The representative prototype first implements one complete baseline: uniform-`int64` quantities, `256`-row tile chunks, dense common resources, mixed tile rows with direct phenotype lookup, resource-major tile stocks, stored once-per-tile effective values, and straightforward copy-on-write field groups. It profiles the entire tick, save, projection, encoding, client-apply, and render path before creating alternative storage implementations.
+The representative prototype first implements one complete baseline: uniform-`int64` quantities, `256`-row tile chunks, dense common resources, mixed tile rows with direct phenotype lookup, resource-major tile stocks, stored once-per-tile effective values, ordinary owner-mutable arrays, and detached save/publication snapshots. It profiles the entire tick, save, projection, encoding, client-apply, and render path before creating alternative storage implementations.
 
 The following are candidate targeted experiments only when the baseline identifies their corresponding metric as material:
 
@@ -391,7 +391,7 @@ The following are candidate targeted experiments only when the baseline identifi
 3. Dense common internal slots against a synthetic hybrid at several nonzero densities.
 4. Mixed tile scan with per-row phenotype lookup against derived tile/species cohorts.
 5. Resource-major tile matrices against tile-major matrices for gas transport, all-resource tile claims, and projection capture.
-6. Copy-on-write page groups that combine or separate spatial, common balances, micronutrients, and behavior.
+6. Snapshot-copy cost versus a later copy-on-write or double-buffered capture strategy, only if boundary pause time is material.
 
 Record CPU time, cache misses where tooling permits, bytes copied, allocations, peak memory, branch behavior where available, and code complexity. Run at:
 
@@ -420,7 +420,7 @@ Record CPU time, cache misses where tooling permits, bytes copied, allocations, 
 - Compiler verification of the proposed `47`-slot common organism manifest against the final v1 reaction/acquisition catalogue.
 - Conditional per-group maximum range proof and bounded-width experiment, only if uniform-`int64` organism storage is a measured bottleneck.
 - Whether a measured occupancy or access bottleneck justifies moving any binding-cohort fields out of their simplest starting representation.
-- Whether measured copy bandwidth or chunk occupancy justifies changing the starting `256`-row chunks or straightforward copy-on-write field grouping.
+- Whether measured snapshot-copy bandwidth or chunk occupancy justifies changing the starting `256`-row chunks or owner-mutable field grouping.
 - Exact `TilePhysiologyView`, `TileAcquisitionView`, and `TileMovementView` field lists after the first production kernels exist.
 - Phases in which derived tile/species cohorts outperform simple mixed scans.
 - Maximum compiled processes, reaction inputs/outputs, allocation bands, holdbacks, and binding cohorts used to size scratch without unbounded allocation.

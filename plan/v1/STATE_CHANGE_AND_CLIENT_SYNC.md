@@ -138,29 +138,29 @@ Resource transactions and death-risk records retain their own canonical facts. T
 
 # Tick integration
 
-Every successful phase commit returns a phase-local change set. The tick builder merges these in canonical phase order. A failed phase discards its staged writes and change metadata together, so a partially applied tick can never be published.
+Every successful phase commit returns a phase-local change set. The tick builder merges these in canonical phase order. A failed preflight applies neither its staged writes nor its change metadata. An unexpected failure after any mutation faults the world; in either case a partially applied tick is never published.
 
 ```text
 AdvanceOneTick(world, admittedCommands):
-    transaction = world.BeginTick()
-    changes = TickChangeBuilder(transaction.nextWorldRevision)
+    changes = TickChangeBuilder(world.nextWorldRevision)
 
     for phase in CanonicalPhaseOrder:
-        stableView = transaction.BuildPhaseView(phase)
+        stableView = world.BuildPhaseView(phase)
         outcomes = phase.Evaluate(stableView)       // parallel where allowed
-        phaseChanges = transaction.CommitPhase(
+        phaseChanges = world.PreflightAndCommitPhase(
             phase,
             DeterministicallyMerge(outcomes))
         changes.Merge(phaseChanges)
 
-    transaction.FinalizeHistoriesAndKnowledge(changes)
-    transaction.ValidateInvariants()
-    completed = transaction.CommitAtomically()
-    tickChanges = changes.Seal(completed.tick, completed.worldRevision)
+    world.FinalizeHistoriesAndKnowledge(changes)
+    world.ValidateInvariants()
+    boundary = world.SealCompletedBoundary()
+    tickChanges = changes.Seal(boundary.tick, boundary.worldRevision)
+    publicationSnapshot = CaptureDuePublicationValues(world, tickChanges)
 
-    eventSink.Observe(completed.readView, tickChanges)
-    metricsSink.Observe(completed.readView, tickChanges)
-    projectionHub.Observe(completed.readView, tickChanges)
+    eventSink.ObserveSynchronously(world.completedReadView, tickChanges)
+    metricsSink.Observe(boundary.metrics, tickChanges)
+    projectionHub.Observe(publicationSnapshot, tickChanges)
 ```
 
 The simulation library exposes a completed read view and the internal change set; it does not emit Protocol Buffer objects. Publication is downstream of atomic commit and cannot feed information, timing, subscriptions, or backpressure into later simulation outcomes.
@@ -169,9 +169,9 @@ Change-set ordering and contents must be identical across supported worker count
 
 ## Completed-state lifetime
 
-An asynchronous projector must never retain a view of arrays that the next tick can mutate underneath it. `CommitAtomically` therefore produces the immutable page-root defined in [ENTITY_IDENTITY_AND_STORAGE.md](ENTITY_IDENTITY_AND_STORAGE.md). When publication is due, the runner exports bounded immutable publication-value pages or grants a bounded completed-root lease; no asynchronous consumer receives the working arrays.
+An asynchronous projector must never retain a view of arrays that the next tick can mutate underneath it. At a due completed boundary, the runner therefore copies the necessary projection-source values into bounded immutable `PublicationSnapshot` records; actor authorization is enforced while producing each stream's snapshot, and no asynchronous consumer receives simulation arrays.
 
-The projection hub synchronously captures lightweight stream authorization/invalidation decisions at commit and materializes values from the newest compatible completed boundary according to [WORLD_EXECUTION_AND_OWNERSHIP.md](WORLD_EXECUTION_AND_OWNERSHIP.md). It releases superseded handles promptly. Slow encoders cannot pin unbounded historical world versions: their work is cancelled/coalesced to a newer handle or replaced by a snapshot under the configured memory budget. Socket delivery never holds a world read lease.
+The projection hub synchronously captures lightweight stream authorization/invalidation decisions and owns the detached snapshot according to [WORLD_EXECUTION_AND_OWNERSHIP.md](WORLD_EXECUTION_AND_OWNERSHIP.md). Slow encoders cannot accumulate unbounded snapshots: obsolete work is cancelled/coalesced to a newer capture or replaced by a full snapshot under the configured memory budget. Socket delivery never retains world memory.
 
 # Actor-authorized projection
 
@@ -373,7 +373,7 @@ Snapshots and batches populate the same normalized projection schema. This preve
 The simulation owner never waits on projection, encoding, sockets, acknowledgements, or rendering.
 
 - Every stream has bounded pending-state and outbound-byte budgets.
-- Completed-state read leases and pending encoders have a separate bounded memory/time budget; obsolete projection work is cancelled rather than pinning mutable-world history.
+- Detached publication snapshots and pending encoders have a separate bounded memory/time budget; obsolete projection work is cancelled rather than retaining stale snapshot copies.
 - Before serialization, pending ordinary state invalidations coalesce to the newest absolute values across any number of completed ticks.
 - Ordered retained events and command results use bounded durable/reconnect retention appropriate to their owner; they are not silently collapsed into state.
 - If an encoded delta queue becomes stale, the server may discard unsent state batches and rematerialize one batch from the client's acknowledged base to the newest state.
@@ -398,7 +398,7 @@ Default organism/map update rates, event retention, byte limits, merge CPU budge
 - Every authoritative store mutation produces the expected structural or logical-field dirty mark.
 - Debug shadow hashes catch deliberate unmarked writes.
 - Create, swap removal, tile migration, speciation, death/remnant creation, resource transfer, and knowledge transitions retain stable IDs and correct invalidations.
-- A failed tick publishes no change set or projection and leaves the prior revision valid.
+- A failed tick publishes no change set or projection, leaves the prior client revision valid, and faults the in-memory world if mutation had begun.
 
 ## Projection correctness
 
@@ -446,8 +446,7 @@ Acceptance thresholds are intentionally deferred until the dense storage prototy
 
 These do not block entity identity/storage design, but must be fixed before the first networked vertical slice is complete:
 
-- Exact stable-ID encoding and non-reuse strategy.
-- Structure-of-arrays chunk size and dirty-set representation per store.
+- Dirty-set representation per store and final logical field-group catalogue.
 - Logical field-group catalogue and generated mutation/projection metadata.
 - Protocol Buffer package/version and JavaScript 64-bit mapping.
 - Default projection cadence by interest/zoom and maximum batch/part size.

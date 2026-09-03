@@ -312,7 +312,7 @@ In v1, the first call resolves the tile-wide pool, the second returns no gradien
 # Determinism, save, and protocol implications
 
 - Tile, position, velocity, current behavior, and typed target are authoritative and saved.
-- Stored body radius and its dependency generation are loaded and validated as gameplay materialized state. Spatial index bins are structural indexes and are rebuilt from the loaded positions and stored radii.
+- Body radius is available only from the stored runtime materialization. Load may accept a compatible complete cache or rebuild it through the sole radius owner before spatial bins are rebuilt from positions and radii.
 - Stable IDs, not dense slots or bin offsets, cross save or protocol boundaries.
 - A live tile projection may send exact entity positions. Reduced and unknown projections send no current organisms or remains.
 - Server interest management may change transmission cost but cannot change index construction, sensing, target selection, or simulation outcomes.

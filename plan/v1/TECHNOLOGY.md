@@ -73,7 +73,7 @@ Rules, traits, reactions, scenarios, and balance values cross the one-way cold-p
 
 The same boundary is the supported mod seam. V1 should accept locally installed, declarative balance overlays that replace only explicitly registered fields before whole-pack validation and compilation, plus complete closed-schema world-generation profiles selected during world setup. It does not execute mod code or hot-reload an active world. The exact surface, provenance, conflict, save, client, and future-extension rules are in [MODDABILITY.md](MODDABILITY.md).
 
-The first execution and storage contracts are now specified in [WORLD_EXECUTION_AND_OWNERSHIP.md](WORLD_EXECUTION_AND_OWNERSHIP.md) and [ENTITY_IDENTITY_AND_STORAGE.md](ENTITY_IDENTITY_AND_STORAGE.md): one loaded world has one exclusive runner/writer; ticks use pooled copy-on-write page transactions; organisms/remnants begin in `256`-row tile-partitioned chunked structure-of-arrays stores; stable opaque IDs resolve through paged locators; and phase workers return isolated outcomes for canonical commit. Alternative chunk/page sizes or layouts are considered only after the baseline profile identifies the corresponding bottleneck.
+The first execution and storage contracts are now specified in [WORLD_EXECUTION_AND_OWNERSHIP.md](WORLD_EXECUTION_AND_OWNERSHIP.md) and [ENTITY_IDENTITY_AND_STORAGE.md](ENTITY_IDENTITY_AND_STORAGE.md): one loaded world has one exclusive runner/writer; organisms/remnants begin in ordinary `256`-row tile-partitioned chunked structure-of-arrays stores; live stable-ID lookup begins with standard dictionaries; phase workers return isolated outcomes for owner-only preflight and commit; and saves/publications use detached boundary snapshots. Copy-on-write roots, custom locator paging, and alternative chunk/layout schemes require representative evidence.
 
 ## Determinism and conservation
 
@@ -86,7 +86,7 @@ Deterministic replay and internal mass balance are architectural properties, not
 - Saving and restoring the root seed, RNG algorithm/schema IDs, semantic event ordinals, and rules state required for continuation.
 - The exact base-pack, canonical mod-set, world-pack/profile/options, compiler, final-rules/scenario/world-rules, and RNG compatibility identities stored with every world.
 
-The [resource deep dive](RESOURCE_MODEL.md) and [range proof](RESOURCE_CALIBRATION.md) select signed 64-bit game-native integer quanta for authoritative matter and energy quantities, with checked 128-bit intermediates. [Organism health calibration](ORGANISM_HEALTH_CALIBRATION.md) provisionally selects a parts-per-million fixed-point ratio for health, normalized factors, and probabilities. The first [world and climate contract](WORLD_AND_CLIMATE.md) adds signed tile coordinates, normalized fixed-point local positions, integer-meter elevation/depth, milli-degree Celsius temperature, integer precipitation rates, and the shared ratio type for normalized conditions. Exact movement velocity/distance encodings and fixed-point representations for remaining rate domains still require the same cross-platform, overflow, precision, and serialization analysis.
+The [resource deep dive](RESOURCE_MODEL.md) and [range proof](RESOURCE_CALIBRATION.md) select signed 64-bit game-native integer quanta for authoritative matter and energy quantities, with checked 128-bit intermediates. [Organism health calibration](ORGANISM_HEALTH_CALIBRATION.md) provisionally selects a parts-per-million fixed-point ratio for health, normalized factors, and probabilities. The first [world and climate contract](WORLD_AND_CLIMATE.md) adds signed tile coordinates, normalized fixed-point local positions, integer-meter elevation/depth, milli-degree Celsius temperature, integer precipitation rates, and the shared ratio type for normalized conditions. Spatial planning fixes `LocalCoordQ` as unsigned 32-bit tile fractions and velocity/displacement as signed 64-bit `LocalCoordQ` units per simulated hour, with wide checked squared-distance arithmetic. Final configured maxima and fixed-point representations for remaining rate domains still require the same cross-platform range proof.
 
 # Server communication
 
@@ -120,7 +120,9 @@ Protocol Buffers will define the cross-language wire contract. Schema files are 
 
 Protocol evolution must follow additive compatibility rules: field numbers are never reused, removed fields are reserved, and messages include enough version context to reject incompatible commands cleanly. Internal save-state representation may reuse appropriate schemas, but network messages and saves are not required to have identical layouts.
 
-The concrete TypeScript code generator and C# package versions will be selected and pinned when the implementation scaffold is created. If representative profiling later shows that Protocol Buffer encoding dominates server or client performance, FlatBuffers may be evaluated against the same message workload. We will not change formats based only on microbenchmarks.
+Authoritative signed/unsigned 64-bit Protocol Buffer values map to C# `long`/`ulong` and TypeScript `bigint`. They never map to JavaScript `number`; presentation code converts only a proved bounded/scaled display value. JSON diagnostics or HTTP representations that cannot carry `bigint` encode these quantities as canonical decimal strings.
+
+The concrete TypeScript code generator and C# package versions will be selected and pinned when the implementation scaffold is created, and the TypeScript generator must provide native `bigint` mappings without handwritten wrappers. If representative profiling later shows that Protocol Buffer encoding dominates server or client performance, FlatBuffers may be evaluated against the same message workload. We will not change formats based only on microbenchmarks.
 
 # First client
 
@@ -165,18 +167,16 @@ V1 will not combine a C# server with a Rust or C++ simulation library. A foreign
 
 # Validation before broad implementation
 
-The first implementation milestone should be a disposable but representative simulation benchmark. It should exercise enough of the architecture to validate the technology choice before the full biological model is built.
+Validation should grow in stages. The first milestone is a minimal end-to-end walking skeleton, not a prematurely production-shaped benchmark. It proves that the chosen boundaries compose before the full biological model or performance machinery is built.
 
-The benchmark should include:
+Stage A should include:
 
-- Approximately 100,000 organisms distributed across several hundred tiles, providing headroom beyond the initial gameplay target.
-- Dense organism state and stable identifiers.
-- Resource absorption, metabolism, movement, reproduction, death, and dead remains.
-- Tile-local atmospheric mixing and at least one other cross-tile resource flow.
-- Resource-flow aggregation and mass-balance assertions.
-- Deterministic single-threaded and parallel execution.
-- Save, reload, replay continuation, and state hashing.
-- Protocol encoding of a representative client snapshot and subsequent deltas.
+- One tile, one founder phenotype, one compiled mass-balanced reaction, and roughly `100..1,000` organisms.
+- Real stable identifiers, owner-mutable dense state, keyed randomness, and the same phase interfaces intended for v1.
+- A canonical state hash, logical change capture, detached save/reload, and a direct actor-authorized projection snapshot.
+- Repeated scalar runs that produce identical resource ledgers and hashes.
+
+Stage B grows the same executable path to the default grid and approximately `10,000` organisms, adds the opening lifecycle/resource systems, a browser full snapshot plus deltas, and profiling. Stage C exercises clustered `50,000` and `100,000` organism worlds, parallel execution, representative histories, save/reload, and protocol load before performance claims or specialized storage work are accepted. The `100,000` case is a capacity benchmark, not a gate that blocks learning from the first executable tick.
 
 We should record:
 
@@ -184,7 +184,7 @@ We should record:
 - Median, high-percentile, and worst observed tick duration.
 - Total memory and estimated memory per organism and tile.
 - Bytes allocated per tick after warmup and garbage-collection pause behavior.
-- Scaling across worker counts.
+- Scaling across worker counts once Stage C introduces parallel execution.
 - Snapshot and delta size and encoding time.
 - Equality of state hashes across repeated runs, save/reload boundaries, and supported worker counts.
 - Complexity and maintainability of the resulting code.

@@ -344,7 +344,7 @@ Before accepting a rule pack, validate:
 - All calculations shown here are exact integer operations.
 - Division occurs only in named allocation/rate operations with specified rounding and persisted remainders.
 - State hashes include resource quantities and persisted remainders, not recomputed display values.
-- Protocol Buffer 64-bit quantities must become JavaScript `bigint`, strings, or exact long wrappers.
+- Protocol Buffer 64-bit quantities become native TypeScript `bigint`; JSON-only diagnostic/HTTP forms use canonical decimal strings, and neither path silently converts to JavaScript `number`.
 - `Int128` diagnostics must serialize as decimal strings or a defined 128-bit message, never a floating-point number.
 - UI charts may down-convert scaled values to `number` after retaining the exact authoritative value.
 

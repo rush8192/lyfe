@@ -1,6 +1,6 @@
 # Materialized Derived State and Single-Source Computation
 
-Status: first v1 ownership and materialization contract; exact field inventory and page grouping will be finalized with the engine prototype
+Status: first v1 ownership, runtime materialization, and persistence-rebuild contract; exact field inventory and physical grouping will be finalized with the engine prototype
 
 Sources: [authoritative data model](DATA_MODEL.md), [resource storage and evaluation](RESOURCE_STORAGE_AND_EVALUATION.md), [trait compilation](TRAIT_SYSTEM.md), [world and climate](WORLD_AND_CLIMATE.md), [organism state and health](ORGANISM_STATE_AND_HEALTH.md), and [state change and client synchronization](STATE_CHANGE_AND_CLIENT_SYNC.md).
 
@@ -17,12 +17,12 @@ For every gameplay-relevant derived value:
 1. exactly one subsystem owns its formula;
 2. the owner computes it at a named deterministic barrier;
 3. the result is stored in the working/completed world or immutable compiled-rules state;
-4. dependency mutation marks the materialization dirty or updates it in the same transaction;
+4. dependency mutation marks the materialization dirty or updates it in the same owner commit;
 5. no downstream system may independently reproduce the formula;
 6. a dirty materialization cannot be consumed;
-7. debug or load-time recomputation may verify it, but never supplies an alternate gameplay result.
+7. debug recomputation may verify it, while load may invoke that same sole owner to rebuild a declared pure materialization before any gameplay consumer runs.
 
-“Derived” describes provenance, not permission to recalculate anywhere. “Stored” means materialized in its owning runtime/version table for all consumers. Completed values that affect continuation or player-observable state are also serialized under the save policy below.
+“Derived” describes provenance, not permission to recalculate anywhere. “Stored” means materialized in its owning runtime table for all consumers. It does not automatically mean that the value must be serialized. A load-time rebuild uses the production owner/formula and is completed before the world becomes observable; it is not a competing runtime calculation path.
 
 # What qualifies for materialization
 
@@ -46,7 +46,7 @@ Conversely, do not remove or duplicate a shared gameplay materialization merely 
 | --- | --- | --- | --- |
 | Primary authoritative state | resource balances, structure assignments, birth tick, moisture memory, acquired traits | World/entity stores | Yes |
 | Immutable compiled state | dense resource handles, reaction records, final phenotype values, process plans, fixed tile transforms | Rule/genome/world compiler | Stored once; save references rules/genome hashes and validates compiled hashes |
-| Materialized current state | tile current/effective parameters, accessible stocks, organism used load/capacity/health/activation, species aggregates | Named phase builder in transactional pages | Completed-boundary values needed for continuation or observation are saved |
+| Materialized current state | tile current/effective parameters, accessible stocks, organism used load/capacity/health/activation, species aggregates | Named owner-built runtime tables | Optional cache payload; may be rebuilt deterministically before load completes |
 | Phase materialization | internal allocation results, claim/grant tables, death-risk scratch before a death record | Named phase arena/output | Not saved because no save occurs mid-transaction |
 | Derived structural index | ID locator if omitted durably, spatial bins, tile/species row cohorts | Storage/index builder | Rebuilt/verified; never a gameplay formula source |
 | Presentation-only derivation | chart pixels, interpolation, localized prose | Client | No |
@@ -248,7 +248,7 @@ TileResourceEffectiveState:
 
 This table is not another resource account. It cannot be debited and never participates in conservation. Claims still debit the primary stock matrix, but request construction, exposure, and explanation use the stored effective values. A grant resolver caps against the same primary stock generation named in the materialization stamp.
 
-Biological acquisition, environmental production, waste release, decay, or any later phase that changes a relevant tile stock dirties this table. The same builder refreshes affected tiles before another authoritative consumer and performs a mandatory final refresh before the completed boundary is hashed, saved, or projected. There is one formula owner even though several phase barriers may schedule it.
+Biological acquisition, environmental production, waste release, decay, or any later phase that changes a relevant tile stock dirties this table. The same builder refreshes affected tiles before another authoritative consumer and performs a mandatory final refresh before the completed boundary is hashed or projected, and before any optional materialization cache is captured for a save. There is one formula owner even though several phase barriers may schedule it.
 
 If a value is meaningful only after organism-specific traits—such as temperature stress against a phenotype's tolerated range—the tile table stores the environmental side of the calculation, not one value per possible species. An occupied tile/species cohort may materialize a shared combined response when two or more phases demonstrably reuse it; that optimization has an explicit owner and sparse `(tile, species)` lifetime.
 
@@ -326,22 +326,22 @@ Tile resource-flow buckets are already materialized from applied ledger transact
 
 # Save and load policy
 
-The completed world save includes materialized current values that:
+Persistence distinguishes remembered state from pure materialization:
 
-- feed the next tick or a future decision;
-- represent the completed boundary shown to the player;
-- would otherwise require rerunning an already committed phase; or
-- are needed to diagnose/hash the exact completed result.
+- Any value containing information that cannot be recovered from the completed boundary—history rings, moving averages, fractional remainders, scheduled ordinals/times, actor knowledge, or deliberately retained evidence—is primary/historical state and must be serialized.
+- A pure materialization whose declared dependencies are all saved or immutable compiled inputs may be omitted. During load, its one production owner rebuilds it in canonical order before hashing, validation, publication, or the next command/tick.
+- A save may include pure materializations as a versioned acceleration/debug section. The loader validates its dependency identity and either accepts the whole compatible section or discards it and invokes the owner; it never mixes stale rows with rebuilt rows.
+- Phase arenas and structural indexes remain excluded and are rebuilt when needed.
 
-This includes completed tile climate/resource-effective state, organism capacity/condition materializations, and species aggregates. Phase arenas and rebuildable structural indexes remain excluded.
+Thus completed tile climate/resource-effective state, organism capacity/condition values, and species aggregates are runtime single sources, but not automatically mandatory save fields. If a supposedly derived aggregate feeds future behavior through recurrence or retention, that recurrent input is named and saved as historical state rather than hidden inside a cache.
 
 Compiled rule/phenotype tables may be stored once in a rules package/cache rather than duplicated in every save, but the save records their canonical hashes and genome references. Load resolves those exact compiled tables and rejects a mismatch.
 
-Load does not silently replace a stored materialization by recalculating it under current code. It validates schema/rules/dependency stamps and may run a debug verification oracle. Rebuilding a missing materialization belongs to an explicit versioned migration that produces a new compatible save, not ordinary continuation.
+Load resolves the exact compatible rules/compiler identity first. It then accepts a compatible optional cache section or rebuilds the complete declared materialization through the sole owner. A rebuild under different rule/compiler semantics is forbidden; that requires an explicit migration. After rebuilding, the logical world hash must equal the save's recorded hash.
 
 # Hashing, diffs, and explanations
 
-- Completed materialized gameplay values participate in the authoritative state hash alongside their primary dependencies. This detects stale update bugs early.
+- Completed materialized gameplay values participate in the authoritative state hash alongside their primary dependencies. This detects stale update bugs and proves that load-time rebuilding produced the same operational world.
 - Change capture marks the materialized field when its owner writes a new value. Projectors read it directly rather than independently deriving health, access, capacity, or aggregate values.
 - Client explanations carry the stored value plus stored provenance/input references. A client may format or scale it, but does not reproduce authoritative formulas.
 - A debug recomputation oracle compares primary inputs with materialized outputs at configured boundaries. A mismatch faults validation; the recomputed value is never substituted into the live world.
@@ -376,10 +376,10 @@ CompileGenome(domainGenome, compiledRules):
 # Failure behavior
 
 - Missing, dirty, stale, or mismatched materialized state is an invariant failure, not a cache miss.
-- Overflow or invalid domain output aborts the working transaction.
+- Overflow or invalid domain output fails the phase preflight when possible; any unexpected post-mutation invariant failure faults the in-memory world.
 - A compiler failure prevents the genome/rule pack/world from becoming active.
 - Materialization builders may not consume client visibility, subscriptions, wall-clock time, or unordered worker results.
-- A failed builder leaves the previous completed root authoritative through the normal copy-on-write transaction.
+- A failed builder never publishes or saves a partial boundary. If owner mutation has begun, the runner faults and recovery starts from the latest durable save.
 
 # Tests
 
@@ -391,7 +391,7 @@ CompileGenome(domainGenome, compiledRules):
 - Stored organism used load, bound totals, capacities, energy, radius, throughput, activation, and health match recomputation oracles after every relevant mutation type.
 - Phase allocation computes each process admission once and prevents independent re-admission during execution.
 - Stored species/tile aggregates reconcile with entity/ledger state at every completed boundary.
-- Save/load preserves materialized values and generations exactly; a mismatch fails rather than silently healing.
+- Save/load either accepts a whole compatible materialization cache or rebuilds it through the sole owner; both paths produce identical operational values, generations, and world hashes.
 - State changes and client projections expose the same stored operational values used by gameplay.
 - Worker count, page layout, dirty-target ordering, and subscriptions do not change materialized results or hashes.
 
@@ -403,8 +403,8 @@ CompileGenome(domainGenome, compiledRules):
 4. Implement phase-1 `TileClimateState` and phase-2 `TileResourceEffectiveState` with dependency generations.
 5. Implement organism used-load, bound-total, capacity, stored-energy, radius, age-throughput, activation, and named health materializations.
 6. Make internal allocation emit one phase-owned stored plan consumed by process execution.
-7. Persist and hash completed materializations; add debug recomputation oracles.
-8. Profile materialization and field/page grouping in the complete simulation/publication path. Change a materialization's lifetime or representation only after the optimization gate is met, while preserving one formula owner and one stored result for every shared gameplay value.
+7. Hash completed materializations, classify remembered versus purely rebuildable inputs, and add save/load rebuild plus debug-oracle tests.
+8. Profile materialization and field grouping in the complete simulation/publication path. Change a materialization's runtime lifetime or representation only after the optimization gate is met, while preserving one formula owner and one stored result for every shared gameplay value.
 
 # Remaining detailed choices
 
@@ -412,4 +412,4 @@ CompileGenome(domainGenome, compiledRules):
 - Whether sparse occupied `(tile, species)` effective-response materializations save enough repeated work to justify storage.
 - Per-row versus page/table dependency generations in release builds.
 - Which detailed explanation inputs remain always resident versus generated from retained provenance on demand.
-- Save schema grouping and compatibility/migration behavior for newly added materialized fields.
+- Whether measured load time justifies serializing any pure materialization cache sections; omission remains the simple baseline.

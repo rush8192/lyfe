@@ -328,11 +328,12 @@ RandomCompatibilityState:
     rootSeed
     algorithmId
     rngSchemaVersion
+    rngDomainManifestHash
 ```
 
 There is no global cursor or per-worker stream state. Persistent gameplay ordinals remain with the entity/subsystem that owns their semantic event.
 
-Load and replay require an implementation of the exact `algorithmId` and `rngSchemaVersion`. If unavailable, the world is incompatible; silently upgrading it would change its future. Adding a new unused domain is compatible with earlier outcomes, but changing an existing numeric ID, coordinate meaning, packing, sample assignment, conversion, or candidate canonicalization requires a new RNG schema version.
+Load and replay require an implementation of the exact `algorithmId`, `rngSchemaVersion`, and registered-domain manifest. If unavailable, the world is incompatible; silently upgrading it would change its future. Adding a new unused domain is compatible with earlier outcomes only through an explicitly compatible manifest/version policy; changing an existing numeric ID, coordinate meaning, packing, sample assignment, conversion, or candidate canonicalization requires a new RNG schema version.
 
 Rule changes may retain an RNG schema to support common-random-number balance comparisons when the same mechanic and address still have the same meaning. The rules hash remains separate and still determines whether the save itself is otherwise compatible.
 
@@ -387,7 +388,7 @@ Player explanations expose authored probability, relevant factors, and realized 
 4. Implement the typed integer conversions with golden/property tests.
 5. Replace existing pseudocode keys mechanic by mechanic, beginning with death, Brownian motion, metabolic binomials, reproduction jitter, contention ranks, predation, and autonomous evolution.
 6. Add optional debug address auditing and architecture tests prohibiting platform RNG use.
-7. Add seed/schema to setup, save, replay, state-hash metadata, and diagnostics.
+7. Add seed plus algorithm/schema/domain-manifest identity to setup, save, replay, state-hash metadata, and diagnostics.
 8. Profile the scalar implementation in the representative simulation before considering vectorization, alternate conversions, or batched Philox calls.
 
 # Remaining implementation inputs
@@ -396,7 +397,7 @@ Player explanations expose authored probability, relevant factors, and realized 
 - Exact canonical proposal/candidate-set hash algorithm used only where an existing stable ID cannot name an autonomous-evolution proposal.
 - Whether raw death draws remain in every durable death record or move to a bounded diagnostic side record while preserving causal explanation.
 - Maximum world/tick/event ordinals used to validate all documented address packings.
-- State-hash placement for `algorithmId`, RNG schema, domain manifest hash, and root seed.
+- Concrete numeric state-hash field tags for `algorithmId`, RNG schema, domain-manifest hash, and root seed; their placement in the `WorldStateHashV1` preamble is fixed by [PERSISTENCE_AND_REPLAY.md](PERSISTENCE_AND_REPLAY.md).
 
 # Scientific and platform basis
 

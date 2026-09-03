@@ -65,7 +65,7 @@ Each pack contains one or more complete `WorldGenerationProfile` records. A prof
 - start-region requirements, deterministic repair budgets, generation attempts, and profile-specific validation horizons; and
 - presentation metadata explaining the world premise and the ecological pressures it is likely—but not guaranteed—to create.
 
-World options address a permanent typed `WorldParameterId` defined by the same generated authoring/schema contract used for balance parameters. A profile supplies a default plus the range or choices the player may select. Setup values outside that advertised and engine-validated domain fail before generation. The normalized selected options enter `worldRulesHash`.
+World options address a stable namespaced `WorldParameterKey` defined by the same generated authoring/schema contract used for balance parameters. These cold-path keys are canonical strings, not permanent numeric IDs. A profile supplies a default plus the range or choices the player may select. Setup values outside that advertised and engine-validated domain fail before generation. The normalized key/value options enter `worldRulesHash`.
 
 A world pack cannot add a generator stage, arbitrary noise implementation, resource, exposure type, gas species, topology rule, script, or executable asset. It can select only registered algorithms and existing definition keys supported by its declared API/registry identity. Fixed maps, custom generator code, and new tile/resource kinds remain future content/code-mod work.
 
@@ -106,7 +106,7 @@ The default is `FullPackOnly`. Moddability is opt-in rather than inferred merely
 An overlay can never change:
 
 - a definition's typed numeric ID or stable key;
-- base pack ID, compiler/API version, registry locks, or tombstones;
+- base pack ID, compiler/API version, definition registries, or tombstones;
 - engine-vocabulary IDs, RNG domains/address schemas, outcome/event IDs, or canonical hash field tags;
 - the type/discriminator of a definition or effect; or
 - the target base-pack identity.
@@ -148,14 +148,13 @@ Concrete geography, climate, atmospheric-background, abiotic source/sink/exchang
 
 Names, descriptions, author credits, layout hints, visual descriptors, and other explicitly non-authoritative presentation fields may be replaced without changing simulation mechanics. Presentation overlays still receive their own package/mod-set identity and follow client visibility and asset-safety rules.
 
-# Mod parameter registry
+# Mod parameter catalogue
 
-Overlays do not address arbitrary JSON Pointer paths. The authoring contract generates a stable registry of permitted parameters:
+Overlays do not address arbitrary JSON Pointer paths. The authoring contract generates a stable catalogue of permitted parameters:
 
 ```text
 ModParameterDefinition:
-    id: ModParameterId              // explicit permanent UInt32; zero invalid
-    stableKey                       // e.g. trait.mutation-point-cost
+    stableKey                       // namespaced, e.g. lyfe.trait.mutation-point-cost
     targetDefinitionKind
     modPolicy
     valueShape                      // integer, choice, integer list, curve points, record
@@ -166,9 +165,9 @@ ModParameterDefinition:
     introducedCompilerVersion
 ```
 
-The C# property and this registry are one generated contract: an explicitly annotated authoring member declares its `ModParameterId`, stable key, policy, shape, and unit. Schema export includes `x-lyfe-mod-policy`, `x-lyfe-mod-parameter`, unit, and bounds. `Lyfe.RuleTool describe-mod-surface` emits the complete human-readable catalogue.
+The C# property and this catalogue are one generated contract: an explicitly annotated authoring member declares its stable key, policy, shape, and unit. Schema export includes `x-lyfe-mod-policy`, `x-lyfe-mod-parameter`, unit, and bounds. `Lyfe.RuleTool describe-mod-surface` emits the complete human-readable catalogue.
 
-IDs and keys are locked and tombstoned like other engine vocabulary. Renaming a C# property does not change the mod parameter identity. Removing or reinterpreting a parameter is a compatibility decision.
+Stable keys are part of the public authoring contract. Renaming a C# property does not change its key. Removing or reinterpreting a key requires an API/schema-version decision, but v1 does not maintain a numeric-ID allocation or tombstone ledger for mod/world parameters. Package identities, canonical keys, and the declared compiler/world-generation API versions provide the compatibility boundary. Permanent numeric registries remain reserved for hot, persisted semantic domains such as resources, traits, reactions, events, and RNG domains.
 
 # Balance-mod package
 
@@ -358,7 +357,7 @@ The local server lists installed validated mod sets and compatible world profile
 
 # Required tests
 
-- Every `BalanceOverride`/`PresentationOverride` member has one permanent mod-parameter identity, declared unit/shape/bounds, generated schema annotation, and lock entry.
+- Every `BalanceOverride`/`PresentationOverride` member has one stable namespaced key, declared unit/shape/bounds, and generated schema annotation.
 - Unannotated fields default to `FullPackOnly`; an overlay cannot reach locked/full-pack-only fields through alternate JSON spelling or nested structure.
 - Unknown targets/parameters, wrong types/units, stale base/value hashes, identity edits, duplicate writers, missing dependencies, path escapes, and excessive values fail deterministically.
 - Disjoint mod package enumeration order produces the same flattened model, provenance order, hashes, diagnostics, and compiled artifacts.
@@ -377,8 +376,8 @@ The local server lists installed validated mod sets and compatible world profile
 
 # Implementation changes to make now
 
-1. Add `ModPolicy`, permanent `ModParameterId`, and closed `WorldParameterId`/generator-algorithm metadata to authoring members as the records are created.
-2. Generate the mod/world-parameter schema annotations, registry locks, `describe-mod-surface`, and world-pack schema alongside ordinary rule schemas.
+1. Add `ModPolicy`, stable namespaced mod/world parameter keys, and closed generator-algorithm metadata to authoring members as the records are created.
+2. Generate the mod/world-parameter schema annotations, catalogues, `describe-mod-surface`, and world-pack schema alongside ordinary rule schemas.
 3. Make the rule compiler accept `RuleSourceSet` rather than a single implicit directory, and make world compilation accept one explicit `WorldSourceSelection`.
 4. Implement immutable replacement and conflict detection before normalization; do not mutate deserialized base records in place.
 5. Split mandatory invariant/determinism fixtures from official balance/experience certification.

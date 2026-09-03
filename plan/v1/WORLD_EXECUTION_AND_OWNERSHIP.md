@@ -44,7 +44,7 @@ WorldHost
 WorldRunner — exclusive writer
   ├── bounded command/control mailbox
   ├── wall-clock scheduler
-  ├── SimulationWorld working/completed versions
+  ├── one owner-mutable SimulationWorld
   ├── deterministic phase coordinator
   └── completed-boundary publication
         │               │                 │
@@ -57,11 +57,11 @@ WorldRunner — exclusive writer
 
 ## `Lyfe.Simulation`
 
-Owns world state, rule execution, deterministic transactions, typed state mutation, stable simulation IDs, resource accounting, canonical simulation events, and state hashing. It knows nothing about ASP.NET, sockets, client sessions, wall-clock speed, file locations, or Protocol Buffer types.
+Owns world state, rule execution, deterministic boundary semantics, typed state mutation, stable simulation IDs, resource accounting, canonical simulation events, and state hashing. It knows nothing about ASP.NET, sockets, client sessions, wall-clock speed, file locations, or Protocol Buffer types.
 
 ## `WorldRunner`
 
-Owns the loaded simulation instance and is the only caller allowed to begin, commit, or discard authoritative transactions. It assigns safe-boundary work, advances ticks, invokes bounded phase parallelism, coordinates save/publication captures, and exposes lifecycle status.
+Owns the loaded simulation instance and is the only caller allowed to mutate it. It assigns safe-boundary work, advances ticks, invokes bounded phase parallelism, coordinates detached save/publication captures, and exposes lifecycle status.
 
 ## `WorldHost`
 
@@ -77,7 +77,7 @@ Consumes sealed changes and bounded immutable publication values after commit. I
 
 ## Persistence worker
 
-Serializes an immutable save handle captured at one completed boundary. File/database I/O and compression occur away from the world owner. A save failure reports failure for that request but does not roll back or fault a healthy world.
+Serializes a detached logical save snapshot copied at one completed boundary. File/database I/O and compression occur away from the world owner. A save failure reports failure for that request but does not roll back or fault a healthy world.
 
 # World lifecycle
 
@@ -100,7 +100,7 @@ PausedReady <──────> Running
   Unloaded / ProcessStopped
 ```
 
-`Saving`, `Publishing`, and `ClientDisconnected` are not world lifecycle states. They are bounded operations over immutable completed versions and may overlap later ticks. `GameEnded` is authoritative gameplay state; its runner normally remains `PausedReady` so the client can inspect and save the final world.
+`Saving`, `Publishing`, and `ClientDisconnected` are not world lifecycle states. They are bounded operations over detached boundary snapshots and may overlap later ticks. `GameEnded` is authoritative gameplay state; its runner normally remains `PausedReady` so the client can inspect and save the final world.
 
 | State | Tick advancement | Mailbox behavior | Read/save behavior |
 | --- | --- | --- | --- |
@@ -108,7 +108,7 @@ PausedReady <──────> Running
 | `Loading` | None | Reject or wait behind load request | No partial world publication |
 | `PausedReady` | None | Drain run control, queries, and eligible boundary transactions | Publish/query/save completed state |
 | `Running` | Scheduled sequential ticks | Drain at safe boundaries | Publish/save completed state |
-| `Faulted` | None | Reject simulation commands; allow diagnostics/export of last completed version where valid | Never publish failed working state |
+| `Faulted` | None | Reject simulation commands; allow diagnostics and access to the last durable save | Never publish or save the partially mutated in-memory tick |
 | `Stopping` | Finish/discard according to current safe boundary, admit no new gameplay work | Drain only shutdown completion | Complete or cancel background work by policy |
 
 # Mailboxes and request classes
@@ -148,7 +148,7 @@ Server receipt is not gameplay acceptance. A queued acknowledgement may be sent 
 
 # Safe-boundary transactions
 
-There are two authoritative transaction kinds:
+There are two externally atomic boundary-mutation kinds:
 
 - `TickTransaction`: advances simulated time by exactly one configured tick and executes all phases.
 - `BoundaryCommandTransaction`: applies commands that are explicitly valid while paused without advancing time, such as a confirmed player speciation or sandbox control transfer.
@@ -163,39 +163,38 @@ While running, eligible player commands are normally admitted at the next tick's
 WorldRunner.RunOneTick():
     assert lifecycle == Running
     boundaryBatch = DrainAndOrderMailbox()
-    working = completedWorld.BeginTransactionalFork()
-
+    changes = TickChangeBuilder(world.nextWorldRevision)
     try:
-        working.ExecuteOwnerOnlyCommandAdmissionPhase(boundaryBatch)
-        working.RunOwnedMaterializationBuilders(CommandAdmission)
-        working.SealPhaseJournal(CommandAdmission)
+        world.ExecuteOwnerOnlyCommandAdmissionPhase(boundaryBatch, changes)
+        world.RunOwnedMaterializationBuilders(CommandAdmission, changes)
+        changes.SealPhase(CommandAdmission)
 
         for phase in CanonicalTickPhases1Through10:
-            stableView = working.SealPhaseReadView()
+            stableView = world.SealPhaseReadView()
             work = phase.EnumerateLogicalWork(stableView)
             partitions = phase.SchedulePhysicalPartitions(
                 work, operationalWorkerCount)
             outcomesBySlot = RunOnBoundedWorkers(partitions, stableView)
             resolved = phase.CanonicalReduceAndPreflight(
                 stableView, outcomesBySlot)
-            working.CommitPhaseThroughTypedMutators(resolved)
-            working.RunOwnedMaterializationBuilders(phase)
-            working.SealPhaseJournal(phase)
+            world.CommitPhaseThroughTypedMutators(resolved, changes)
+            world.RunOwnedMaterializationBuilders(phase, changes)
+            changes.SealPhase(phase)
 
-        working.ExecuteOwnerOnlyFinalizationPhase()
-        working.RunOwnedMaterializationBuilders(Finalization)
-        working.ValidateCompleteTick()
-        working.SealPhaseJournal(Finalization)
-        completedWorld = working.Commit()
-        PublishCompletedBoundary(completedWorld)
+        world.ExecuteOwnerOnlyFinalizationPhase(changes)
+        world.RunOwnedMaterializationBuilders(Finalization, changes)
+        world.ValidateCompleteTick()
+        boundary = world.SealCompletedBoundary(changes)
+        CaptureDuePublicationAndSaveSnapshots(world, boundary)
     catch error:
-        working.Discard()
-        EnterFaulted(error, completedWorld)
+        EnterFaulted(error, lastPublishedBoundaryMetadata)
 ```
 
 Parallel phase workers receive immutable phase views and isolated output buffers. They never allocate entity IDs, mutate stores, append directly to global event logs, or resolve shared contention. Physical partitions may change with worker count and have no logical identity. The owner validates stable outcome keys, performs exact grouped resolution, assigns IDs by accepted creation key, preflights the complete mutation plan, commits through typed mutators, and runs materialization builders. [DETERMINISTIC_PARALLEL_EXECUTION.md](DETERMINISTIC_PARALLEL_EXECUTION.md) is normative.
 
 The first vertical slice uses one worker through the final worker-buffer/reduction interface. Representative profiling may enable a configured bounded degree of parallel evaluation phase by phase on the .NET worker pool. A dedicated simulation worker pool is warranted only if the server benchmark demonstrates interference. Worker count changes may change performance but not state, IDs, events, materializations, journals, or hashes.
+
+V1 deliberately does not require a copy-on-write world root, MVCC, undo journal, or whole-tick rollback. The owner mutates ordinary dense state only after each phase's complete plan passes preflight, and no external reader sees that state until the full boundary validates. If an unexpected evaluator, commit, materialization, arithmetic, or invariant defect occurs after mutation begins, the runner faults and the partial in-memory world is discarded on unload/restart; recovery uses the last durable save/checkpoint. Copy-on-write or double-buffered hot state may be evaluated later only if near-zero-pause snapshots or in-process failed-tick recovery becomes a measured product requirement.
 
 # Wall-clock scheduling
 
@@ -239,20 +238,20 @@ WorldRunner.MainLoop():
                 lifecycle = PausedReady
 
     lifecycle = Stopping
-    FinishShutdownFromLastCompletedRoot()
+    FinishShutdownFromLastCompletedBoundary()
 ```
 
-A pause requested during evaluation becomes effective after that transaction commits; it does not interrupt biological phases and publish half a tick. A forced shutdown timeout may cancel evaluation and discard the entire working fork. Resume establishes a new monotonic wall deadline and carries no catch-up debt from time spent paused.
+A pause requested during evaluation becomes effective after the tick completes; it does not interrupt biological phases or publish half a tick. Once a tick has committed any phase, graceful cancellation does not interrupt it. A forced shutdown timeout may terminate the process and lose progress since the last durable save, but can never publish the partial tick. Resume establishes a new monotonic wall deadline and carries no catch-up debt from time spent paused.
 
-Loading constructs and validates a complete root, rebuilds only declared structural indexes, validates stored gameplay materializations and their dependency generations, and computes the required hash before installing the runner's first completed version. No connection receives a partial loading view. A missing gameplay materialization requires an explicit save migration rather than ordinary load-time reconstruction.
+Loading constructs and validates a complete world, rebuilds declared structural indexes and permitted derived materializations, and computes the required hash before installing the runner's first completed boundary. No connection receives a partial loading view.
 
 # Completed-state publication
 
 At every successful transaction, the runner seals a `TickChangeSet` or boundary change set. The projection hub synchronously records only the lightweight invalidation, event-reference, actor-knowledge, and stream-interest consequences that must not be lost.
 
-When a stream publication is due, the runner exports the required final values into a bounded immutable `PublicationReadHandle` before allowing those particular mutable pages to be reused. Protocol mapping, compression, chunking, and socket I/O remain asynchronous. A connection or resynchronization may request a full authorized capture at the next safe boundary.
+When a stream publication is due, the runner copies the required final values into a bounded immutable `PublicationSnapshot` before starting the next tick. Protocol mapping, compression, chunking, and socket I/O remain asynchronous. A connection or resynchronization may request a full authorized capture at the next safe boundary.
 
-This is the v1 interpretation of the `CompletedReadHandle` contract in [STATE_CHANGE_AND_CLIENT_SYNC.md](STATE_CHANGE_AND_CLIENT_SYNC.md): it may contain compact typed publication-value pages rather than a copy of the entire world, and a full handle is created only for a full projection/save/hash need. It never exposes live mutable arrays.
+This is the v1 interpretation of the completed-read contract in [STATE_CHANGE_AND_CLIENT_SYNC.md](STATE_CHANGE_AND_CLIENT_SYNC.md): it contains compact copied publication values rather than a retained view of the entire world, and a full snapshot is created only for a full projection/save/hash need. It never exposes live mutable arrays.
 
 # Save and checkpoint execution
 
@@ -263,29 +262,28 @@ RequestSave(request):
 AtCompletedBoundary(request):
     if incompatible save already capturing:
         coalesce request or return SaveBusy
-    saveHandle = completedWorld.RetainImmutableVersion()
-    persistenceWorker.Enqueue(saveHandle, request)
+    saveSnapshot = SaveSnapshotBuilder.CopyCanonicalState(world)
+    persistenceWorker.Enqueue(saveSnapshot, request)
 
 PersistenceWorker:
     serialize canonical state
     checksum, compress, and atomically replace destination
-    release saveHandle
     publish request result
 ```
 
-The cheap boundary operation is retaining a completed version and its pages, not performing file I/O. At most one full save serialization per world should run initially. A retained save can increase copy-on-write pressure, so memory and duration are bounded and observed; further requests coalesce by destination/policy or receive `SaveBusy`.
+The boundary operation is a measured synchronous copy into a save-owned logical snapshot; file I/O, checksumming, compression, and atomic replacement remain asynchronous. At most one full save serialization per world should run initially. Snapshot memory and copy duration are bounded and observed; further requests coalesce by destination/policy or receive `SaveBusy`. If the copy alone later violates pause/latency targets, snapshot-specific copy-on-write becomes an evidence-driven optimization.
 
 # Fault containment
 
 | Failure | Required behavior |
 | --- | --- |
 | Invalid/rejected command | Record typed result; world continues |
-| Tick evaluation, arithmetic, invariant, or commit failure | Discard transactional fork, retain last completed version, enter `Faulted` |
+| Tick evaluation, arithmetic, invariant, or commit failure | Publish nothing, mark in-memory world invalid, enter `Faulted`, and recover from the last durable save if requested |
 | Projection/encoding failure | Reset or disconnect affected stream; world continues |
 | Slow client | Coalesce, snapshot, warn, or disconnect; world continues |
 | Save serialization/write failure | Preserve prior valid save and running world; report request failure |
 | Metrics/diagnostic sink failure | Disable/fail sink according to policy; never affect world |
-| Process crash | Recover from last atomic save/checkpoint and command log; never claim uncommitted memory as saved |
+| Process crash | Recover from the last atomic save/checkpoint; v1 does not promise write-ahead recovery of later accepted commands |
 
 Fault reports retain world/tick/revision, phase, exception classification, rules hash, command batch IDs, state-hash/checkpoint references, and bounded diagnostic context. They must not include secrets from another actor projection.
 
@@ -295,13 +293,13 @@ Graceful shutdown is ordered:
 
 1. stop accepting new sessions and lifecycle/gameplay requests;
 2. request pause/stop on the runner;
-3. allow the active authoritative transaction to finish, or discard its transactional fork at an explicit timeout-safe boundary;
-4. optionally capture the configured shutdown save from the last completed version;
+3. allow the active authoritative tick to finish; if a forced timeout kills it, do not publish or save the partial state;
+4. optionally capture the configured shutdown save from the resulting completed boundary;
 5. complete/cancel projection and persistence work without invalidating an atomic save;
 6. flush retained command/event metadata required by policy;
-7. release world versions and stop the host.
+7. release snapshots and stop the host.
 
-Cancellation is observed between phases for evaluation work, but a cancelled phase never commits a partial outcome. Exact graceful and forced timeouts remain deployment configuration.
+Cancellation is observed before a tick and while an evaluation phase has not yet committed. After any phase commit, graceful shutdown lets the tick finish; only forced process termination may cut it short. Exact graceful and forced timeouts remain deployment configuration.
 
 # Scaling path
 
@@ -317,15 +315,15 @@ Competitive multiplayer adds actors, commands, and shared-clock policy to one ru
 
 # Invariants and tests
 
-- Exactly one writer may hold a working world transaction.
+- Exactly one runner may mutate a loaded world.
 - No background worker retains a mutable store reference or `Span<T>` after its phase/barrier.
-- A tick or boundary transaction is visible in full or not at all.
-- The last completed version remains readable after a transactional failure.
+- A tick or boundary mutation is externally visible in full or not at all.
+- A failed partially mutated in-memory tick is never queried, projected, or saved; recovery starts from the last durable checkpoint.
 - Command retries cannot apply twice; replay uses recorded application order rather than network timing.
 - Worker count, completion order, projection load, saves, queries, pause duration, and wall-clock speed do not change authoritative results.
 - Slow/failing clients, encoders, metrics sinks, and save destinations cannot block tick ownership beyond their bounded capture work.
 - Only one loaded world exists in a v1 process, while no public interface assumes an unqualified global world.
-- Shutdown under every phase either commits one valid completed boundary or discards the working fork.
+- Graceful shutdown finishes a valid boundary; forced termination may lose unsaved progress but never publishes a partial boundary.
 
 # Remaining calibration and implementation choices
 
@@ -333,5 +331,5 @@ Competitive multiplayer adds actors, commands, and shared-clock policy to one ru
 - Mailbox count/byte limits, maximum boundary batch, and command-result retention.
 - Initial worker-count policy and whether benchmark evidence warrants dedicated workers.
 - Publication cadence and maximum synchronous publication-copy budget.
-- Save concurrency, memory budget, and graceful/forced shutdown timeouts.
+- Save-snapshot copy budget, concurrency, memory budget, and graceful/forced shutdown timeouts.
 - Operational process/container model for a future hosted multi-world service.

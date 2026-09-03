@@ -24,7 +24,7 @@ These are composed typed inputs rather than a generic precedence stack. Scenario
 
 The RNG algorithm, permanent domain IDs, coordinate schemas, and typed conversion rules are engine compatibility metadata, not tunable balance configuration. Rule data supplies bounded `RatioQ` probabilities, weights, tables, and eligible candidate sets; [KEYED_RANDOMNESS.md](KEYED_RANDOMNESS.md) alone maps them to reproducible draws.
 
-The official base values for moddable simulation parameters live in this rule data, not duplicated in engine kernels or clients. Authoring fields default to full-pack-only and opt into the stable `BalanceOverride` or `PresentationOverride` surface with a permanent mod-parameter identity. Overlays are flattened before ordinary validation/compilation and create a distinct final mechanics/mod-set identity; see [MODDABILITY.md](MODDABILITY.md).
+The official base values for moddable simulation parameters live in this rule data, not duplicated in engine kernels or clients. Authoring fields default to full-pack-only and opt into the stable `BalanceOverride` or `PresentationOverride` surface with a namespaced parameter key. Overlays are flattened before ordinary validation/compilation and create a distinct final mechanics/mod-set identity; see [MODDABILITY.md](MODDABILITY.md).
 
 # Data-driven definitions
 
@@ -70,7 +70,7 @@ Evaluate data schemas for:
 - Autonomous pressure mappings/weights/decay, material-opportunity composition, evaluation cadence, savings horizon, exploration probability, goal invalidation rules, commit curve, base and opportunity-adjusted tile-count weights, and explanation retention from [EVOLUTION.md](EVOLUTION.md).
 - Speciation tile fractions, founder rounding and selection-key domain, typed validation errors, and lineage-event fields from [EVOLUTION.md](EVOLUTION.md).
 - Strategic-intent metadata, benefit-timing rules, authored candidate goals, frontier limit, attention thresholds/recovery hysteresis, chronicle significance/deduplication windows, and consequence-review duration from [PLAYER_LOOP_AND_NARRATIVE.md](PLAYER_LOOP_AND_NARRATIVE.md). Presentation wording and private notes are not rules data.
-- Closed-schema world-generation-pack manifests, complete named profiles, stable world-parameter IDs, default/allowed option values, compatibility metadata, and profile hashes from [MODDABILITY.md](MODDABILITY.md).
+- Closed-schema world-generation-pack manifests, complete named profiles, stable namespaced world-parameter keys, default/allowed option values, compatibility metadata, and profile hashes from [MODDABILITY.md](MODDABILITY.md).
 - World-profile dimensions, odd-height/equator validation, calendar definition, axial tilt, aquatic-fraction target, elevation ranges, terrain thresholds, weather-field scales, moisture coefficients, depth-light curve, phototrophy throughput, volcanic-pulse parameters, atmospheric and tile-resource initialization, lithology/endowment distributions, starting-region eligibility, repair weights/budget, required pair count, generation-attempt limit, and seed-suite thresholds from [WORLD_AND_CLIMATE.md](WORLD_AND_CLIMATE.md) and [WORLD_CLIMATE_CALIBRATION.md](WORLD_CLIMATE_CALIBRATION.md).
 
 Data-driven does not mean arbitrary scripting. Frequently executed behavior should compile or resolve into efficient runtime structures during world initialization.

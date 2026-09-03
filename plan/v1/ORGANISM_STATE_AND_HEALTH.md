@@ -304,7 +304,7 @@ Concrete state changes during a tick, so there is not one timeless health value 
 
 The health builder updates only organisms whose declared dependencies changed between snapshots, stores the result and dependency generation, then seals it for consumers. The named phase determines which materialized value is visible.
 
-The default, unqualified meaning of `health` in saved snapshots, telemetry, and gameplay documentation is `end_health`.
+The default, unqualified meaning of `health` in completed world/publication snapshots, telemetry, and gameplay documentation is `end_health`.
 
 # Materialization and performance
 
@@ -315,7 +315,7 @@ Derived health does not require repeated expensive object-graph evaluation.
 - Compute organism-local factors in dense batches at the named health barriers and store the operational result.
 - Tag materialized condition state with tick, phase, organism-state generation, compiled-phenotype revision, and tile-effective-state generation.
 - Treat a tag mismatch or dirty read as an invariant failure; authoritative consumers never lazily recalculate.
-- Include completed materialized health in saves and authoritative hashes. Debug/load oracles may recompute and reject a mismatch but never silently heal it.
+- Include completed materialized health in authoritative hashes. A save may include a compatible health cache, or the sole health owner rebuilds the complete table before load validation/publication; debug oracles never silently replace a value during normal execution.
 
 The server includes the stored `end_health` and its compact materialized factor breakdown in a client projection. Explanation reads the same value used by reproduction, behavior, species averaging, and mutation income.
 

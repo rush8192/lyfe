@@ -69,23 +69,25 @@ implementation/v1/
 
 This layout is provisional until dependency rules and code generation are tested.
 
-# Dependency rules to define
+# Dependency rules
 
-- [ ] `Lyfe.Simulation` depends only on general-purpose libraries justified by the simulation plan.
-- [ ] `Lyfe.Server` may depend on simulation and protocol projects; simulation never depends on server.
-- [ ] Generated protocol types do not become the authoritative internal model.
-- [ ] Internal `TickChangeSet` types contain stable IDs and logical invalidations, never actor visibility, subscriptions, transport types, or dense slots.
-- [ ] Client packages do not import server implementation code.
-- [ ] Benchmarks invoke the simulation library directly without networking.
-- [ ] A headless scenario runner can restore one completed-boundary snapshot, apply alternate ordered command sets, advance to authored observation landmarks, and emit stable machine-readable metrics without changing simulation state.
-- [ ] Save/replay adapters do not leak storage concerns into organism logic.
+- [x] `Lyfe.Simulation` depends only on general-purpose libraries justified by the simulation plan.
+- [x] `Lyfe.Server` may depend on simulation and protocol projects; simulation never depends on server.
+- [x] Generated protocol types do not become the authoritative internal model.
+- [x] Internal `TickChangeSet` types contain stable IDs and logical invalidations, never actor visibility, subscriptions, transport types, or dense slots.
+- [x] Client packages do not import server implementation code.
+- [x] Benchmarks invoke the simulation library directly without networking.
+- [x] A headless scenario runner can restore one completed-boundary snapshot, apply alternate ordered command sets, advance to authored observation landmarks, and emit stable machine-readable metrics without changing simulation state.
+- [x] Save/replay adapters do not leak storage concerns into organism logic.
+
+The scaffold must enforce these decisions with project references and architecture tests; the dependency direction itself is no longer open.
 - [x] Strict authoring, validation, normalization, hashing, and compilation remain cold-path namespaces inside `Lyfe.Simulation`; the small `Lyfe.RuleTool` executable references that library, and tick kernels receive only immutable compiled artifacts. See [RULE_PACK_AUTHORING_AND_COMPILATION.md](RULE_PACK_AUTHORING_AND_COMPILATION.md).
 
 # Runtime ownership
 
-The detailed contract is [WORLD_EXECUTION_AND_OWNERSHIP.md](WORLD_EXECUTION_AND_OWNERSHIP.md): a `WorldHost` manages one v1 loaded `WorldRunner`; that runner has exclusive write access, consumes a bounded mailbox, owns wall-clock scheduling, and commits transactional ticks or safe-boundary commands. ASP.NET sessions, projection, persistence, and metrics remain downstream or message-based. Internal phase workers receive stable reads and isolated outputs only.
+The detailed contract is [WORLD_EXECUTION_AND_OWNERSHIP.md](WORLD_EXECUTION_AND_OWNERSHIP.md): a `WorldHost` manages one v1 loaded `WorldRunner`; that runner has exclusive write access, consumes a bounded mailbox, owns wall-clock scheduling, and commits ticks or safe-boundary commands. ASP.NET sessions, projection, persistence, and metrics remain downstream or message-based. Internal phase workers receive stable reads and isolated outputs only.
 
-The runner retains the last immutable completed root while a working copy-on-write transaction advances. Publication and saves use bounded immutable handles; encoding, sockets, compression, and file I/O cannot hold mutable arrays or delay the world beyond bounded capture work. Failures outside the tick are isolated, while a tick/invariant failure discards the working fork and faults the runner on the prior completed version.
+The runner mutates one ordinary dense world exclusively. Phase evaluators produce isolated outcomes and the owner preflights each complete phase plan before applying it; clients observe only fully validated completed boundaries. Publication and saves synchronously copy bounded detached snapshots at a boundary, so encoding, sockets, compression, and file I/O never retain mutable simulation arrays. A tick/invariant defect after mutation starts faults and invalidates the in-memory world; v1 recovers from the last durable save rather than maintaining a copy-on-write rollback database.
 
 # Concurrency model
 
@@ -95,7 +97,7 @@ The simulation behaves as one logical state machine even when internal phases us
 - Phase barriers around parallel work.
 - Per-tile or per-worker output buffers.
 - Deterministic merging of movements, interactions, and resource claims.
-- Read-only publication of completed state to network serializers.
+- Detached publication snapshots of completed state for network serializers.
 - Deterministic phase-local change capture and tick-level merge through the typed authoritative mutation boundary.
 - Cancellation and shutdown only between safe boundaries.
 
@@ -119,7 +121,7 @@ Balance scenarios need a third, side-effect-free observation surface. `EventSink
 - Headless scenario/batch-runner lifecycle, checkpoint-branching contract, and stable result schema.
 - [x] Change-journal, projection-hub, and per-stream lifecycle contract; see [STATE_CHANGE_AND_CLIENT_SYNC.md](STATE_CHANGE_AND_CLIENT_SYNC.md).
 - [x] Decision on one-world-per-process versus multi-world hosting for v1.
-- [x] World lifecycle, exclusive ownership, safe-boundary, save, fault, and shutdown contracts; exact operational limits remain open.
+- [x] World lifecycle, exclusive ownership, safe-boundary, detached save/publication capture, fault, and shutdown contracts; exact operational limits remain open.
 - [x] Semantic keyed-randomness contract and deterministic scalar/parallel evaluation, reduction, preflight, commit, and equivalence-oracle contract; permanent RNG domain values and concrete payload types remain implementation scaffold work. See [KEYED_RANDOMNESS.md](KEYED_RANDOMNESS.md) and [DETERMINISTIC_PARALLEL_EXECUTION.md](DETERMINISTIC_PARALLEL_EXECUTION.md).
 - [x] Rule-pack format, permanent typed identity policy, layer composition, validation/reporting pipeline, canonical hash boundary, global compiler, full DNA compiler, and authoring CLI responsibilities; concrete records and catalogue assignments remain. See [RULE_PACK_AUTHORING_AND_COMPILATION.md](RULE_PACK_AUTHORING_AND_COMPILATION.md).
 - [x] V1 local balance-mod and closed-schema world-pack seams, field-level opt-in policy, immutable overlay composition, complete profile selection, conflict behavior, combined identity, and client/server boundaries; general content/code mods and distribution UX remain future work. See [MODDABILITY.md](MODDABILITY.md).
