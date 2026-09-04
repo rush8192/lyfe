@@ -1,6 +1,6 @@
 # Server API and Client Protocol
 
-Status: scaffold
+Status: Stage-A generated projection snapshot and absolute-batch subset implemented; commands, hosted stream transport, retention, cadence, and richer gameplay schemas remain
 
 Sources: [SIMULATION vision](../../vision/SIMULATION.md), [INTERFACE vision](../../vision/INTERFACE.md), [player loop and narrative](PLAYER_LOOP_AND_NARRATIVE.md), [behavior and resource pressure](BEHAVIOR_AND_RESOURCE_PRESSURE.md), [state change and client synchronization](STATE_CHANGE_AND_CLIENT_SYNC.md), [moddability](MODDABILITY.md), and [technology decisions](TECHNOLOGY.md).
 
@@ -130,16 +130,31 @@ V1 need not implement accounts, matchmaking, or competitive rules. It must avoid
 
 A future multiplayer world pins one server-selected mod set and world profile. Clients acknowledge their identities and required presentation/engine vocabulary during connection, but do not upload packages or participate in authoritative rule compilation. Server discovery, mod distribution, and competitive eligibility remain future service policy.
 
+# Stage-A generated contract
+
+The checked-in `lyfe.v1` Protocol Buffer source owns world lifecycle, organism
+lifecycle, population scope, exact resource stocks, organisms, species, explicit
+unknown/reduced/live tile variants, the actor world projection, projection
+snapshot, and absolute projection batch. `Google.Protobuf 3.36.1` and
+`Grpc.Tools 2.83.0` generate C#; Buf CLI `1.72.0` and `protoc-gen-es 2.14.1`
+generate TypeScript. Generated authoritative `uint64`/`sint64` fields are
+`ulong`/`long` in C# and `bigint` in TypeScript.
+
+The native server exposes the current actor-authorized full snapshot as
+`application/x-protobuf` at `/api/v1/worlds/active/projection`. This is the
+Stage-A read seam, not yet a retained subscription stream. `NET-400` owns live
+transport cadence, acknowledgements, bounded retention, backpressure, and resume.
+
 # Required decisions and artifacts
 
-- [ ] Protocol package/version strategy and code generator.
+- [x] Versioned `lyfe.v1` package, exact C#/TypeScript generators, pins, generation commands, and native `bigint` mapping.
 - [ ] HTTP operation catalogue.
 - [ ] WebSocket envelope and message catalogue.
 - [ ] Command ordering and idempotency.
 - [ ] Subscription and interest model.
 - [ ] Decision-summary, evolution-goal, attention-policy, alert, notable-event, and consequence-review schemas and retention behavior.
-- [ ] Exact Protocol Buffer actor-authorized unknown/reduced/live projection schemas; replacement and cache-eviction semantics are fixed in [STATE_CHANGE_AND_CLIENT_SYNC.md](STATE_CHANGE_AND_CLIENT_SYNC.md).
-- [x] Logical delta representation, merge algebra, stream revisions, atomic application, and resynchronization rules; exact generated schemas and numeric limits remain open. See [STATE_CHANGE_AND_CLIENT_SYNC.md](STATE_CHANGE_AND_CLIENT_SYNC.md).
+- [x] Direct actor-authorized unknown/reduced/live projection oracle plus generated Stage-A field numbers and binary snapshot mapping; richer entity/history shapes remain with their authoritative stores. See [STATE_CHANGE_AND_CLIENT_SYNC.md](STATE_CHANGE_AND_CLIENT_SYNC.md).
+- [x] Stage-A absolute tile/species replacement schema, stream revisions, atomic TypeScript application, visibility eviction, and full-snapshot resynchronization; transport limits remain `NET-400`. See [STATE_CHANGE_AND_CLIENT_SYNC.md](STATE_CHANGE_AND_CLIENT_SYNC.md).
 - [ ] Queue, retention, batch, chunk, cadence, and backpressure limits; bounded/coalescing behavior is fixed.
 - [ ] Local deployment/startup flow.
 - [x] Server-selected installed mod-set and world-profile boundary with required world/handshake identity; exact HTTP/Protocol Buffer fields remain with the general schema pass. See [MODDABILITY.md](MODDABILITY.md).

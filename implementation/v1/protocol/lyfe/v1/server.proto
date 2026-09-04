@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package lyfe.v1;
+
+option csharp_namespace = "Lyfe.Protocol.V1";
+
+message ServerCapabilities {
+  uint32 protocol_version = 1;
+  uint32 minimum_protocol_version = 2;
+  string simulation_version = 3;
+  repeated string features = 4;
+}
+
+message ActiveWorldSummary {
+  uint64 world_id = 1;
+  uint64 completed_tick = 2;
+  uint64 world_revision = 3;
+  bytes state_hash = 4;
+  string lifecycle = 5;
+}

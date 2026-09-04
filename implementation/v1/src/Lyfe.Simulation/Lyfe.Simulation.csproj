@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>Lyfe.Simulation</AssemblyName>
+    <RootNamespace>Lyfe.Simulation</RootNamespace>
+  </PropertyGroup>
+</Project>

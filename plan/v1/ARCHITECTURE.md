@@ -2,7 +2,7 @@
 
 Status: first world-execution, deterministic worker/reduction, and ownership pass decided; exact operational limits pending calibration
 
-Sources: [SIMULATION vision](../../vision/SIMULATION.md), [INTERFACE vision](../../vision/INTERFACE.md), [technology decisions](TECHNOLOGY.md), [rule-pack authoring and compilation](RULE_PACK_AUTHORING_AND_COMPILATION.md), [moddability](MODDABILITY.md), [keyed randomness](KEYED_RANDOMNESS.md), and [deterministic parallel execution](DETERMINISTIC_PARALLEL_EXECUTION.md).
+Sources: [SIMULATION vision](../../vision/SIMULATION.md), [INTERFACE vision](../../vision/INTERFACE.md), [technology decisions](TECHNOLOGY.md), [deployment and portability](DEPLOYMENT_AND_PORTABILITY.md), [rule-pack authoring and compilation](RULE_PACK_AUTHORING_AND_COMPILATION.md), [moddability](MODDABILITY.md), [keyed randomness](KEYED_RANDOMNESS.md), and [deterministic parallel execution](DETERMINISTIC_PARALLEL_EXECUTION.md).
 
 # Purpose
 
@@ -49,6 +49,8 @@ Pure simulation library
 ```text
 implementation/v1/
   Lyfe.sln
+  Dockerfile.server
+  compose.yaml
   src/
     Lyfe.Simulation/
     Lyfe.Server/
@@ -67,7 +69,9 @@ implementation/v1/
   tools/Lyfe.RuleTool/
 ```
 
-This layout is provisional until dependency rules and code generation are tested.
+This initial layout is now established by the implementation scaffold and dependency-direction tests. Protocol code generation may add generated-package projects, but additions must preserve these dependency rules.
+
+The authoritative server is also a deployment boundary: the checked-in multi-stage Dockerfile packages `Lyfe.Server` and its dependencies into a non-root Linux image, while Compose supplies the reference portable local launch. These artifacts remain outside every .NET project, and no container/runtime concept enters `Lyfe.Simulation`.
 
 # Dependency rules
 

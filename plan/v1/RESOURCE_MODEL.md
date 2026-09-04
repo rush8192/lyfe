@@ -10,6 +10,18 @@ Define the authoritative v1 model for matter, chemical energy, reservoirs, react
 
 This document fixes the accounting architecture needed by the other plans. Exact rates, capacities, efficiencies, and most reaction coefficients remain versioned balance data.
 
+## Implementation checkpoint
+
+`LEDGER-100` implements the first complete external-capture transaction against the
+minimal official rules: `4 H₂ + 2 CO₂ -> 2 ReserveOrganic + 2 boundary H₂O`, with
+three gross energy units divided into two stored and one dissipated. Typed account
+keys distinguish tile atmosphere, organism energy reserve, matter boundary, energy
+opportunity, and dissipated heat. Every transaction must exactly match its compiled
+reaction, conserve each CHNOPS element and energy through checked `Int128` totals,
+fit all finite balances, and produce the exact authoritative post-state promised by
+the journal. Production history aggregation, all other reservoirs/reactions, and
+the mass-balanced abiogenesis transaction remain later vertical slices.
+
 # V1 scope and non-goals
 
 V1 will model:

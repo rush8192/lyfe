@@ -1,0 +1,22 @@
+{
+  "kind": "reactions",
+  "reactions": [
+    {
+      "numericId": 1,
+      "stableKey": "reaction.hydrogen-acetogenesis",
+      "displayName": "Hydrogen acetogenesis",
+      "processKind": "external-energy-capture",
+      "inputs": [
+        { "resourceKey": "resource.hydrogen-gas", "quantity": 4 },
+        { "resourceKey": "resource.carbon-dioxide", "quantity": 2 }
+      ],
+      "outputs": [
+        { "resourceKey": "resource.reserve-organic", "quantity": 2 },
+        { "resourceKey": "resource.ocean-water", "quantity": 2 }
+      ],
+      "grossEnergyQ": 3,
+      "storedEnergyQ": 2,
+      "dissipatedEnergyQ": 1
+    }
+  ]
+}

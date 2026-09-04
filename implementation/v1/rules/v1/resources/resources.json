@@ -1,0 +1,49 @@
+{
+  "kind": "resources",
+  "resources": [
+    {
+      "numericId": 1,
+      "stableKey": "resource.hydrogen-gas",
+      "displayName": "Hydrogen gas",
+      "biologicalForm": "inorganic",
+      "environmentalPhase": "gas",
+      "composition": [
+        { "element": "hydrogen", "quantity": 2 }
+      ]
+    },
+    {
+      "numericId": 2,
+      "stableKey": "resource.carbon-dioxide",
+      "displayName": "Carbon dioxide",
+      "biologicalForm": "inorganic",
+      "environmentalPhase": "gas",
+      "composition": [
+        { "element": "carbon", "quantity": 1 },
+        { "element": "oxygen", "quantity": 2 }
+      ]
+    },
+    {
+      "numericId": 3,
+      "stableKey": "resource.reserve-organic",
+      "displayName": "Reserve organic matter",
+      "biologicalForm": "organic",
+      "environmentalPhase": "dissolved",
+      "composition": [
+        { "element": "carbon", "quantity": 1 },
+        { "element": "hydrogen", "quantity": 2 },
+        { "element": "oxygen", "quantity": 1 }
+      ]
+    },
+    {
+      "numericId": 4,
+      "stableKey": "resource.ocean-water",
+      "displayName": "Ocean water",
+      "biologicalForm": "boundary",
+      "environmentalPhase": "boundary",
+      "composition": [
+        { "element": "hydrogen", "quantity": 2 },
+        { "element": "oxygen", "quantity": 1 }
+      ]
+    }
+  ]
+}

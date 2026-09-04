@@ -1,0 +1,34 @@
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS restore
+WORKDIR /source
+
+COPY Directory.Build.props Directory.Packages.props global.json ./
+COPY src/Lyfe.Simulation/Lyfe.Simulation.csproj src/Lyfe.Simulation/
+COPY src/Lyfe.Protocol/Lyfe.Protocol.csproj src/Lyfe.Protocol/
+COPY src/Lyfe.Server/Lyfe.Server.csproj src/Lyfe.Server/
+RUN dotnet restore src/Lyfe.Server/Lyfe.Server.csproj
+
+FROM restore AS build
+COPY src/ src/
+COPY protocol/ protocol/
+COPY rules/ rules/
+COPY world-packs/ world-packs/
+RUN dotnet publish src/Lyfe.Server/Lyfe.Server.csproj \
+    --configuration Release \
+    --no-restore \
+    --output /app/publish \
+    /p:UseAppHost=false
+
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
+WORKDIR /app
+
+ENV ASPNETCORE_HTTP_PORTS=8080 \
+    DOTNET_EnableDiagnostics=0 \
+    DOTNET_HOSTBUILDER__RELOADCONFIGONCHANGE=false
+
+EXPOSE 8080
+
+RUN mkdir -p /var/lib/lyfe && chown app:app /var/lib/lyfe
+COPY --from=build --chown=app:app /app/publish/ ./
+
+USER app
+ENTRYPOINT ["dotnet", "Lyfe.Server.dll"]

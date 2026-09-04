@@ -8,6 +8,33 @@ Sources: [SIMULATION vision](../../vision/SIMULATION.md), [ORGANISMS vision](../
 
 Define the fixed-tick state machine, command boundary, deterministic action ordering, parallel work, and event publication for the authoritative world.
 
+## Implementation checkpoint
+
+`TICK-100` implements the scalar reference boundary and all twelve ordered phase
+barriers. Each phase seals a generation-stamped view, emits total-keyed outcomes,
+preflights before opening a mutable journal, commits only through typed state
+mutators, validates, and seals a phase journal. Phase 3 is the first substantive
+slice: it advances organisms in stable-ID order by the compiled one-hour duration.
+
+`LEDGER-100` adds the first phase-5/6 vertical path. Each eligible founder emits a
+one-whole-extent hydrogen-acetogenesis intent; coupled H₂/CO₂ scarcity admits only
+complete bundles using the registered keyed residual rank. Canonical transaction
+records preserve tile debits, organism `ReserveOrganic` credits, ocean-water
+boundary output, chemical-energy opportunity, stored energy, and dissipated heat.
+Preflight validates finite balances and capacity, the conservation oracle expands
+all resources through checked `Int128` CHNOPS totals, and post-commit validation
+proves the authoritative balances equal the ledger's promised result. The fixed
+one-extent request and `10,000` reserve ceiling are deliberately narrow foundation
+values pending compiled phenotype throughput and storage-capacity materialization.
+
+The runner publishes the new tick/revision only after all phases and final
+validation succeed. A preflight failure leaves that phase untouched; an unexpected
+failure after mutation faults the private working world while queries continue to
+see only the preceding published snapshot. The other biological behaviors below
+remain authoritative targets rather than claims about the current executable
+surface. `HASH-100` now seals each published boundary over canonical logical
+state; `CHANGE-100` is the next implementation slice.
+
 # Time model
 
 - The default tick represents one simulated hour and is configurable per world.

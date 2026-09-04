@@ -1,0 +1,93 @@
+{
+  "kind": "worldProfiles",
+  "profiles": [
+    {
+      "stableKey": "world.primordial-earth-v1",
+      "displayName": "Primordial Earth 32 by 17",
+      "width": 32,
+      "height": 17,
+      "wrapX": true,
+      "wrapY": false,
+      "generator": {
+        "algorithmVersion": 1,
+        "maximumAttempts": 8,
+        "targetAquaticFractionMinimumQ": 650000,
+        "targetAquaticFractionMaximumQ": 750000,
+        "elevation": {
+          "wavelengthsTiles": [16, 8, 4, 2],
+          "amplitudesQ": [1000000, 500000, 250000, 125000],
+          "continentalAmplitudeQ": 750000,
+          "maximumOceanDepthMeters": 6000,
+          "maximumLandElevationMeters": 4000
+        },
+        "climate": {
+          "hoursPerDay": 24,
+          "daysPerMonth": 30,
+          "monthsPerYear": 12,
+          "axialTiltMilliDegrees": 23500,
+          "equatorialAnnualMeanMilliC": 42000,
+          "latitudeCoolingMilliC": 38000,
+          "landLapseMilliCPerKilometer": 6500,
+          "geothermalMilliC": 5000,
+          "regionalAnomalyMagnitudeMilliC": 5000,
+          "baseSeasonalAmplitudeMilliC": 2000,
+          "latitudeSeasonalAmplitudeMilliC": 18000,
+          "aquaticSeasonalityQ": 450000,
+          "terrestrialSeasonalityQ": 1000000,
+          "aquaticDiurnalAmplitudeMilliC": 2000,
+          "terrestrialDiurnalAmplitudeMilliC": 8000,
+          "minimumTemperatureMilliC": -80000,
+          "maximumTemperatureMilliC": 80000,
+          "maximumMonthlyPrecipitationMicrometersPerHour": 250,
+          "cloudMinimumQ": 50000,
+          "cloudPrecipitationContributionQ": 650000,
+          "cloudSolarAttenuationQ": 600000,
+          "turbidityAttenuationQ": 750000
+        },
+        "volcanism": {
+          "tileFractionMinimumQ": 80000,
+          "tileFractionMaximumQ": 180000,
+          "tileThresholdQ": 400000,
+          "founderActivityMinimumQ": 650000,
+          "founderActivityMaximumQ": 950000,
+          "founderActivityTargetQ": 800000
+        },
+        "startingRegions": {
+          "requiredPairs": 4,
+          "minimumPairSeparationTiles": 4,
+          "maximumAbsoluteLatitudeMilliDegrees": 12000,
+          "hydrogenMinimumDepthMeters": 120,
+          "hydrogenMaximumDepthMeters": 300,
+          "hydrogenTargetDepthMeters": 200,
+          "sulfurMinimumDepthMeters": 5,
+          "sulfurMaximumDepthMeters": 35,
+          "sulfurTargetDepthMeters": 20,
+          "annualTemperatureMinimumMilliC": 38000,
+          "annualTemperatureMaximumMilliC": 50000,
+          "currentTemperatureMinimumMilliC": 40000,
+          "currentTemperatureMaximumMilliC": 50000,
+          "hydrogenMaximumDailyLightQ": 2016000,
+          "sulfurMinimumDailyLightQ": 5185000,
+          "sulfurMaximumDailyLightQ": 6337000,
+          "maximumRepairedTiles": 8,
+          "hydrogenMaximumDepthRepairMeters": 150,
+          "sulfurMaximumDepthRepairMeters": 40,
+          "maximumVolcanismRepairQ": 250000,
+          "maximumTotalRepairCostQ": 550000
+        },
+        "defaultResourceStocks": [
+          { "resourceKey": "resource.hydrogen-gas", "quantity": 0 },
+          { "resourceKey": "resource.carbon-dioxide", "quantity": 100000000 },
+          { "resourceKey": "resource.reserve-organic", "quantity": 0 },
+          { "resourceKey": "resource.ocean-water", "quantity": 0 }
+        ],
+        "hydrogenStartResourceStocks": [
+          { "resourceKey": "resource.hydrogen-gas", "quantity": 50000000 },
+          { "resourceKey": "resource.carbon-dioxide", "quantity": 100000000 },
+          { "resourceKey": "resource.reserve-organic", "quantity": 0 },
+          { "resourceKey": "resource.ocean-water", "quantity": 0 }
+        ]
+      }
+    }
+  ]
+}

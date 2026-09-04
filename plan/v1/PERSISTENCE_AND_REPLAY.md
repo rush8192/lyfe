@@ -1,6 +1,6 @@
 # Persistence, Checkpoints, and Replay
 
-Status: first save-content, detached boundary-snapshot, compatibility, state-hash, and v1 crash-durability pass; container, replay export, and retention details pending
+Status: Stage-A envelope, canonical logical payload, exact reload/hash/continuation, atomic replacement, and crash-durability boundary implemented; replay export, hosted lifecycle operations, and retention details pending
 
 Sources: [SIMULATION vision](../../vision/SIMULATION.md), [GAMEPLAY vision](../../vision/GAMEPLAY.md), [player loop and narrative](PLAYER_LOOP_AND_NARRATIVE.md), [keyed randomness](KEYED_RANDOMNESS.md), [deterministic parallel execution](DETERMINISTIC_PARALLEL_EXECUTION.md), [rule-pack authoring and compilation](RULE_PACK_AUTHORING_AND_COMPILATION.md), [moddability](MODDABILITY.md), and [technology decisions](TECHNOLOGY.md).
 
@@ -47,6 +47,105 @@ A successfully completed save/checkpoint is the v1 crash-durability boundary. A 
 
 The in-memory accepted-command log supports deterministic replay export and diagnostics. It is not a write-ahead log and is not sufficient by itself for crash recovery. Adding durable command journaling, group commit, or exactly-once recovery is future hosted-service work and must be justified by a stronger availability promise.
 
+# V1 save envelope
+
+`SAVE-100` fixes a transport-independent binary envelope around an opaque logical
+world payload. `SAVE-120` supplies the canonical Stage-A logical payload,
+index/materialization rebuild, hash verification, and next-tick continuation.
+No endpoint may present an envelope containing a placeholder payload as a useful
+player save.
+
+All integers in the fixed preamble are unsigned little-endian. The layout is:
+
+| Offset | Bytes | Meaning |
+| ---: | ---: | --- |
+| `0` | `8` | ASCII magic `LYFESV1` followed by NUL |
+| `8` | `4` | container version (`1`) |
+| `12` | `4` | compression kind (`1` = Brotli) |
+| `16` | `4` | canonical JSON metadata byte length |
+| `20` | `4` | reserved; must be zero |
+| `24` | `8` | compressed payload byte length |
+| `32` | `8` | logical payload byte length |
+| `40` | `32` | SHA-256 of the metadata bytes |
+| `72` | `32` | SHA-256 of the compressed payload bytes |
+| `104` | `32` | SHA-256 of the logical payload bytes |
+| `136` | variable | canonical UTF-8 JSON metadata, then the Brotli payload |
+
+V1 limits metadata to `64 KiB` and both compressed and logical payloads to
+`1 GiB`; empty payloads, trailing bytes, nonzero reserved data, undeclared JSON
+members, non-NFC text, and noncanonical lowercase hexadecimal identities are
+invalid. These are defensive implementation ceilings, not promises that a
+one-gigabyte save is operationally acceptable. Representative save memory,
+latency, and file-size budgets remain release calibration work.
+
+The metadata is readable and compatibility-checkable without decompressing or
+reading the payload. It records the completed boundary and its world hash, root
+seed, payload/hash schema versions, engine simulation version, complete rule-pack
+and world-profile identities, mechanics/presentation/registry/compiled hashes,
+balance-mod and selected-option hashes, scenario, RNG identity, and certification
+class. A loader fails closed on anything other than exact identity equality before
+payload decoding. Only a `PausedReady` completed boundary is valid. The initial
+factory records the empty SHA-256 sentinel for the not-yet-configurable mod set
+and world options and labels the artifact `official-unmodified-v1`; those values
+must be replaced by the actual composition identities when mod loading lands.
+
+Container version `1` and logical payload schema version `1` evolve separately.
+The v1 load policy supports only the exact container version, compression kind,
+payload schema, and compatibility identity. There are no implicit migrations,
+best-effort repairs, or rule substitution. A future migration must read an older
+schema into its own typed representation, produce a new canonical state, and
+verify an explicitly versioned migration fixture; merely relaxing equality is
+not a migration strategy.
+
+Corruption and structural failures have stable typed categories for bad magic,
+unsupported versions/compression, malformed lengths or metadata, checksum
+mismatches in each domain, decompression failure, logical-length mismatch,
+truncation, trailing data, and incompatibility. UI wording may evolve, but it
+must preserve the distinction between damage and a healthy save made by an
+incompatible simulation.
+
+## Atomic local-file replacement
+
+The local writer creates a unique hidden temporary file in the destination
+directory, writes the complete envelope, flushes file contents to stable storage,
+closes it, and performs one same-directory overwrite rename. A failure or
+cancellation before the rename leaves the prior destination intact and removes
+the current temporary file. A completed rename makes the new envelope visible as
+a whole to loaders.
+
+This contract depends on a filesystem providing atomic same-directory rename.
+It does not overclaim directory-entry durability across every storage device or
+network filesystem after sudden power loss; supported deployment backends must
+be validated separately. Startup ignores orphan files matching the temporary
+naming convention, and later recovery work may clean stale orphans. The writer
+does not use a delete-then-move sequence and never exposes the temporary path as
+the save identity.
+
+## Implemented logical world payload v1
+
+The logical payload begins with the eight-byte `LYFEWLD1` magic and unsigned
+little-endian schema version `1`. It then stores next genome/species/organism IDs,
+bounded record counts, canonical tile-resource balances, genomes, species,
+organisms, and the last completed tick's fully expanded matter/energy ledger.
+Records use stable domain IDs and exact integer quantities; no dense row, chunk,
+locator, mutation epoch, scratch buffer, or protocol type enters the format.
+
+The writer requires strict ascending stable-ID order and tile/resource plus total
+transaction-key order. The reader rejects bad magic/schema, truncation, trailing
+bytes, excessive counts, zero/invalid continuation values, and noncanonical
+ordering with typed failures. Current defensive limits are `4,000,000` tile-
+resource rows, `1,000,000` genomes/species/organisms/transactions, and `128`
+matter or energy entries per transaction. These are corruption ceilings, not
+supported-world promises.
+
+Load validates the envelope compatibility identity before reading its payload,
+decodes the logical records, reconstructs fresh stores/locators/populations and
+the entity allocator, rebuilds and reconciles the completed ledger, and computes
+the canonical world hash. A mismatch between reconstructed boundary and recorded
+metadata rejects the world. Golden bytes, canonical re-encoding, altered-state
+rejection, exact round-trip equality, and identical next-tick continuation are
+automated Stage-A fixtures.
+
 # Replay model
 
 The detailed plan should distinguish:
@@ -66,15 +165,10 @@ Replay(initialSnapshot, commandLog, targetTick):
     return state at target or a divergence report
 ```
 
-# Format and evolution
+# Remaining format and evolution work
 
 Decide:
 
-- Container format and file layout.
-- Schema ownership separate from in-memory C# layout.
-- Compression and checksums.
-- Save metadata readable without loading the full world.
-- Compatibility policy across rule and engine versions.
 - Movement/migration event provenance, including the v1-zero environmental-displacement component, and compatibility behavior when later rule packs add environment-driven transport.
 - Retention and size limits for events and resource histories.
 - Whether small data-only base/mod/world-pack sources and locks are embedded in saves by default or exported as a portable sidecar bundle.
@@ -87,6 +181,34 @@ The hash includes all primary continuation state, next-ID counters, RNG ordinals
 
 Hashing the logical model is intentionally independent of the save-container bytes and physical in-memory layout. A save stores its completed logical hash and load recomputes it after validation/rebuilding indexes; mismatch rejects the load. Debug/determinism fixtures may hash after every phase or tick. Production computes it at creation/load/save, at authored diagnostic checkpoints, and optionally at a configurable low cadence—not obligatorily every tick.
 
+## Implemented WorldStateHashV1 vocabulary
+
+`HASH-100` assigns schema version `1` and top-level record tag `0x3000`.
+The currently implemented record tags are compatibility `0x3001`, next-ID
+counters `0x3002`, tile `0x3100`, tile resource `0x3101`, genome `0x3200`,
+species `0x3300`, organism `0x3400`, resource transaction `0x3500`, matter
+entry `0x3501`, and energy entry `0x3502`. Top-level field tags are fixed as:
+
+| Field tag | Logical field |
+| ---: | --- |
+| `1..3` | Hash schema version, engine simulation version, compatibility record |
+| `4..9` | World ID, completed tick, revision, simulated hours, tick duration, runner state |
+| `10` | Next genome/species/organism IDs |
+| `20` | Tiles and resource balances, ordered by `TileId` then `ResourceId` |
+| `30` | Genomes ordered by `GenomeId` |
+| `40` | Species ordered by `SpeciesId` |
+| `50` | Organisms ordered by `OrganismId` |
+| `60` | Completed-tick resource transactions ordered by total transaction key |
+
+The compatibility record fixes fields `1..20` as base-pack ID/version and API
+versions, mechanics/registry/compiled hashes, scenario ID, world-pack/profile and
+compiled-world hashes, RNG algorithm/schema/domain-manifest identity, and the low
+then high words of the root seed. Entity subrecords use explicit field order matching
+their current logical state records; adding future authoritative fields requires new
+tags and golden-vector updates rather than inserting untagged bytes. The first
+goldens cover creation and a completed capture tick. Physical migration that changes
+chunk row order but restores identical logical state produces the same hash.
+
 A hierarchical diagnostic mode also records per-store and per-tile/species digests so a divergence report can identify the first mismatched tick, phase, subsystem, tile, resource, or entity. These child digests aid diagnosis but do not replace the canonical whole-world hash.
 
 # Local and future server storage
@@ -95,17 +217,17 @@ V1 may use local files, but persistence interfaces should not assume the client 
 
 # Required decisions and tests
 
-- [ ] Save/checkpoint schema and container.
-- [ ] Atomic write and recovery procedure.
-- [x] Completed-boundary detached logical snapshot and background serialization ownership; exact container, memory, concurrency, and timeout limits remain open.
-- [x] RNG continuation state and validation boundary: canonical root seed, pinned algorithm ID, RNG schema version, domain-manifest hash, and persistent semantic ordinals are saved; mutable stream cursors do not exist. Exact container encoding remains open. See [KEYED_RANDOMNESS.md](KEYED_RANDOMNESS.md).
+- [x] Versioned v1 envelope/container, metadata schema, Brotli encoding, bounds, compatibility-before-payload contract, and separately versioned canonical logical payload.
+- [x] Atomic same-directory temporary-write, flush, replace, and pre-replace failure procedure; backend power-loss validation remains operational work.
+- [x] Completed-boundary detached logical snapshot and background serialization ownership; concurrency and timeout policy plus representative memory limits remain open.
+- [x] RNG continuation state and validation boundary: canonical root seed, pinned algorithm ID, RNG schema version, domain-manifest hash, and persistent semantic ordinals are saved; mutable stream cursors do not exist. See [KEYED_RANDOMNESS.md](KEYED_RANDOMNESS.md).
 - [ ] Replay command-log format.
-- [x] `WorldStateHashV1` algorithm, logical scope/exclusions, canonical order, load verification, and debug/production cadence; concrete numeric record/field tags and golden vectors remain scaffold work.
+- [x] `WorldStateHashV1` algorithm, logical scope/exclusions, canonical order, concrete v1 record/field tags, creation/first-tick golden vectors, debug/production cadence, and load-time recomputation.
 - [x] Exact base/mod-set/world-pack/profile/options/final-rule/world compatibility identity and fail-closed load boundary; see [RULE_PACK_AUTHORING_AND_COMPILATION.md](RULE_PACK_AUTHORING_AND_COMPILATION.md) and [MODDABILITY.md](MODDABILITY.md).
-- [ ] Engine/save-schema migration and retained multi-version compatibility policy.
+- [x] V1 engine/save-schema policy: exact compatibility only, no implicit migrations; retained multi-version support remains future work.
 - [ ] Event/history retention and compression.
 - [ ] Canonical-event versus presentation-preference storage boundary, including export/privacy behavior for private notes.
-- [ ] Corruption detection and user-visible errors.
-- [ ] Round-trip equality tests.
+- [x] Envelope corruption detection and stable typed error categories; client-facing wording remains with the save UI.
+- [x] Stage-A round-trip equality, canonical byte, altered-state rejection, and identical next-tick continuation tests; expand with each new primary-state slice.
 - [ ] Long replay and deliberate-divergence tests.
 - [x] V1 crash durability ends at the last completed save; accepted commands are not synchronously write-ahead durable.

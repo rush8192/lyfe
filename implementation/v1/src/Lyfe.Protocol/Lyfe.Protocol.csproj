@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>Lyfe.Protocol</AssemblyName>
+    <RootNamespace>Lyfe.Protocol</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Google.Protobuf" />
+    <PackageReference Include="Grpc.Tools" PrivateAssets="All" />
+  </ItemGroup>
+  <ItemGroup>
+    <Protobuf Include="../../protocol/**/*.proto"
+              Link="Schemas/%(RecursiveDir)%(Filename)%(Extension)"
+              GrpcServices="None" />
+  </ItemGroup>
+</Project>

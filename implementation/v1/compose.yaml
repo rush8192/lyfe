@@ -1,0 +1,26 @@
+name: lyfe-v1
+
+services:
+  server:
+    image: lyfe-server:v1-dev
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+    ports:
+      - "${LYFE_SERVER_PORT:-5080}:8080"
+    volumes:
+      - lyfe-data:/var/lib/lyfe
+    read_only: true
+    tmpfs:
+      - /tmp
+    init: true
+    stop_grace_period: 30s
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  lyfe-data:

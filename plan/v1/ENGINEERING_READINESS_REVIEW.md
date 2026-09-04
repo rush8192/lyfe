@@ -1,6 +1,6 @@
 # Engineering Readiness Review
 
-Status: v1 foundation review complete; the architecture is ready for a walking skeleton, with explicitly staged decisions and optimization gates
+Status: v1 foundation review complete and Stage-A walking skeleton implemented; Stage B can grow the same seams into the playable opening
 
 Sources: [technology](TECHNOLOGY.md), [architecture](ARCHITECTURE.md), [world ownership](WORLD_EXECUTION_AND_OWNERSHIP.md), [data model](DATA_MODEL.md), [entity storage](ENTITY_IDENTITY_AND_STORAGE.md), [rule compilation](RULE_PACK_AUTHORING_AND_COMPILATION.md), [moddability](MODDABILITY.md), [persistence](PERSISTENCE_AND_REPLAY.md), [client synchronization](STATE_CHANGE_AND_CLIENT_SYNC.md), and [validation](VALIDATION_AND_PERFORMANCE.md).
 

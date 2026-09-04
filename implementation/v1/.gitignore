@@ -1,0 +1,10 @@
+**/bin/
+**/obj/
+**/TestResults/
+client/node_modules/
+client/dist/
+client/coverage/
+.DS_Store
+*.user
+*.suo
+*.log

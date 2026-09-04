@@ -238,7 +238,7 @@ C# is reconsidered only after representative profiling shows that the managed ru
 - [x] Balance-mod validation, composition laws, compatibility identity, and certification boundary; concrete generated test cases remain implementation work. See [MODDABILITY.md](MODDABILITY.md).
 - [x] Closed-schema world-pack/profile validation, option, identity, deterministic-generation, and certification boundary; representative external profiles and expanded seed suites remain implementation work. See [MODDABILITY.md](MODDABILITY.md) and [WORLD_AND_CLIMATE.md](WORLD_AND_CLIMATE.md).
 - [ ] Resource-conservation oracle.
-- [x] `WorldStateHashV1` algorithm, logical inclusion/exclusion rules, canonical ordering, load verification, and cadence; concrete field tags and golden vectors remain scaffold work. See [PERSISTENCE_AND_REPLAY.md](PERSISTENCE_AND_REPLAY.md).
+- [x] `WorldStateHashV1` algorithm, logical inclusion/exclusion rules, canonical ordering, concrete record/field tags, creation/first-tick golden vectors, and cadence. Save/load verification remains owned by the persistence slice. See [PERSISTENCE_AND_REPLAY.md](PERSISTENCE_AND_REPLAY.md).
 - [x] State-change/projection correctness taxonomy and merge-law requirements; concrete property-test generators and performance thresholds remain open. See [STATE_CHANGE_AND_CLIENT_SYNC.md](STATE_CHANGE_AND_CLIENT_SYNC.md).
 - [x] World ownership/failure and entity identity/storage test contracts; concrete benchmark thresholds remain open. See [WORLD_EXECUTION_AND_OWNERSHIP.md](WORLD_EXECUTION_AND_OWNERSHIP.md) and [ENTITY_IDENTITY_AND_STORAGE.md](ENTITY_IDENTITY_AND_STORAGE.md).
 - [ ] Benchmark world/rule pack.

@@ -1,6 +1,6 @@
 # Keyed Randomness and Random-Address Stability
 
-Status: first v1 authoritative randomness contract; domain numeric assignments and golden vectors will be frozen with the implementation scaffold
+Status: authoritative v1 randomness contract; initial domain assignments, manifest hash, and golden vectors are frozen by `RNG-100`
 
 Sources: [technology decisions](TECHNOLOGY.md), [simulation loop](SIMULATION_LOOP.md), [world execution and ownership](WORLD_EXECUTION_AND_OWNERSHIP.md), [entity identity and storage](ENTITY_IDENTITY_AND_STORAGE.md), [rule-pack authoring and compilation](RULE_PACK_AUTHORING_AND_COMPILATION.md), and [persistence and replay](PERSISTENCE_AND_REPLAY.md).
 
@@ -155,31 +155,39 @@ Rules:
 
 The active/tombstoned ID-and-key lock, assignment workflow, and registry compatibility hash follow [RULE_PACK_AUTHORING_AND_COMPILATION.md](RULE_PACK_AUTHORING_AND_COMPILATION.md). RNG domains remain engine compatibility vocabulary rather than tunable scenario data.
 
-First registry entries should cover at least:
+The first registry is frozen below. Numeric gaps are deliberate room for related
+future mechanics; assigned values are never reused.
 
-| Domain | Coordinate 0 | Coordinate 1 | Coordinate 2 |
-| --- | --- | --- | --- |
-| Founder position X/Y | `setupOrdinal` | `organismId` | `tileId` |
-| World-generation field sample | `tileId` | field-specific octave/layer | generation attempt |
-| Weather event | `tick` | `tileId` | weather-event ordinal/type |
-| Intrinsic exposure death | `tick` | `organismId` | `exposureId` |
-| Senescence death | `tick` | `organismId` | `0` |
-| Micronutrient uptake | `tick` | `organismId` | `resource-selection stage` |
-| Metabolic opportunity | `tick` | `organismId` | `reactionId` |
-| Brownian direction/magnitude | `tick` | `organismId` | `0` |
-| Migration admission | `tick` | `organismId` | `edgeId` |
-| Behavior choice | `tick` | `organismId` | behavior-selection ordinal or `0` |
-| Predation target choice | `tick` | `predatorId` | candidate `preyId` |
-| Predation kill | `tick` | `predatorId` | `preyId` |
-| Resource remainder rank | `tick` | `claimantId` | `Pack32(tileId, resourceId)` |
-| Coupled-claim remainder rank | `tick` | `claimantId` | `Pack32(tileId, reactionId)` |
-| Predation-feeding remainder rank | `tick` | `claimantId` | `Pack32(tileId, resourceId)` |
-| Micronutrient target rank | `tick` | `organismId` | `resourceId` |
-| Reproduction cooldown jitter | `organismId` | successful-reproduction ordinal | `0` |
-| Reproduction indivisible remainder | `organismId` | successful-reproduction ordinal | `resourceId` |
-| Speciation founder selection | `speciationEventId` | `tileId` | `organismId` |
-| Autonomous exploration/choice | autonomous evaluation ordinal | `speciesId` | canonical proposal/candidate-set hash |
-| Autonomous commit | autonomous evaluation ordinal | `speciesId` | intent/proposal hash |
+| ID | Domain | Operation | Coordinate 0 | Coordinate 1 | Coordinate 2 |
+| --- | --- | --- | --- | --- | --- |
+| `0x0101` | Founder position X | bounded integer | `setupOrdinal` | `organismId` | `tileId` |
+| `0x0102` | Founder position Y | bounded integer | `setupOrdinal` | `organismId` | `tileId` |
+| `0x0201` | World-generation field sample | bounded integer | `tileId` | field-specific octave/layer | generation attempt |
+| `0x0301` | Weather event | Bernoulli | `tick` | `tileId` | weather-event ordinal/type |
+| `0x0401` | Intrinsic exposure death | Bernoulli | `tick` | `organismId` | `exposureId` |
+| `0x0402` | Senescence death | Bernoulli | `tick` | `organismId` | `0` |
+| `0x0501` | Micronutrient uptake | weighted choice | `tick` | `organismId` | resource-selection stage |
+| `0x0601` | Metabolic opportunity | keyed binomial | `tick` | `organismId` | `reactionId` |
+| `0x0701` | Brownian direction | bounded integer | `tick` | `organismId` | `0` |
+| `0x0702` | Brownian magnitude | bounded integer | `tick` | `organismId` | `0` |
+| `0x0703` | Migration admission | Bernoulli | `tick` | `organismId` | `edgeId` |
+| `0x0801` | Behavior choice | weighted choice | `tick` | `organismId` | behavior-selection ordinal or `0` |
+| `0x0901` | Predation target choice | stable rank | `tick` | `predatorId` | candidate `preyId` |
+| `0x0902` | Predation kill | Bernoulli | `tick` | `predatorId` | `preyId` |
+| `0x0a01` | Resource remainder rank | stable rank | `tick` | `claimantId` | `Pack32(tileId, resourceId)` |
+| `0x0a02` | Coupled-claim remainder rank | stable rank | `tick` | `claimantId` | `Pack32(tileId, reactionId)` |
+| `0x0a03` | Predation-feeding remainder rank | stable rank | `tick` | `claimantId` | `Pack32(tileId, resourceId)` |
+| `0x0a04` | Micronutrient target rank | stable rank | `tick` | `organismId` | `resourceId` |
+| `0x0b01` | Reproduction cooldown jitter | bounded integer | `organismId` | successful-reproduction ordinal | `0` |
+| `0x0b02` | Reproduction indivisible remainder | stable rank | `organismId` | successful-reproduction ordinal | `resourceId` |
+| `0x0c01` | Speciation founder selection | stable rank | `speciationEventId` | `tileId` | `organismId` |
+| `0x0d01` | Autonomous exploration/choice | weighted choice | autonomous evaluation ordinal | `speciesId` | canonical proposal/candidate-set hash |
+| `0x0d02` | Autonomous commit | Bernoulli | autonomous evaluation ordinal | `speciesId` | intent/proposal hash |
+
+The v1 canonical registry-manifest SHA-256 is
+`2ed4852af4394c74fb85b41dc6bd1b537ed045618ca2aeb095f2cbf4aaf7a59c`.
+The implementation refuses a typed operation that is not the operation declared
+for its domain.
 
 X and Y founder placement, Brownian direction and magnitude, exploration versus weighted choice, and other conceptually independent results receive separate domain IDs even when their coordinates match. One mechanic must not obtain a second conceptual decision by incrementing an implicit cursor.
 
@@ -391,16 +399,15 @@ Player explanations expose authored probability, relevant factors, and realized 
 7. Add seed plus algorithm/schema/domain-manifest identity to setup, save, replay, state-hash metadata, and diagnostics.
 8. Profile the scalar implementation in the representative simulation before considering vectorization, alternate conversions, or batched Philox calls.
 
-# Remaining implementation inputs
+# Remaining integration inputs
 
-- Permanent numeric assignments for the first domain registry.
 - Exact canonical proposal/candidate-set hash algorithm used only where an existing stable ID cannot name an autonomous-evolution proposal.
 - Whether raw death draws remain in every durable death record or move to a bounded diagnostic side record while preserving causal explanation.
 - Maximum world/tick/event ordinals used to validate all documented address packings.
-- Concrete numeric state-hash field tags for `algorithmId`, RNG schema, domain-manifest hash, and root seed; their placement in the `WorldStateHashV1` preamble is fixed by [PERSISTENCE_AND_REPLAY.md](PERSISTENCE_AND_REPLAY.md).
+- [x] Concrete numeric state-hash field tags for `algorithmId`, RNG schema, domain-manifest hash, and root seed are implemented in the `WorldStateHashV1` compatibility record; see [PERSISTENCE_AND_REPLAY.md](PERSISTENCE_AND_REPLAY.md).
 
 # Scientific and platform basis
 
-Counter-based generators were designed for parallel simulations: independent keyed transformations of counters avoid sequential generator state, parallelize naturally, and the Random123 families passed the TestU01 BigCrush suite in the authors' evaluation. LYFE uses the published ten-round 4×64-bit Philox variant and freezes its own compatibility vectors rather than depending on a platform package: [Salmon, Moraes, Dror, and Shaw](https://www.thesalmons.org/john/random123/papers/random123sc11.pdf), [Random123 project](https://random123.com/), and [Random123 Philox reference source](https://github.com/lemire/random123/blob/master/include/Random123/philox.h).
+Counter-based generators were designed for parallel simulations: independent keyed transformations of counters avoid sequential generator state, parallelize naturally, and the Random123 families passed the TestU01 BigCrush suite in the authors' evaluation. LYFE uses the published ten-round 4×64-bit Philox variant and freezes its own compatibility vectors rather than depending on a platform package: [Salmon, Moraes, Dror, and Shaw](https://www.thesalmons.org/john/random123/papers/random123sc11.pdf), [Random123 project](https://random123.com/), [official Random123 Philox reference source](https://github.com/DEShawResearch/random123/blob/main/include/Random123/philox.h), and [official known-answer vectors](https://github.com/DEShawResearch/random123/blob/main/tests/kat_vectors).
 
 The platform RNG is deliberately excluded because Microsoft documents that `System.Random` is not guaranteed to keep the same implementation or seeded sequence across major .NET versions: [Microsoft .NET `Random` documentation](https://learn.microsoft.com/en-us/dotnet/api/system.random?view=net-10.0#notes-to-callers).

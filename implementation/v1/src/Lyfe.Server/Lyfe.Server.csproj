@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <AssemblyName>Lyfe.Server</AssemblyName>
+    <RootNamespace>Lyfe.Server</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Lyfe.Protocol/Lyfe.Protocol.csproj" />
+    <ProjectReference Include="../Lyfe.Simulation/Lyfe.Simulation.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="../../rules/v1/**/*.json"
+             Link="OfficialRules/%(RecursiveDir)%(Filename)%(Extension)"
+             CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="../../world-packs/primordial-earth/**/*.json"
+             Link="OfficialWorld/%(RecursiveDir)%(Filename)%(Extension)"
+             CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="../../world-packs/primordial-earth-v1/**/*.json"
+             Link="OfficialGeneratedWorld/%(RecursiveDir)%(Filename)%(Extension)"
+             CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

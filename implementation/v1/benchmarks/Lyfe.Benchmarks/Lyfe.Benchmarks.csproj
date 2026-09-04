@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>Lyfe.Benchmarks</AssemblyName>
+    <RootNamespace>Lyfe.Benchmarks</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/Lyfe.Simulation/Lyfe.Simulation.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="../../rules/v1/**/*.json"
+             Link="OfficialRules/%(RecursiveDir)%(Filename)%(Extension)"
+             CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="../../world-packs/primordial-earth/**/*.json"
+             Link="OfficialWorld/%(RecursiveDir)%(Filename)%(Extension)"
+             CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

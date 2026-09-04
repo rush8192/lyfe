@@ -1,6 +1,6 @@
 # Browser Client
 
-Status: scaffold
+Status: Stage-A generated snapshot transport, normalized cache, absolute batch applier, and truthful PixiJS organism view implemented; playable controls and explanatory surfaces remain
 
 Sources: [INTERFACE vision](../../vision/INTERFACE.md), [GAMEPLAY vision](../../vision/GAMEPLAY.md), [player loop and narrative](PLAYER_LOOP_AND_NARRATIVE.md), [behavior and resource pressure](BEHAVIOR_AND_RESOURCE_PRESSURE.md), [state change and client synchronization](STATE_CHANGE_AND_CLIENT_SYNC.md), [moddability](MODDABILITY.md), and [technology decisions](TECHNOLOGY.md).
 
@@ -124,14 +124,32 @@ Define viewport interest, object pooling, sprite batching, level of detail, upda
 
 The normalized cache and batch applier follow [STATE_CHANGE_AND_CLIENT_SYNC.md](STATE_CHANGE_AND_CLIENT_SYNC.md). A batch is fully decoded and validated, applied to a draft in dependency order, and committed at one exact stream revision before React selectors or PixiJS buffers are notified. State fields are absolute replacements, histories are keyed upserts, and entity removals distinguish destruction from loss of projection. React observes coarse changed scopes; PixiJS receives bulk changed-ID/column ranges and never renders an intermediate partial batch.
 
+# Stage-A executable surface
+
+The browser fetches `application/x-protobuf`, decodes the generated
+`ProjectionSnapshot`, and preserves all authoritative 64-bit values as `bigint`.
+The initial normalized cache is keyed by stable domain IDs rather than server
+dense locations. Its pure batch applier stages absolute tile/species
+replacements and removals, validates exact stream/world/rules/tick/revision
+continuity, then returns a new committed cache. Duplicates are harmless; gaps,
+out-of-order or ambiguous operations, wrong identity, and invalid replacement
+state retain the prior cache and require a fresh authorized snapshot.
+
+The first PixiJS view distinguishes unknown, reduced, and live tile shapes and
+draws each organism in a live tile exactly once from its authoritative stable-ID
+projection. A live-to-reduced whole-tile replacement removes the inaccessible
+organism collection from cache. This intentionally small surface proves the
+thin-client, hidden-state, generated-contract, and one-to-one rendering seams;
+it is not yet the playable map/inspector UI.
+
 # Required decisions and artifacts
 
-- [ ] Client build/package tooling and pinned versions.
-- [ ] State-store/query approach.
-- [ ] React/Pixi ownership boundary.
+- [x] Stage-A Vite/TypeScript/Vitest tooling and package versions pinned; release/CI upgrade policy remains.
+- [x] Stage-A normalized immutable projection-cache API; richer selectors, subscriptions, and renderer notifications grow with the playable UI.
+- [x] Initial React shell/PixiJS dense-world ownership boundary.
 - [ ] Camera, zoom, tile, and within-tile coordinate mapping.
-- [x] Logical snapshot/delta application, atomicity, merge, duplicate/gap, and renderer-notification contract; concrete state-store APIs remain open. See [STATE_CHANGE_AND_CLIENT_SYNC.md](STATE_CHANGE_AND_CLIENT_SYNC.md).
-- [ ] Exploration-state visual language, stale-data UX, and live-to-reduced cache tests.
+- [x] Logical and generated snapshot/delta application, atomicity, replacement merge, duplicate/gap recovery, and Stage-A cache API. See [STATE_CHANGE_AND_CLIENT_SYNC.md](STATE_CHANGE_AND_CLIENT_SYNC.md).
+- [ ] Complete exploration-state visual language and stale-data UX; Stage-A unknown/reduced/live shapes and live-to-reduced cache eviction are implemented.
 - [ ] Resource-chart and lineage-graph libraries.
 - [ ] Loading, disconnect, resync, and command-error UX.
 - [x] Client balance/world-profile authority boundary, final-definition cache identity, world-profile setup consequences, and modified-world disclosure; exact metadata schemas remain part of the protocol pass. See [MODDABILITY.md](MODDABILITY.md).

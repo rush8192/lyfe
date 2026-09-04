@@ -1,0 +1,113 @@
+syntax = "proto3";
+
+package lyfe.v1;
+
+option csharp_namespace = "Lyfe.Protocol.V1";
+
+enum WorldLifecycle {
+  WORLD_LIFECYCLE_UNSPECIFIED = 0;
+  WORLD_LIFECYCLE_PAUSED_READY = 1;
+}
+
+enum OrganismLifecyclePhase {
+  ORGANISM_LIFECYCLE_PHASE_UNSPECIFIED = 0;
+  ORGANISM_LIFECYCLE_PHASE_MATURE = 1;
+}
+
+enum SpeciesPopulationScope {
+  SPECIES_POPULATION_SCOPE_UNSPECIFIED = 0;
+  SPECIES_POPULATION_SCOPE_WORLD_EXACT = 1;
+  SPECIES_POPULATION_SCOPE_LIVE_TILES_OBSERVED = 2;
+}
+
+message ExactResourceStock {
+  uint32 resource_id = 1;
+  sint64 quantity_q = 2;
+}
+
+message OrganismProjection {
+  uint64 organism_id = 1;
+  uint64 species_id = 2;
+  uint32 position_x_q = 3;
+  uint32 position_y_q = 4;
+  sint64 velocity_x_q_per_hour = 5;
+  sint64 velocity_y_q_per_hour = 6;
+  uint64 birth_tick = 7;
+  uint64 biological_age_hours = 8;
+  OrganismLifecyclePhase lifecycle_phase = 9;
+  sint64 structural_matter_q = 10;
+  sint64 charged_reserve_q = 11;
+}
+
+message UnknownTile {}
+
+message ReducedTile {
+  sint32 elevation_meters = 1;
+  uint64 observed_at_tick = 2;
+  repeated uint32 known_present_resource_ids = 3;
+}
+
+message LiveTile {
+  sint32 elevation_meters = 1;
+  uint64 observed_at_tick = 2;
+  repeated ExactResourceStock resource_stocks = 3;
+  repeated OrganismProjection organisms = 4;
+}
+
+message TileProjection {
+  uint32 tile_id = 1;
+  sint32 x = 2;
+  sint32 y = 3;
+
+  oneof detail {
+    UnknownTile unknown = 10;
+    ReducedTile reduced = 11;
+    LiveTile live = 12;
+  }
+}
+
+message SpeciesProjection {
+  uint64 species_id = 1;
+  SpeciesPopulationScope population_scope = 2;
+  uint64 population = 3;
+}
+
+message ActorWorldProjection {
+  uint64 world_id = 1;
+  uint64 completed_tick = 2;
+  uint64 world_revision = 3;
+  uint64 simulated_hours = 4;
+  uint32 tick_duration_hours = 5;
+  WorldLifecycle lifecycle = 6;
+  string world_rules_hash = 7;
+  uint32 width = 8;
+  uint32 height = 9;
+  bool wrap_x = 10;
+  bool wrap_y = 11;
+  uint64 controlled_species_id = 12;
+  repeated TileProjection tiles = 13;
+  repeated SpeciesProjection species = 14;
+}
+
+message ProjectionSnapshot {
+  uint64 projection_stream_id = 1;
+  uint64 stream_revision = 2;
+  ActorWorldProjection projection = 3;
+}
+
+message ProjectionBatch {
+  uint64 projection_stream_id = 1;
+  uint64 world_id = 2;
+  string world_rules_hash = 3;
+  uint64 base_stream_revision = 4;
+  uint64 target_stream_revision = 5;
+  uint64 from_exclusive_tick = 6;
+  uint64 through_completed_tick = 7;
+  uint64 world_revision = 8;
+  uint64 simulated_hours = 9;
+  WorldLifecycle lifecycle = 10;
+  repeated TileProjection tile_replacements = 11;
+  repeated uint32 removed_tile_ids = 12;
+  repeated SpeciesProjection species_replacements = 13;
+  repeated uint64 removed_species_ids = 14;
+}

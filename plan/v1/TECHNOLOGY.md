@@ -14,9 +14,12 @@ This document records the initial technology and architectural choices for LYFE 
 | Control-plane transport | HTTP for setup, metadata, saves, and other request-response operations |
 | Simulation ownership | The server is authoritative; clients never advance or resolve simulation state |
 | Deployment boundary | Server and client remain separate processes even for local single-player play |
+| Server packaging | OCI-compatible Linux image built by a multi-stage Dockerfile; Docker Compose is the reference portable local deployment path |
 | Rule authoring and mods | Strict UTF-8 JSON, typed C# authoring records, generated JSON Schema, validated data-only balance overlays, and one immutable compiled rule set |
 
 Competitive multiplayer is not part of v1. Nevertheless, the server boundary, command model, clock ownership, protocol, and player-control state must not assume that only one client or human actor can ever exist.
+
+The detailed container decision and operational contract are in [DEPLOYMENT_AND_PORTABILITY.md](DEPLOYMENT_AND_PORTABILITY.md). Containers package and validate the server boundary; they do not replace native development, enter the simulation library, or commit v1 to a production orchestrator.
 
 # Core simulation and server
 
@@ -122,7 +125,7 @@ Protocol evolution must follow additive compatibility rules: field numbers are n
 
 Authoritative signed/unsigned 64-bit Protocol Buffer values map to C# `long`/`ulong` and TypeScript `bigint`. They never map to JavaScript `number`; presentation code converts only a proved bounded/scaled display value. JSON diagnostics or HTTP representations that cannot carry `bigint` encode these quantities as canonical decimal strings.
 
-The concrete TypeScript code generator and C# package versions will be selected and pinned when the implementation scaffold is created, and the TypeScript generator must provide native `bigint` mappings without handwritten wrappers. If representative profiling later shows that Protocol Buffer encoding dominates server or client performance, FlatBuffers may be evaluated against the same message workload. We will not change formats based only on microbenchmarks.
+The scaffold pins `Google.Protobuf 3.36.1` and `Grpc.Tools 2.83.0` for C#, plus Buf CLI `1.72.0` and `protoc-gen-es 2.14.1` for TypeScript. Both bindings generate from the versioned `lyfe.v1` sources, and TypeScript receives native `bigint` mappings without handwritten numeric wrappers. If representative profiling later shows that Protocol Buffer encoding dominates server or client performance, FlatBuffers may be evaluated against the same message workload. We will not change formats based only on microbenchmarks.
 
 # First client
 
@@ -175,8 +178,9 @@ Stage A should include:
 - Real stable identifiers, owner-mutable dense state, keyed randomness, and the same phase interfaces intended for v1.
 - A canonical state hash, logical change capture, detached save/reload, and a direct actor-authorized projection snapshot.
 - Repeated scalar runs that produce identical resource ledgers and hashes.
+- A generated binary projection consumed by the browser plus one absolute delta/cache-resynchronization path.
 
-Stage B grows the same executable path to the default grid and approximately `10,000` organisms, adds the opening lifecycle/resource systems, a browser full snapshot plus deltas, and profiling. Stage C exercises clustered `50,000` and `100,000` organism worlds, parallel execution, representative histories, save/reload, and protocol load before performance claims or specialized storage work are accepted. The `100,000` case is a capacity benchmark, not a gate that blocks learning from the first executable tick.
+Stage B grows the same executable path to the default grid and approximately `10,000` organisms, adds the opening lifecycle/resource systems, expands the browser snapshot/deltas into the playable observation-and-decision loop, and profiles the complete path. Stage C exercises clustered `50,000` and `100,000` organism worlds, parallel execution, representative histories, save/reload, and protocol load before performance claims or specialized storage work are accepted. The `100,000` case is a capacity benchmark, not a gate that blocks learning from the first executable tick.
 
 We should record:
 

@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "registries": [
+    {
+      "kind": "resource",
+      "entries": [
+        { "numericId": 1, "stableKey": "resource.hydrogen-gas", "status": "active" },
+        { "numericId": 2, "stableKey": "resource.carbon-dioxide", "status": "active" },
+        { "numericId": 3, "stableKey": "resource.reserve-organic", "status": "active" },
+        { "numericId": 4, "stableKey": "resource.ocean-water", "status": "active" }
+      ]
+    },
+    {
+      "kind": "reaction",
+      "entries": [
+        { "numericId": 1, "stableKey": "reaction.hydrogen-acetogenesis", "status": "active" }
+      ]
+    },
+    {
+      "kind": "founderGenome",
+      "entries": [
+        { "numericId": 1, "stableKey": "genome.hydrogen-founder", "status": "active" }
+      ]
+    },
+    {
+      "kind": "scenario",
+      "entries": [
+        { "numericId": 1, "stableKey": "scenario.foundation-sandbox", "status": "active" }
+      ]
+    }
+  ]
+}

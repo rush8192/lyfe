@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package lyfe.v1;
+
+option csharp_namespace = "Lyfe.Protocol.V1";
+
+message WorldRef {
+  uint64 world_id = 1;
+}
+
+message ProjectionCursor {
+  uint64 completed_tick = 1;
+  uint64 world_revision = 2;
+  uint64 stream_revision = 3;
+}

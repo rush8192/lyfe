@@ -1,0 +1,13 @@
+**/bin/
+**/obj/
+**/TestResults/
+.git/
+.gitignore
+.DS_Store
+client/node_modules/
+client/dist/
+client/coverage/
+*.log
+*.user
+*.suo
+

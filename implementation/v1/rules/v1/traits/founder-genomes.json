@@ -1,0 +1,13 @@
+{
+  "kind": "founderGenomes",
+  "founderGenomes": [
+    {
+      "numericId": 1,
+      "stableKey": "genome.hydrogen-founder",
+      "displayName": "Hydrogen founder",
+      "enabledReactionKeys": [
+        "reaction.hydrogen-acetogenesis"
+      ]
+    }
+  ]
+}

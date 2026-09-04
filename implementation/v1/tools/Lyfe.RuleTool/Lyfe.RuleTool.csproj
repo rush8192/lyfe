@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>Lyfe.RuleTool</AssemblyName>
+    <RootNamespace>Lyfe.RuleTool</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/Lyfe.Simulation/Lyfe.Simulation.csproj" />
+  </ItemGroup>
+</Project>

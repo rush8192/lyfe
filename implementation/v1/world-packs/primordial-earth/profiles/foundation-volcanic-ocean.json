@@ -1,0 +1,26 @@
+{
+  "kind": "worldProfiles",
+  "profiles": [
+    {
+      "stableKey": "world.primordial-foundation",
+      "displayName": "One-tile volcanic ocean",
+      "width": 1,
+      "height": 1,
+      "wrapX": true,
+      "wrapY": false,
+      "tiles": [
+        {
+          "x": 0,
+          "y": 0,
+          "elevationMeters": -200,
+          "resourceStocks": [
+            { "resourceKey": "resource.hydrogen-gas", "quantity": 50000000 },
+            { "resourceKey": "resource.carbon-dioxide", "quantity": 100000000 },
+            { "resourceKey": "resource.reserve-organic", "quantity": 0 },
+            { "resourceKey": "resource.ocean-water", "quantity": 0 }
+          ]
+        }
+      ]
+    }
+  ]
+}

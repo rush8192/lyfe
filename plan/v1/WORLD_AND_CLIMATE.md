@@ -1,12 +1,22 @@
 # World, Generation, and Climate
 
-Status: first topology, generation, calendar, climate algorithms, numerical world-profile candidate, and external world-pack boundary; representative-map validation remains provisional
+Status: first executable deterministic generator and static climate materialization implemented; recurring weather/moisture, lithology, gas coupling, and biological representative-map validation remain provisional
 
 Sources: [WORLD vision](../../vision/WORLD.md), [SIMULATION vision](../../vision/SIMULATION.md), [GAMEPLAY vision](../../vision/GAMEPLAY.md), [moddability](MODDABILITY.md), and [numerical calibration](WORLD_CLIMATE_CALIBRATION.md).
 
 # Purpose
 
 Translate fixed geography, climate baselines, current conditions, world generation, and cross-tile exchange into deterministic algorithms and state.
+
+The implementation milestone `WORLD-200` now compiles a separate official
+`32 × 17` generated-world pack and deterministically produces layered elevation,
+the configured aquatic/volcanic coverage, monthly climate normals, integer-only
+calendar/solar/depth-light conditions, and four recorded repaired founding pairs.
+The current acceptance matrix covers 32 additional seeds plus fixed golden cases.
+It deliberately does not claim the later weather-event recurrence, two-year
+surface-moisture spin-up, lithology/endowment reconciliation, volcanic pulses,
+gas equilibrium, or biological founder smoke tests; those remain owned by their
+subsequent world, gas, terrestrial, and opening slices.
 
 # Decisions fixed by this pass
 

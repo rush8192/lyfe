@@ -1,0 +1,14 @@
+{
+  "kind": "scenarios",
+  "scenarios": [
+    {
+      "numericId": 1,
+      "stableKey": "scenario.foundation-sandbox",
+      "displayName": "Foundation sandbox",
+      "tickDurationHours": 1,
+      "founderGenomeKeys": [
+        "genome.hydrogen-founder"
+      ]
+    }
+  ]
+}

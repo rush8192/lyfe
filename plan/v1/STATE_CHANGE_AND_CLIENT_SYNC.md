@@ -1,6 +1,6 @@
 # State Change Capture and Client Synchronization
 
-Status: first v1 design contract; exact Protocol Buffer field numbers, queue limits, publication cadence, and compression thresholds remain to be calibrated
+Status: Stage-A change capture, direct projection, generated snapshot/batch fields, absolute delta, and atomic TypeScript cache implemented; queue limits, hosted cadence/retention, richer field groups, and compression thresholds remain
 
 Sources: [architecture](ARCHITECTURE.md), [authoritative data model](DATA_MODEL.md), [simulation loop](SIMULATION_LOOP.md), [server protocol](SERVER_AND_PROTOCOL.md), [browser client](CLIENT.md), and [exploration vision](../../vision/INTERFACE.md).
 
@@ -136,6 +136,39 @@ StoreChanges:
 
 Resource transactions and death-risk records retain their own canonical facts. The change set references them or invalidates their projected aggregate; it does not duplicate the resource ledger or event store.
 
+## Implemented Stage-A merge contract
+
+The first executable substrate now retains both representations needed at the boundary:
+
+- each `TickPhaseJournal` owns a canonically sealed `PhaseChangeSet` containing typed creates, removals, organism relocations, logical-field dirtiness, and that phase's immutable resource transactions;
+- the completed `TickChangeSet` owns all 12 phase journals plus `MergedTickChanges`, whose per-entity-kind store changes and resource-transaction keys are the compact input for later projectors.
+
+The merge walks phases in canonical order and emits entity kinds, IDs, field groups, relocations, and ledger keys in numeric/stable-ID order. Its lifecycle algebra is deliberately strict:
+
+| Phase-local history during one tick | Merged result |
+| --- | --- |
+| create, then dirty or relocate | create only; a future projector rereads the full final entity |
+| create, then remove | neither structural operation nor dirtiness; retained canonical events remain separate |
+| dirty or relocate, then remove | remove only |
+| multiple continuous relocations | one relocation from the first source to the final destination |
+| relocation back to the first source | no relocation |
+| remove, then create with the same stable ID | invalid |
+
+Resource transactions remain in their owning phase journal and in the completed ledger hashed with world state. The merged contract carries only their sorted `LedgerTransactionKey` references. It never repeats matter or energy entries.
+
+The Stage-A implementation fails tick finalization before publication if the raw or merged journal exceeds these provisional safety limits:
+
+| Category | Per-tick limit |
+| --- | ---: |
+| Creates plus removals | `200,000` |
+| Relocations | `100,000` |
+| Dirty entity/field-group references | `1,000,000` |
+| Resource transaction references | `500,000` |
+
+These are memory-safety bounds, not target workload claims or mod-visible biological settings. Representative projection and performance work may tune them, but no path may silently truncate a completed journal.
+
+`TickChangeInspectorV1` renders the merged contract as compact deterministic JSON with fixed property order and decimal-string 64-bit IDs. It is a golden-test and operator diagnostic surface only. It is not a durable save format, Protocol Buffer schema, projection payload, or compatibility promise beyond its explicit inspector version.
+
 # Tick integration
 
 Every successful phase commit returns a phase-local change set. The tick builder merges these in canonical phase order. A failed preflight applies neither its staged writes nor its change metadata. An unexpected failure after any mutation faults the world; in either case a partially applied tick is never published.
@@ -182,6 +215,21 @@ One world change can produce different outputs for different actors and connecti
 3. authoritative actor knowledge and control;
 4. that connection's interest subscriptions; and
 5. the prior normalized projection contract for the stream.
+
+## Implemented Stage-A direct oracle
+
+The first executable projection boundary is intentionally direct and transport-free:
+
+1. under the world-owner lock, `WorldRunner` copies one complete `WorldPublicationSnapshot` from a valid completed boundary;
+2. the snapshot contains canonical stable IDs and value records but no dense slots, chunks, rows, locators, dirty buffers, authoritative state hash, or mutable simulation arrays;
+3. the pure server-side `DirectWorldProjector` combines that trusted source with an `ActorKnowledgeSnapshot` and returns a canonical `ActorWorldProjection`;
+4. protocol generation, serialization, stream revisions, subscriptions, deltas, and client application remain later boundaries.
+
+The oracle derives every tile currently occupied by the controlled species as live, regardless of whether a stale discovery entry also exists. A discovered non-live tile is reduced and carries fixed geography, its knowledge observation tick, and only the resource identities recorded in that coarse knowledge snapshot. Every remaining tile is unknown and carries only stable tile identity plus grid position. These are separate C# record shapes; reduced and unknown records have no exact-stock or organism property that a serializer could accidentally populate.
+
+Live tiles contain exact current resource stocks and all organisms presently in that tile in stable-ID order. The controlled species receives its exact world population. Any other species is emitted only if observed in a live tile, and its population is explicitly scoped to those live tiles rather than exposing the authoritative global count. Actor projection output deliberately omits `WorldStateHashV1` because changes to hidden state would turn it into an information side channel; a future projection hash covers only the authorized normalized cache.
+
+The `ActorKnowledgeSnapshot` is the trusted input contract for this oracle, not yet the final authoritative actor-knowledge store. Initial neighbor discovery, remembered full observations, knowledge mutation at completed boundaries, and persistence remain owned by the later gameplay/save slices. Invalid controlled species, duplicate tiles/resources, future observation ticks, dangling source references, or inconsistent source populations fail before any projection is returned.
 
 Subscriptions only narrow authorized information. The projector must not serialize hidden values and expect the browser to mask them.
 
@@ -433,12 +481,12 @@ Acceptance thresholds are intentionally deferred until the dense storage prototy
 
 # Implementation sequence
 
-1. Define stable IDs, logical field groups, typed store mutators, and debug mutation coverage beside the first dense organism/tile stores.
-2. Implement `PhaseChangeSet`, deterministic tick merge, and a diagnostic text/JSON inspector without networking.
-3. Define normalized projection schemas for world metadata, unknown/reduced/live tiles, organisms, remains, species, lineage, and clock state.
-4. Implement direct full projection and prove actor authorization before implementing deltas.
-5. Implement change-driven projection materialization and verify it equals the direct projection oracle.
-6. Add mergeable Protocol Buffer batches, the atomic TypeScript cache applier, and property tests.
+1. [Done] Define stable IDs, logical field groups, typed store mutators, and debug mutation coverage beside the first dense organism/tile stores.
+2. [Done] Implement `PhaseChangeSet`, deterministic tick merge, and a diagnostic JSON inspector without networking.
+3. [Stage-A subset done] Define normalized generated projection schemas for current world metadata, unknown/reduced/live tiles, organisms, species, and clock state; remains, lineage, histories, and richer knowledge memory land with their authoritative stores.
+4. [Done] Implement direct full projection and prove actor authorization before implementing deltas.
+5. [Stage-A subset done] Materialize one absolute next-boundary delta and verify its replacements against the direct projection oracle; finer change-driven field selection grows with new stores.
+6. [Stage-A subset done] Add generated Protocol Buffer snapshot/batch messages and an atomic TypeScript cache applier; equality, duplicate, gap, ordering, rules/identity, visibility-eviction, and full-snapshot recovery fixtures pass.
 7. Add publication cadence, acknowledgements, retention, reconnect, chunking, and backpressure.
 8. Profile the complete server-to-client path and tune ordinary queue/batch budgets; introduce alternate field grouping, density thresholds, or application compression only for a demonstrated bottleneck.
 
@@ -448,7 +496,6 @@ These do not block entity identity/storage design, but must be fixed before the 
 
 - Dirty-set representation per store and final logical field-group catalogue.
 - Logical field-group catalogue and generated mutation/projection metadata.
-- Protocol Buffer package/version and JavaScript 64-bit mapping.
 - Default projection cadence by interest/zoom and maximum batch/part size.
 - Stream retention, acknowledgement, snapshot, and disconnect byte/time limits.
 - Canonical projection-hash encoding and cadence.

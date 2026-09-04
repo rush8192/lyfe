@@ -1,0 +1,11 @@
+{
+  "worldPackId": "lyfe.world.primordial-earth-v1",
+  "version": "0.1.0",
+  "displayName": "Primordial Earth v1",
+  "worldGenerationApiVersion": 1,
+  "compatibleBasePackId": "lyfe.official.v1-foundation",
+  "requiredRegistryManifestHash": "48c4f080abd2edb9c5612856a05d882d727e9bc5d6a06661eb5fa0a9b32bdedc",
+  "profileFiles": [
+    "profiles/primordial-earth-v1.json"
+  ]
+}
