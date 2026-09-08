@@ -7,7 +7,16 @@ import {
   ProjectionSnapshotSchema,
   SpeciesPopulationScope,
 } from "../generated/lyfe/v1/projection_pb";
-import { formatSimulationHour, readActiveWorldProjection } from "./server";
+import {
+  SpeciationFailure,
+  SpeciationProposalRequestSchema,
+  SpeciationProposalSchema,
+} from "../generated/lyfe/v1/evolution_pb";
+import {
+  formatSimulationHour,
+  previewSpeciation,
+  readActiveWorldProjection,
+} from "./server";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -68,5 +77,36 @@ describe("projection transport", () => {
     expect(decoded.world.worldId).toBe(9_007_199_254_740_993n);
     expect(decoded.world).toEqual(expected);
     expect(decoded.projectionStreamId).toBe(44n);
+  });
+
+  it("posts and decodes an exact mutation proposal", async () => {
+    const request = create(SpeciationProposalRequestSchema, {
+      worldId: 1n,
+      ancestorSpeciesId: 2n,
+      expectedEvolutionRevision: 3n,
+      expectedGenomeHash: "a".repeat(64),
+      newTraitIds: [3],
+      selectedTileIds: [0],
+    });
+    const response = create(SpeciationProposalSchema, {
+      failure: SpeciationFailure.INSUFFICIENT_MUTATION_POINTS,
+      mutationPriceQ: 40_000_000n,
+      balanceBeforeQ: 10_000_000n,
+      descendantPopulation: 50n,
+    });
+    const fetchMock = vi.fn(async () =>
+      new Response(toBinary(SpeciationProposalSchema, response), {
+        headers: { "content-type": "application/x-protobuf" },
+      }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const decoded = await previewSpeciation(request, new AbortController().signal);
+
+    expect(decoded.mutationPriceQ).toBe(40_000_000n);
+    expect(decoded.descendantPopulation).toBe(50n);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/v1/worlds/active/evolution/preview",
+      expect.objectContaining({ method: "POST" }),
+    );
   });
 });

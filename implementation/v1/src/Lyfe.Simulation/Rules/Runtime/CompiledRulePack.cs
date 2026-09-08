@@ -27,6 +27,8 @@ public readonly record struct CompiledElementQuantity(
 
 public sealed record CompiledResource(
     ResourceId Id,
+    string StableKey,
+    string DisplayName,
     BiologicalForm BiologicalForm,
     EnvironmentalPhase EnvironmentalPhase,
     ImmutableArray<CompiledElementQuantity> Composition);
@@ -143,6 +145,7 @@ public enum EvolutionPressureTag : byte
 public sealed record CompiledTrait(
     TraitId Id,
     string StableKey,
+    string DisplayName,
     string Family,
     bool Selectable,
     long MutationPointCostQ,

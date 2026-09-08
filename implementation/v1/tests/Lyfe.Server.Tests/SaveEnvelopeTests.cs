@@ -38,7 +38,7 @@ public sealed class SaveEnvelopeTests
         Assert.Equal(SaveCompressionKind.Brotli, descriptor.Compression);
         Assert.Equal((ulong)payload.Length, descriptor.LogicalPayloadLength);
         Assert.Equal(
-            "5e5493ea86699df16d8b6d8e950a72563d36162c58e5f3950441f5387abfcf9d",
+            "4142870c251ae6894c96fed7048999b6aa524f9bc9286c7aff92130b5f792196",
             descriptor.MetadataSha256);
         Assert.True(descriptorStream.Position < descriptorStream.Length);
 
@@ -180,12 +180,41 @@ public sealed class SaveEnvelopeTests
         Assert.Equal(payload, WorldPayloadCodec.Encode(decoded));
         Assert.Equal(detached.State.Organisms.Length, decoded.Organisms.Length);
         Assert.Equal(detached.State.LastCompletedTransactions.Length, decoded.LastCompletedTransactions.Length);
+        Assert.Equal(3, decoded.ResourceFlowHistory.Length);
+        Assert.Equal(
+            detached.State.ResourceFlowHistory.Select(value => (
+                value.CompletedTick, value.EndSimulatedHour, value.PeriodHours)),
+            decoded.ResourceFlowHistory.Select(value => (
+                value.CompletedTick, value.EndSimulatedHour, value.PeriodHours)));
+        Assert.Equal(
+            detached.State.ResourceFlowHistory.SelectMany(value => value.ResourceFlows),
+            decoded.ResourceFlowHistory.SelectMany(value => value.ResourceFlows));
+        Assert.Equal(3UL, decoded.ResourceFlowHistory[^1].CompletedTick);
+        Assert.Equal(3UL, decoded.ResourceFlowHistory[^1].EndSimulatedHour);
         Assert.Equal(detached.State.NextJourneyEventId, decoded.NextJourneyEventId);
         Assert.Equal(detached.State.JourneyEvents.Length, decoded.JourneyEvents.Length);
         Assert.Equal(detached.State.JourneyEvents.Select(value => value.EventId),
             decoded.JourneyEvents.Select(value => value.EventId));
         Assert.Equal(detached.State.JourneyEvents.SelectMany(value => value.DeathCauses),
             decoded.JourneyEvents.SelectMany(value => value.DeathCauses));
+        Assert.Equal(
+            detached.State.RoutineActivitySummaries.Select(value => (
+                value.BucketStartHour,
+                value.PeriodHours,
+                value.SubjectOrganismId,
+                value.SubjectSpeciesId,
+                value.TileId)),
+            decoded.RoutineActivitySummaries.Select(value => (
+                value.BucketStartHour,
+                value.PeriodHours,
+                value.SubjectOrganismId,
+                value.SubjectSpeciesId,
+                value.TileId)));
+        Assert.Equal(
+            detached.State.RoutineActivitySummaries.SelectMany(value =>
+                value.ResourceAcquisitions),
+            decoded.RoutineActivitySummaries.SelectMany(value =>
+                value.ResourceAcquisitions));
         var nonDefaultBehavior = detached.State with
         {
             Organisms = detached.State.Organisms
@@ -218,7 +247,7 @@ public sealed class SaveEnvelopeTests
             nonDefaultBehavior.Organisms[0].FreeMicronutrientsQ,
             decodedBehavior.Organisms[0].FreeMicronutrientsQ);
         Assert.Equal(
-            "23693063578b1d36ce9e0d91959c2fb22e24d1b4ab653b6dba4f4a81a7f5b4c5",
+            "6100f3b2c06185dd846aca88aa239744175d3e8d7adcc9645d58a6b4ad3e0a42",
             Convert.ToHexStringLower(SHA256.HashData(payload)));
 
         runner.AdvanceOneTick();

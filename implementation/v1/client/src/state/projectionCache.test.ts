@@ -1,14 +1,24 @@
 import { create, toBinary } from "@bufbuild/protobuf";
 import { describe, expect, it } from "vitest";
 import {
+  AcquisitionGateEvidenceSchema,
+  AcquisitionGateReason,
+  AcquisitionProcess,
   ActorWorldProjectionSchema,
   GameMode,
   GameRunStatus,
   OrganismLifecyclePhase,
+  OrganismActionGateEvidenceSchema,
+  OrganismActionGateReason,
+  OrganismActionProcess,
   OrganismJourneyEventFamily,
   OrganismJourneyEventSchema,
   ProjectionBatchSchema,
   ProjectionSnapshotSchema,
+  ResourceAcquisitionEvidenceSchema,
+  ResourceBiologicalForm,
+  ResourceEnvironmentalPhase,
+  ResourceFlowHistoryIntervalSchema,
   SpeciesPopulationScope,
   TileProjectionSchema,
   WorldLifecycle,
@@ -203,7 +213,7 @@ describe("projection cache", () => {
       eventId: 1n,
       tick: 1n,
       phase: 7,
-      family: OrganismJourneyEventFamily.RESOURCE_ABSORPTION,
+      family: OrganismJourneyEventFamily.FEEDING,
       subjectOrganismId: 1n,
       subjectSpeciesId: 1n,
       tileId: 0,
@@ -226,12 +236,27 @@ describe("projection cache", () => {
       gameplay: initialWorld.gameplay,
       tileReplacements: [liveTile(1n)],
       journeyEventAppends: [event],
+      routineActivitySummaries: [{
+        bucketStartHour: 0n,
+        periodHours: 1,
+        subjectOrganismId: 1n,
+        subjectSpeciesId: 1n,
+        tileId: 0,
+        resourceAcquisitions: [{ resourceId: 1, amountQ: 40n }],
+      }],
+      activityPulseEvents: [{
+        ...event,
+        eventId: 2n,
+        family: OrganismJourneyEventFamily.RESOURCE_ABSORPTION,
+      }],
     });
 
     const applied = applyProjectionBatch(cache, batch);
     expect(applied.status).toBe("applied");
     expect(applied.cache.world.journeyEvents).toHaveLength(1);
     expect(applied.cache.world.journeyEvents[0].eventId).toBe(1n);
+    expect(applied.cache.world.routineActivitySummaries).toHaveLength(1);
+    expect(applied.cache.world.activityPulseEvents[0].eventId).toBe(2n);
 
     const reused = create(ProjectionBatchSchema, {
       ...batch,
@@ -245,9 +270,119 @@ describe("projection cache", () => {
     });
     expect(applyProjectionBatch(applied.cache, reused).status).toBe("resync-required");
   });
+
+  it("rejects malformed per-resource acquisition evidence", () => {
+    const tile = liveTile(1n);
+    if (tile.detail.case !== "live") throw new Error("Expected live tile.");
+    tile.detail.value.organisms[0].resourceAcquisitionEvidence = [
+      create(ResourceAcquisitionEvidenceSchema, {
+        resourceId: 1,
+        requestedQ: 10n,
+        grantedQ: 11n,
+        tileSupplyConstrained: true,
+      }),
+    ];
+
+    expect(() => createProjectionCache(create(ProjectionSnapshotSchema, {
+      projectionStreamId: 7n,
+      streamRevision: 1n,
+      projection: worldAt(1n, tile),
+    }))).toThrow("structurally invalid");
+  });
+
+  it("rejects malformed acquisition-gate evidence", () => {
+    const tile = liveTile(1n);
+    if (tile.detail.case !== "live") throw new Error("Expected live tile.");
+    tile.detail.value.organisms[0].acquisitionGateEvidence = [
+      create(AcquisitionGateEvidenceSchema, {
+        process: AcquisitionProcess.EXTERNAL_ENERGY_CAPTURE,
+        reason: AcquisitionGateReason.INTERNAL_CAPACITY,
+        availableQ: 2n,
+        requiredQ: 2n,
+      }),
+    ];
+
+    expect(() => createProjectionCache(create(ProjectionSnapshotSchema, {
+      projectionStreamId: 7n,
+      streamRevision: 1n,
+      projection: worldAt(1n, tile),
+    }))).toThrow("structurally invalid");
+
+    tile.detail.value.organisms[0].acquisitionGateEvidence = [
+      create(AcquisitionGateEvidenceSchema, {
+        process: AcquisitionProcess.SCAVENGING,
+        reason: AcquisitionGateReason.COOLDOWN_ACTIVE,
+        clearsAtTick: 1n,
+      }),
+    ];
+
+    expect(() => createProjectionCache(create(ProjectionSnapshotSchema, {
+      projectionStreamId: 7n,
+      streamRevision: 1n,
+      projection: worldAt(1n, tile),
+    }))).toThrow("structurally invalid");
+
+    tile.detail.value.organisms[0].acquisitionGateEvidence = [
+      create(AcquisitionGateEvidenceSchema, {
+        process: AcquisitionProcess.EXTERNAL_ENERGY_CAPTURE,
+        reason: AcquisitionGateReason.COOLDOWN_ACTIVE,
+        clearsAtTick: 2n,
+      }),
+    ];
+
+    expect(() => createProjectionCache(create(ProjectionSnapshotSchema, {
+      projectionStreamId: 7n,
+      streamRevision: 1n,
+      projection: worldAt(1n, tile),
+    }))).toThrow("structurally invalid");
+  });
+
+  it("rejects malformed organism action-gate evidence", () => {
+    const tile = liveTile(1n);
+    if (tile.detail.case !== "live") throw new Error("Expected live tile.");
+    tile.detail.value.organisms[0].actionGateEvidence = [
+      create(OrganismActionGateEvidenceSchema, {
+        process: OrganismActionProcess.REPRODUCTION,
+        reason: OrganismActionGateReason.RESOURCE_SUPPLY,
+        availableQ: 0n,
+        requiredQ: 1n,
+        resourceId: 1,
+      }),
+    ];
+
+    expect(() => createProjectionCache(create(ProjectionSnapshotSchema, {
+      projectionStreamId: 7n,
+      streamRevision: 1n,
+      projection: worldAt(1n, tile),
+    }))).toThrow("structurally invalid");
+
+    tile.detail.value.organisms[0].actionGateEvidence = [
+      create(OrganismActionGateEvidenceSchema, {
+        process: OrganismActionProcess.REPRODUCTION,
+        reason: OrganismActionGateReason.COOLDOWN_ACTIVE,
+        clearsAtTick: 1n,
+      }),
+    ];
+
+    expect(() => createProjectionCache(create(ProjectionSnapshotSchema, {
+      projectionStreamId: 7n,
+      streamRevision: 1n,
+      projection: worldAt(1n, tile),
+    }))).toThrow("structurally invalid");
+  });
 });
 
 function worldAt(completedTick: bigint, tile: ReturnType<typeof liveTile>) {
+  if (tile.detail.case === "live") {
+    tile.detail.value.resourceFlowHistory = completedTick === 0n ? [] : [create(
+      ResourceFlowHistoryIntervalSchema,
+      {
+        completedTick,
+        endSimulatedHour: completedTick,
+        periodHours: 1,
+      },
+    )];
+  }
   return create(ActorWorldProjectionSchema, {
     worldId: 1n,
     completedTick,
@@ -281,6 +416,13 @@ function worldAt(completedTick: bigint, tile: ReturnType<typeof liveTile>) {
         population: 1n,
       },
     ],
+    resourceDefinitions: [{
+      resourceId: 1,
+      stableKey: "resource.test",
+      displayName: "Test resource",
+      biologicalForm: ResourceBiologicalForm.INORGANIC,
+      environmentalPhase: ResourceEnvironmentalPhase.DISSOLVED,
+    }],
   });
 }
 
@@ -294,6 +436,12 @@ function liveTile(age: bigint) {
       value: {
         elevationMeters: -100,
         observedAtTick: age,
+        resourceFlowPeriodHours: 1,
+        resourceFlowHistory: age === 0n ? [] : [{
+          completedTick: age,
+          endSimulatedHour: age,
+          periodHours: 1,
+        }],
         resourceStocks: [{ resourceId: 1, quantityQ: 1_000n }],
         organisms: [
           {

@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file lyfe/v1/projection.proto.
  */
 export const file_lyfe_v1_projection: GenFile = /*@__PURE__*/
-  fileDesc("ChhseWZlL3YxL3Byb2plY3Rpb24ucHJvdG8SB2x5ZmUudjEiVwocSm91cm5leURlYXRoQ2F1c2VQcm9iYWJpbGl0eRINCgVjYXVzZRgBIAEoDRIVCg1wcm9iYWJpbGl0eV9xGAIgASgNEhEKCXRyaWdnZXJlZBgDIAEoCCKtAwoUT3JnYW5pc21Kb3VybmV5RXZlbnQSEAoIZXZlbnRfaWQYASABKAQSDAoEdGljaxgCIAEoBBINCgVwaGFzZRgDIAEoDRIzCgZmYW1pbHkYBCABKA4yIy5seWZlLnYxLk9yZ2FuaXNtSm91cm5leUV2ZW50RmFtaWx5EhsKE3N1YmplY3Rfb3JnYW5pc21faWQYBSABKAQSGgoSc3ViamVjdF9zcGVjaWVzX2lkGAYgASgEEg8KB3RpbGVfaWQYByABKA0SFAoMcG9zaXRpb25feF9xGAggASgNEhQKDHBvc2l0aW9uX3lfcRgJIAEoDRIbChNyZWxhdGVkX29yZ2FuaXNtX2lkGAogASgEEhoKEnJlbGF0ZWRfcmVtbmFudF9pZBgLIAEoBBITCgtyZXNvdXJjZV9pZBgMIAEoDRIQCghhbW91bnRfcRgNIAEoEhIRCglkZXRhaWxfaWQYDiABKA0SSAoZZGVhdGhfY2F1c2VfcHJvYmFiaWxpdGllcxgPIAMoCzIlLmx5ZmUudjEuSm91cm5leURlYXRoQ2F1c2VQcm9iYWJpbGl0eSI9ChJFeGFjdFJlc291cmNlU3RvY2sSEwoLcmVzb3VyY2VfaWQYASABKA0SEgoKcXVhbnRpdHlfcRgCIAEoEiLECQoST3JnYW5pc21Qcm9qZWN0aW9uEhMKC29yZ2FuaXNtX2lkGAEgASgEEhIKCnNwZWNpZXNfaWQYAiABKAQSFAoMcG9zaXRpb25feF9xGAMgASgNEhQKDHBvc2l0aW9uX3lfcRgEIAEoDRIdChV2ZWxvY2l0eV94X3FfcGVyX2hvdXIYBSABKBISHQoVdmVsb2NpdHlfeV9xX3Blcl9ob3VyGAYgASgSEhIKCmJpcnRoX3RpY2sYByABKAQSHAoUYmlvbG9naWNhbF9hZ2VfaG91cnMYCCABKAQSOAoPbGlmZWN5Y2xlX3BoYXNlGAkgASgOMh8ubHlmZS52MS5PcmdhbmlzbUxpZmVjeWNsZVBoYXNlEhsKE3N0cnVjdHVyYWxfbWF0dGVyX3EYCiABKBISGQoRY2hhcmdlZF9yZXNlcnZlX3EYCyABKBISIgoaY2hhcmdlZF9yZXNlcnZlX2NhcGFjaXR5X3EYDCABKBISGQoRcmVsYXRpdmVfaGVhbHRoX3EYDSABKA0SGAoQcmVzZXJ2ZV9mYWN0b3JfcRgOIAEoDRIaChJzdHJ1Y3R1cmVfZmFjdG9yX3EYDyABKA0SFAoMYWdlX2ZhY3Rvcl9xGBAgASgNEh4KFmVudmlyb25tZW50YWxfZmFjdG9yX3EYESABKA0SJAoccmVwcm9kdWN0aW9uX25vdF9iZWZvcmVfdGljaxgSIAEoBBIlCh1zdWNjZXNzZnVsX3JlcHJvZHVjdGlvbl9jb3VudBgTIAEoBBIgChhzY2F2ZW5nZV9ub3RfYmVmb3JlX3RpY2sYFCABKAQSJAocaW5nZXN0ZWRfc3RydWN0dXJhbF9tYXR0ZXJfcRgVIAEoEhIVCg1ib2R5X3JhZGl1c19xGBYgASgNEisKCGJlaGF2aW9yGBcgASgOMhkubHlmZS52MS5PcmdhbmlzbUJlaGF2aW9yEjkKFGJlaGF2aW9yX3RhcmdldF9raW5kGBggASgOMhsubHlmZS52MS5CZWhhdmlvclRhcmdldEtpbmQSGgoSYmVoYXZpb3JfdGFyZ2V0X2lkGBkgASgEEiQKHGJlaGF2aW9yX3RhcmdldF9wb3NpdGlvbl94X3EYGiABKA0SJAocYmVoYXZpb3JfdGFyZ2V0X3Bvc2l0aW9uX3lfcRgbIAEoDRIhChliZWhhdmlvcl9zZWxlY3RlZF9hdF90aWNrGBwgASgEEikKIWJlaGF2aW9yX21pbmltdW1fZHdlbGxfdW50aWxfdGljaxgdIAEoBBIgChhyZWNlbnRfZW5lcmd5X2NvdmVyYWdlX3EYHiABKA0SJQodcmVjZW50X2FjcXVpc2l0aW9uX2NvdmVyYWdlX3EYHyABKA0SIwobbGltaXRpbmdfbWF0ZXJpYWxfZGVmaWNpdF9xGCAgASgNEhsKE3Jlc291cmNlX3ByZXNzdXJlX3EYISABKA0SPQoYY29tbWl0dGVkX21pY3JvbnV0cmllbnRzGCIgAygLMhsubHlmZS52MS5FeGFjdFJlc291cmNlU3RvY2sSOAoTZnJlZV9taWNyb251dHJpZW50cxgjIAMoCzIbLmx5ZmUudjEuRXhhY3RSZXNvdXJjZVN0b2NrIksKDUJlaGF2aW9yQ291bnQSKwoIYmVoYXZpb3IYASABKA4yGS5seWZlLnYxLk9yZ2FuaXNtQmVoYXZpb3ISDQoFY291bnQYAiABKAQijgEKFEJlaGF2aW9yRGlzdHJpYnV0aW9uEhIKCnNwZWNpZXNfaWQYASABKAQSGAoQb2JzZXJ2ZWRfYXRfdGljaxgCIAEoBBIgChh0b3RhbF9vYnNlcnZlZF9vcmdhbmlzbXMYAyABKAQSJgoGY291bnRzGAQgAygLMhYubHlmZS52MS5CZWhhdmlvckNvdW50IqQCChFSZW1uYW50UHJvamVjdGlvbhISCgpyZW1uYW50X2lkGAEgASgEEhoKEnNvdXJjZV9vcmdhbmlzbV9pZBgCIAEoBBIZChFzb3VyY2Vfc3BlY2llc19pZBgDIAEoBBIUCgxwb3NpdGlvbl94X3EYBCABKA0SFAoMcG9zaXRpb25feV9xGAUgASgNEhQKDGNyZWF0ZWRfdGljaxgGIAEoBBIbChNzdHJ1Y3R1cmFsX21hdHRlcl9xGAcgASgSEhkKEWNoYXJnZWRfcmVzZXJ2ZV9xGAggASgSEhUKDWJvZHlfcmFkaXVzX3EYCSABKA0SMwoObWljcm9udXRyaWVudHMYCiADKAsyGy5seWZlLnYxLkV4YWN0UmVzb3VyY2VTdG9jayINCgtVbmtub3duVGlsZSJlCgtSZWR1Y2VkVGlsZRIYChBlbGV2YXRpb25fbWV0ZXJzGAEgASgREhgKEG9ic2VydmVkX2F0X3RpY2sYAiABKAQSIgoaa25vd25fcHJlc2VudF9yZXNvdXJjZV9pZHMYAyADKA0ikQIKCExpdmVUaWxlEhgKEGVsZXZhdGlvbl9tZXRlcnMYASABKBESGAoQb2JzZXJ2ZWRfYXRfdGljaxgCIAEoBBI0Cg9yZXNvdXJjZV9zdG9ja3MYAyADKAsyGy5seWZlLnYxLkV4YWN0UmVzb3VyY2VTdG9jaxIuCglvcmdhbmlzbXMYBCADKAsyGy5seWZlLnYxLk9yZ2FuaXNtUHJvamVjdGlvbhIsCghyZW1uYW50cxgFIAMoCzIaLmx5ZmUudjEuUmVtbmFudFByb2plY3Rpb24SPQoWYmVoYXZpb3JfZGlzdHJpYnV0aW9ucxgGIAMoCzIdLmx5ZmUudjEuQmVoYXZpb3JEaXN0cmlidXRpb24itgEKDlRpbGVQcm9qZWN0aW9uEg8KB3RpbGVfaWQYASABKA0SCQoBeBgCIAEoERIJCgF5GAMgASgREicKB3Vua25vd24YCiABKAsyFC5seWZlLnYxLlVua25vd25UaWxlSAASJwoHcmVkdWNlZBgLIAEoCzIULmx5ZmUudjEuUmVkdWNlZFRpbGVIABIhCgRsaXZlGAwgASgLMhEubHlmZS52MS5MaXZlVGlsZUgAQggKBmRldGFpbCLVAQoRU3BlY2llc1Byb2plY3Rpb24SEgoKc3BlY2llc19pZBgBIAEoBBI5ChBwb3B1bGF0aW9uX3Njb3BlGAIgASgOMh8ubHlmZS52MS5TcGVjaWVzUG9wdWxhdGlvblNjb3BlEhIKCnBvcHVsYXRpb24YAyABKAQSLwoPYmVoYXZpb3JfY291bnRzGAQgAygLMhYubHlmZS52MS5CZWhhdmlvckNvdW50EiwKCWV2b2x1dGlvbhgFIAEoCzIZLmx5ZmUudjEuU3BlY2llc0V2b2x1dGlvbiKiAwoQU3BlY2llc0V2b2x1dGlvbhIRCglnZW5vbWVfaWQYASABKAQSGQoRZm91bmRlcl9nZW5vbWVfaWQYDiABKA0SHQoVZm91bmRlcl9hbGxvY2F0aW9uX2lkGA8gASgNEhMKC2dlbm9tZV9oYXNoGAIgASgJEhoKEmFjcXVpcmVkX3RyYWl0X2lkcxgDIAMoDRIaChJtdXRhdGlvbl9iYWxhbmNlX3EYBCABKAQSGgoSZXZvbHV0aW9uX3JldmlzaW9uGAUgASgEEiIKGnNwZWNpYXRpb25fbm90X2JlZm9yZV90aWNrGAYgASgEEhgKEGF2ZXJhZ2VfaGVhbHRoX3EYByABKA0SHgoWbGFzdF9tdXRhdGlvbl9pbmNvbWVfcRgIIAEoBBIiChptdXRhdGlvbl9pbmNvbWVfbW9kaWZpZXJfcRgJIAEoDRIZChFwYXJlbnRfc3BlY2llc19pZBgKIAEoBBIUCgxjcmVhdGVkX3RpY2sYCyABKAQSDwoHZXh0aW5jdBgMIAEoCBIUCgxleHRpbmN0X3RpY2sYDSABKAQirgEKD0FiaW9nZW5lc2lzUm9vdBISCgpzcGVjaWVzX2lkGAEgASgEEhkKEWZvdW5kZXJfZ2Vub21lX2lkGAIgASgNEhgKEHN0YXJ0aW5nX3RpbGVfaWQYAyABKA0SGgoSaW5pdGlhbF9wb3B1bGF0aW9uGAQgASgNEhcKD3BsYXllcl9zZWxlY3RlZBgFIAEoCBIdChVmb3VuZGVyX2FsbG9jYXRpb25faWQYBiABKA0itgIKDkdhbWVQcm9qZWN0aW9uEh8KBG1vZGUYASABKA4yES5seWZlLnYxLkdhbWVNb2RlEioKCnJ1bl9zdGF0dXMYAiABKA4yFi5seWZlLnYxLkdhbWVSdW5TdGF0dXMSLAoLbG9zc19yZWFzb24YAyABKA4yFy5seWZlLnYxLkdhbWVMb3NzUmVhc29uEh0KFWNvbnRyb2xsZWRfc3BlY2llc19pZBgEIAEoBBIZChFnYW1lcGxheV9yZXZpc2lvbhgFIAEoBBINCgVlbmRlZBgGIAEoCBISCgplbmRlZF90aWNrGAcgASgEEicKBXJvb3RzGAggAygLMhgubHlmZS52MS5BYmlvZ2VuZXNpc1Jvb3QSIwobbXV0YXRpb25fbG9ja2VkX3NwZWNpZXNfaWRzGAkgAygEIukDChRBY3RvcldvcmxkUHJvamVjdGlvbhIQCgh3b3JsZF9pZBgBIAEoBBIWCg5jb21wbGV0ZWRfdGljaxgCIAEoBBIWCg53b3JsZF9yZXZpc2lvbhgDIAEoBBIXCg9zaW11bGF0ZWRfaG91cnMYBCABKAQSGwoTdGlja19kdXJhdGlvbl9ob3VycxgFIAEoDRIqCglsaWZlY3ljbGUYBiABKA4yFy5seWZlLnYxLldvcmxkTGlmZWN5Y2xlEhgKEHdvcmxkX3J1bGVzX2hhc2gYByABKAkSDQoFd2lkdGgYCCABKA0SDgoGaGVpZ2h0GAkgASgNEg4KBndyYXBfeBgKIAEoCBIOCgZ3cmFwX3kYCyABKAgSHQoVY29udHJvbGxlZF9zcGVjaWVzX2lkGAwgASgEEiYKBXRpbGVzGA0gAygLMhcubHlmZS52MS5UaWxlUHJvamVjdGlvbhIrCgdzcGVjaWVzGA4gAygLMhoubHlmZS52MS5TcGVjaWVzUHJvamVjdGlvbhIpCghnYW1lcGxheRgPIAEoCzIXLmx5ZmUudjEuR2FtZVByb2plY3Rpb24SNQoOam91cm5leV9ldmVudHMYECADKAsyHS5seWZlLnYxLk9yZ2FuaXNtSm91cm5leUV2ZW50In4KElByb2plY3Rpb25TbmFwc2hvdBIcChRwcm9qZWN0aW9uX3N0cmVhbV9pZBgBIAEoBBIXCg9zdHJlYW1fcmV2aXNpb24YAiABKAQSMQoKcHJvamVjdGlvbhgDIAEoCzIdLmx5ZmUudjEuQWN0b3JXb3JsZFByb2plY3Rpb24iwQQKD1Byb2plY3Rpb25CYXRjaBIcChRwcm9qZWN0aW9uX3N0cmVhbV9pZBgBIAEoBBIQCgh3b3JsZF9pZBgCIAEoBBIYChB3b3JsZF9ydWxlc19oYXNoGAMgASgJEhwKFGJhc2Vfc3RyZWFtX3JldmlzaW9uGAQgASgEEh4KFnRhcmdldF9zdHJlYW1fcmV2aXNpb24YBSABKAQSGwoTZnJvbV9leGNsdXNpdmVfdGljaxgGIAEoBBIeChZ0aHJvdWdoX2NvbXBsZXRlZF90aWNrGAcgASgEEhYKDndvcmxkX3JldmlzaW9uGAggASgEEhcKD3NpbXVsYXRlZF9ob3VycxgJIAEoBBIqCglsaWZlY3ljbGUYCiABKA4yFy5seWZlLnYxLldvcmxkTGlmZWN5Y2xlEjIKEXRpbGVfcmVwbGFjZW1lbnRzGAsgAygLMhcubHlmZS52MS5UaWxlUHJvamVjdGlvbhIYChByZW1vdmVkX3RpbGVfaWRzGAwgAygNEjgKFHNwZWNpZXNfcmVwbGFjZW1lbnRzGA0gAygLMhoubHlmZS52MS5TcGVjaWVzUHJvamVjdGlvbhIbChNyZW1vdmVkX3NwZWNpZXNfaWRzGA4gAygEEikKCGdhbWVwbGF5GA8gASgLMhcubHlmZS52MS5HYW1lUHJvamVjdGlvbhI8ChVqb3VybmV5X2V2ZW50X2FwcGVuZHMYECADKAsyHS5seWZlLnYxLk9yZ2FuaXNtSm91cm5leUV2ZW50KlMKDldvcmxkTGlmZWN5Y2xlEh8KG1dPUkxEX0xJRkVDWUNMRV9VTlNQRUNJRklFRBAAEiAKHFdPUkxEX0xJRkVDWUNMRV9QQVVTRURfUkVBRFkQASpnChZPcmdhbmlzbUxpZmVjeWNsZVBoYXNlEigKJE9SR0FOSVNNX0xJRkVDWUNMRV9QSEFTRV9VTlNQRUNJRklFRBAAEiMKH09SR0FOSVNNX0xJRkVDWUNMRV9QSEFTRV9NQVRVUkUQASqeAQoWU3BlY2llc1BvcHVsYXRpb25TY29wZRIoCiRTUEVDSUVTX1BPUFVMQVRJT05fU0NPUEVfVU5TUEVDSUZJRUQQABIoCiRTUEVDSUVTX1BPUFVMQVRJT05fU0NPUEVfV09STERfRVhBQ1QQARIwCixTUEVDSUVTX1BPUFVMQVRJT05fU0NPUEVfTElWRV9USUxFU19PQlNFUlZFRBACKtgBChBPcmdhbmlzbUJlaGF2aW9yEiEKHU9SR0FOSVNNX0JFSEFWSU9SX1VOU1BFQ0lGSUVEEAASHgoaT1JHQU5JU01fQkVIQVZJT1JfQkFTRUxJTkUQARIgChxPUkdBTklTTV9CRUhBVklPUl9DT05TRVJWSU5HEAISHgoaT1JHQU5JU01fQkVIQVZJT1JfRk9SQUdJTkcQAxIgChxPUkdBTklTTV9CRUhBVklPUl9ESVNQRVJTSU5HEAQSHQoZT1JHQU5JU01fQkVIQVZJT1JfRkxFRUlORxAFKsQBChJCZWhhdmlvclRhcmdldEtpbmQSJAogQkVIQVZJT1JfVEFSR0VUX0tJTkRfVU5TUEVDSUZJRUQQABIhCh1CRUhBVklPUl9UQVJHRVRfS0lORF9PUkdBTklTTRABEiAKHEJFSEFWSU9SX1RBUkdFVF9LSU5EX1JFTU5BTlQQAhIdChlCRUhBVklPUl9UQVJHRVRfS0lORF9FREdFEAMSJAogQkVIQVZJT1JfVEFSR0VUX0tJTkRfTE9DQUxfUE9JTlQQBCpZCghHYW1lTW9kZRIZChVHQU1FX01PREVfVU5TUEVDSUZJRUQQABIaChZHQU1FX01PREVfRlJFRV9TQU5EQk9YEAESFgoSR0FNRV9NT0RFX1NVUlZJVkFMEAIqZgoNR2FtZVJ1blN0YXR1cxIfChtHQU1FX1JVTl9TVEFUVVNfVU5TUEVDSUZJRUQQABIaChZHQU1FX1JVTl9TVEFUVVNfQUNUSVZFEAESGAoUR0FNRV9SVU5fU1RBVFVTX0xPU1QQAiqKAQoOR2FtZUxvc3NSZWFzb24SIAocR0FNRV9MT1NTX1JFQVNPTl9VTlNQRUNJRklFRBAAEiUKIUdBTUVfTE9TU19SRUFTT05fQUxMX0xJRkVfRVhUSU5DVBABEi8KK0dBTUVfTE9TU19SRUFTT05fQ09OVFJPTExFRF9TUEVDSUVTX0VYVElOQ1QQAircAgoaT3JnYW5pc21Kb3VybmV5RXZlbnRGYW1pbHkSLQopT1JHQU5JU01fSk9VUk5FWV9FVkVOVF9GQU1JTFlfVU5TUEVDSUZJRUQQABInCiNPUkdBTklTTV9KT1VSTkVZX0VWRU5UX0ZBTUlMWV9CSVJUSBABEi4KKk9SR0FOSVNNX0pPVVJORVlfRVZFTlRfRkFNSUxZX1JFUFJPRFVDVElPThACEjUKMU9SR0FOSVNNX0pPVVJORVlfRVZFTlRfRkFNSUxZX1JFU09VUkNFX0FCU09SUFRJT04QAxIpCiVPUkdBTklTTV9KT1VSTkVZX0VWRU5UX0ZBTUlMWV9GRUVESU5HEAQSKwonT1JHQU5JU01fSk9VUk5FWV9FVkVOVF9GQU1JTFlfTUlHUkFUSU9OEAUSJwojT1JHQU5JU01fSk9VUk5FWV9FVkVOVF9GQU1JTFlfREVBVEgQBkITqgIQTHlmZS5Qcm90b2NvbC5WMWIGcHJvdG8z");
+  fileDesc("ChhseWZlL3YxL3Byb2plY3Rpb24ucHJvdG8SB2x5ZmUudjEiVwocSm91cm5leURlYXRoQ2F1c2VQcm9iYWJpbGl0eRINCgVjYXVzZRgBIAEoDRIVCg1wcm9iYWJpbGl0eV9xGAIgASgNEhEKCXRyaWdnZXJlZBgDIAEoCCKtAwoUT3JnYW5pc21Kb3VybmV5RXZlbnQSEAoIZXZlbnRfaWQYASABKAQSDAoEdGljaxgCIAEoBBINCgVwaGFzZRgDIAEoDRIzCgZmYW1pbHkYBCABKA4yIy5seWZlLnYxLk9yZ2FuaXNtSm91cm5leUV2ZW50RmFtaWx5EhsKE3N1YmplY3Rfb3JnYW5pc21faWQYBSABKAQSGgoSc3ViamVjdF9zcGVjaWVzX2lkGAYgASgEEg8KB3RpbGVfaWQYByABKA0SFAoMcG9zaXRpb25feF9xGAggASgNEhQKDHBvc2l0aW9uX3lfcRgJIAEoDRIbChNyZWxhdGVkX29yZ2FuaXNtX2lkGAogASgEEhoKEnJlbGF0ZWRfcmVtbmFudF9pZBgLIAEoBBITCgtyZXNvdXJjZV9pZBgMIAEoDRIQCghhbW91bnRfcRgNIAEoEhIRCglkZXRhaWxfaWQYDiABKA0SSAoZZGVhdGhfY2F1c2VfcHJvYmFiaWxpdGllcxgPIAMoCzIlLmx5ZmUudjEuSm91cm5leURlYXRoQ2F1c2VQcm9iYWJpbGl0eSJDChpSb3V0aW5lUmVzb3VyY2VBY3F1aXNpdGlvbhITCgtyZXNvdXJjZV9pZBgBIAEoDRIQCghhbW91bnRfcRgCIAEoEiLfAQoeT3JnYW5pc21Sb3V0aW5lQWN0aXZpdHlTdW1tYXJ5EhkKEWJ1Y2tldF9zdGFydF9ob3VyGAEgASgEEhQKDHBlcmlvZF9ob3VycxgCIAEoDRIbChNzdWJqZWN0X29yZ2FuaXNtX2lkGAMgASgEEhoKEnN1YmplY3Rfc3BlY2llc19pZBgEIAEoBBIPCgd0aWxlX2lkGAUgASgNEkIKFXJlc291cmNlX2FjcXVpc2l0aW9ucxgGIAMoCzIjLmx5ZmUudjEuUm91dGluZVJlc291cmNlQWNxdWlzaXRpb24iPQoSRXhhY3RSZXNvdXJjZVN0b2NrEhMKC3Jlc291cmNlX2lkGAEgASgNEhIKCnF1YW50aXR5X3EYAiABKBIizwEKElJlc291cmNlRGVmaW5pdGlvbhITCgtyZXNvdXJjZV9pZBgBIAEoDRISCgpzdGFibGVfa2V5GAIgASgJEhQKDGRpc3BsYXlfbmFtZRgDIAEoCRI4Cg9iaW9sb2dpY2FsX2Zvcm0YBCABKA4yHy5seWZlLnYxLlJlc291cmNlQmlvbG9naWNhbEZvcm0SQAoTZW52aXJvbm1lbnRhbF9waGFzZRgFIAEoDjIjLmx5ZmUudjEuUmVzb3VyY2VFbnZpcm9ubWVudGFsUGhhc2UiXgoMUmVzb3VyY2VGbG93EhMKC3Jlc291cmNlX2lkGAEgASgNEicKBGtpbmQYAiABKA4yGS5seWZlLnYxLlJlc291cmNlRmxvd0tpbmQSEAoIYW1vdW50X3EYAyABKBIilgEKG1Jlc291cmNlRmxvd0hpc3RvcnlJbnRlcnZhbBIWCg5jb21wbGV0ZWRfdGljaxgBIAEoBBIaChJlbmRfc2ltdWxhdGVkX2hvdXIYAiABKAQSFAoMcGVyaW9kX2hvdXJzGAMgASgNEi0KDnJlc291cmNlX2Zsb3dzGAQgAygLMhUubHlmZS52MS5SZXNvdXJjZUZsb3cioQEKG1Jlc291cmNlQWNxdWlzaXRpb25FdmlkZW5jZRITCgtyZXNvdXJjZV9pZBgBIAEoDRITCgtyZXF1ZXN0ZWRfcRgCIAEoEhIRCglncmFudGVkX3EYAyABKBISHwoXdGlsZV9zdXBwbHlfY29uc3RyYWluZWQYBCABKAgSJAocY2xhaW1fY29udGVudGlvbl9jb25zdHJhaW5lZBgFIAEoCCK4AQoXQWNxdWlzaXRpb25HYXRlRXZpZGVuY2USLAoHcHJvY2VzcxgBIAEoDjIbLmx5ZmUudjEuQWNxdWlzaXRpb25Qcm9jZXNzEi4KBnJlYXNvbhgCIAEoDjIeLmx5ZmUudjEuQWNxdWlzaXRpb25HYXRlUmVhc29uEhMKC2F2YWlsYWJsZV9xGAMgASgSEhIKCnJlcXVpcmVkX3EYBCABKBISFgoOY2xlYXJzX2F0X3RpY2sYBSABKAQi1gEKGk9yZ2FuaXNtQWN0aW9uR2F0ZUV2aWRlbmNlEi8KB3Byb2Nlc3MYASABKA4yHi5seWZlLnYxLk9yZ2FuaXNtQWN0aW9uUHJvY2VzcxIxCgZyZWFzb24YAiABKA4yIS5seWZlLnYxLk9yZ2FuaXNtQWN0aW9uR2F0ZVJlYXNvbhITCgthdmFpbGFibGVfcRgDIAEoEhISCgpyZXF1aXJlZF9xGAQgASgSEhMKC3Jlc291cmNlX2lkGAUgASgNEhYKDmNsZWFyc19hdF90aWNrGAYgASgEIpkLChJPcmdhbmlzbVByb2plY3Rpb24SEwoLb3JnYW5pc21faWQYASABKAQSEgoKc3BlY2llc19pZBgCIAEoBBIUCgxwb3NpdGlvbl94X3EYAyABKA0SFAoMcG9zaXRpb25feV9xGAQgASgNEh0KFXZlbG9jaXR5X3hfcV9wZXJfaG91chgFIAEoEhIdChV2ZWxvY2l0eV95X3FfcGVyX2hvdXIYBiABKBISEgoKYmlydGhfdGljaxgHIAEoBBIcChRiaW9sb2dpY2FsX2FnZV9ob3VycxgIIAEoBBI4Cg9saWZlY3ljbGVfcGhhc2UYCSABKA4yHy5seWZlLnYxLk9yZ2FuaXNtTGlmZWN5Y2xlUGhhc2USGwoTc3RydWN0dXJhbF9tYXR0ZXJfcRgKIAEoEhIZChFjaGFyZ2VkX3Jlc2VydmVfcRgLIAEoEhIiChpjaGFyZ2VkX3Jlc2VydmVfY2FwYWNpdHlfcRgMIAEoEhIZChFyZWxhdGl2ZV9oZWFsdGhfcRgNIAEoDRIYChByZXNlcnZlX2ZhY3Rvcl9xGA4gASgNEhoKEnN0cnVjdHVyZV9mYWN0b3JfcRgPIAEoDRIUCgxhZ2VfZmFjdG9yX3EYECABKA0SHgoWZW52aXJvbm1lbnRhbF9mYWN0b3JfcRgRIAEoDRIkChxyZXByb2R1Y3Rpb25fbm90X2JlZm9yZV90aWNrGBIgASgEEiUKHXN1Y2Nlc3NmdWxfcmVwcm9kdWN0aW9uX2NvdW50GBMgASgEEiAKGHNjYXZlbmdlX25vdF9iZWZvcmVfdGljaxgUIAEoBBIkChxpbmdlc3RlZF9zdHJ1Y3R1cmFsX21hdHRlcl9xGBUgASgSEhUKDWJvZHlfcmFkaXVzX3EYFiABKA0SKwoIYmVoYXZpb3IYFyABKA4yGS5seWZlLnYxLk9yZ2FuaXNtQmVoYXZpb3ISOQoUYmVoYXZpb3JfdGFyZ2V0X2tpbmQYGCABKA4yGy5seWZlLnYxLkJlaGF2aW9yVGFyZ2V0S2luZBIaChJiZWhhdmlvcl90YXJnZXRfaWQYGSABKAQSJAocYmVoYXZpb3JfdGFyZ2V0X3Bvc2l0aW9uX3hfcRgaIAEoDRIkChxiZWhhdmlvcl90YXJnZXRfcG9zaXRpb25feV9xGBsgASgNEiEKGWJlaGF2aW9yX3NlbGVjdGVkX2F0X3RpY2sYHCABKAQSKQohYmVoYXZpb3JfbWluaW11bV9kd2VsbF91bnRpbF90aWNrGB0gASgEEiAKGHJlY2VudF9lbmVyZ3lfY292ZXJhZ2VfcRgeIAEoDRIlCh1yZWNlbnRfYWNxdWlzaXRpb25fY292ZXJhZ2VfcRgfIAEoDRIjChtsaW1pdGluZ19tYXRlcmlhbF9kZWZpY2l0X3EYICABKA0SGwoTcmVzb3VyY2VfcHJlc3N1cmVfcRghIAEoDRI9Chhjb21taXR0ZWRfbWljcm9udXRyaWVudHMYIiADKAsyGy5seWZlLnYxLkV4YWN0UmVzb3VyY2VTdG9jaxI4ChNmcmVlX21pY3JvbnV0cmllbnRzGCMgAygLMhsubHlmZS52MS5FeGFjdFJlc291cmNlU3RvY2sSSwodcmVzb3VyY2VfYWNxdWlzaXRpb25fZXZpZGVuY2UYJCADKAsyJC5seWZlLnYxLlJlc291cmNlQWNxdWlzaXRpb25FdmlkZW5jZRJDChlhY3F1aXNpdGlvbl9nYXRlX2V2aWRlbmNlGCUgAygLMiAubHlmZS52MS5BY3F1aXNpdGlvbkdhdGVFdmlkZW5jZRJBChRhY3Rpb25fZ2F0ZV9ldmlkZW5jZRgmIAMoCzIjLmx5ZmUudjEuT3JnYW5pc21BY3Rpb25HYXRlRXZpZGVuY2UiSwoNQmVoYXZpb3JDb3VudBIrCghiZWhhdmlvchgBIAEoDjIZLmx5ZmUudjEuT3JnYW5pc21CZWhhdmlvchINCgVjb3VudBgCIAEoBCKOAQoUQmVoYXZpb3JEaXN0cmlidXRpb24SEgoKc3BlY2llc19pZBgBIAEoBBIYChBvYnNlcnZlZF9hdF90aWNrGAIgASgEEiAKGHRvdGFsX29ic2VydmVkX29yZ2FuaXNtcxgDIAEoBBImCgZjb3VudHMYBCADKAsyFi5seWZlLnYxLkJlaGF2aW9yQ291bnQipAIKEVJlbW5hbnRQcm9qZWN0aW9uEhIKCnJlbW5hbnRfaWQYASABKAQSGgoSc291cmNlX29yZ2FuaXNtX2lkGAIgASgEEhkKEXNvdXJjZV9zcGVjaWVzX2lkGAMgASgEEhQKDHBvc2l0aW9uX3hfcRgEIAEoDRIUCgxwb3NpdGlvbl95X3EYBSABKA0SFAoMY3JlYXRlZF90aWNrGAYgASgEEhsKE3N0cnVjdHVyYWxfbWF0dGVyX3EYByABKBISGQoRY2hhcmdlZF9yZXNlcnZlX3EYCCABKBISFQoNYm9keV9yYWRpdXNfcRgJIAEoDRIzCg5taWNyb251dHJpZW50cxgKIAMoCzIbLmx5ZmUudjEuRXhhY3RSZXNvdXJjZVN0b2NrIg0KC1Vua25vd25UaWxlImUKC1JlZHVjZWRUaWxlEhgKEGVsZXZhdGlvbl9tZXRlcnMYASABKBESGAoQb2JzZXJ2ZWRfYXRfdGljaxgCIAEoBBIiChprbm93bl9wcmVzZW50X3Jlc291cmNlX2lkcxgDIAMoDSKpAwoITGl2ZVRpbGUSGAoQZWxldmF0aW9uX21ldGVycxgBIAEoERIYChBvYnNlcnZlZF9hdF90aWNrGAIgASgEEjQKD3Jlc291cmNlX3N0b2NrcxgDIAMoCzIbLmx5ZmUudjEuRXhhY3RSZXNvdXJjZVN0b2NrEi4KCW9yZ2FuaXNtcxgEIAMoCzIbLmx5ZmUudjEuT3JnYW5pc21Qcm9qZWN0aW9uEiwKCHJlbW5hbnRzGAUgAygLMhoubHlmZS52MS5SZW1uYW50UHJvamVjdGlvbhI9ChZiZWhhdmlvcl9kaXN0cmlidXRpb25zGAYgAygLMh0ubHlmZS52MS5CZWhhdmlvckRpc3RyaWJ1dGlvbhIiChpyZXNvdXJjZV9mbG93X3BlcmlvZF9ob3VycxgHIAEoDRItCg5yZXNvdXJjZV9mbG93cxgIIAMoCzIVLmx5ZmUudjEuUmVzb3VyY2VGbG93EkMKFXJlc291cmNlX2Zsb3dfaGlzdG9yeRgJIAMoCzIkLmx5ZmUudjEuUmVzb3VyY2VGbG93SGlzdG9yeUludGVydmFsIrYBCg5UaWxlUHJvamVjdGlvbhIPCgd0aWxlX2lkGAEgASgNEgkKAXgYAiABKBESCQoBeRgDIAEoERInCgd1bmtub3duGAogASgLMhQubHlmZS52MS5Vbmtub3duVGlsZUgAEicKB3JlZHVjZWQYCyABKAsyFC5seWZlLnYxLlJlZHVjZWRUaWxlSAASIQoEbGl2ZRgMIAEoCzIRLmx5ZmUudjEuTGl2ZVRpbGVIAEIICgZkZXRhaWwi1QEKEVNwZWNpZXNQcm9qZWN0aW9uEhIKCnNwZWNpZXNfaWQYASABKAQSOQoQcG9wdWxhdGlvbl9zY29wZRgCIAEoDjIfLmx5ZmUudjEuU3BlY2llc1BvcHVsYXRpb25TY29wZRISCgpwb3B1bGF0aW9uGAMgASgEEi8KD2JlaGF2aW9yX2NvdW50cxgEIAMoCzIWLmx5ZmUudjEuQmVoYXZpb3JDb3VudBIsCglldm9sdXRpb24YBSABKAsyGS5seWZlLnYxLlNwZWNpZXNFdm9sdXRpb24iogMKEFNwZWNpZXNFdm9sdXRpb24SEQoJZ2Vub21lX2lkGAEgASgEEhkKEWZvdW5kZXJfZ2Vub21lX2lkGA4gASgNEh0KFWZvdW5kZXJfYWxsb2NhdGlvbl9pZBgPIAEoDRITCgtnZW5vbWVfaGFzaBgCIAEoCRIaChJhY3F1aXJlZF90cmFpdF9pZHMYAyADKA0SGgoSbXV0YXRpb25fYmFsYW5jZV9xGAQgASgEEhoKEmV2b2x1dGlvbl9yZXZpc2lvbhgFIAEoBBIiChpzcGVjaWF0aW9uX25vdF9iZWZvcmVfdGljaxgGIAEoBBIYChBhdmVyYWdlX2hlYWx0aF9xGAcgASgNEh4KFmxhc3RfbXV0YXRpb25faW5jb21lX3EYCCABKAQSIgoabXV0YXRpb25faW5jb21lX21vZGlmaWVyX3EYCSABKA0SGQoRcGFyZW50X3NwZWNpZXNfaWQYCiABKAQSFAoMY3JlYXRlZF90aWNrGAsgASgEEg8KB2V4dGluY3QYDCABKAgSFAoMZXh0aW5jdF90aWNrGA0gASgEIq4BCg9BYmlvZ2VuZXNpc1Jvb3QSEgoKc3BlY2llc19pZBgBIAEoBBIZChFmb3VuZGVyX2dlbm9tZV9pZBgCIAEoDRIYChBzdGFydGluZ190aWxlX2lkGAMgASgNEhoKEmluaXRpYWxfcG9wdWxhdGlvbhgEIAEoDRIXCg9wbGF5ZXJfc2VsZWN0ZWQYBSABKAgSHQoVZm91bmRlcl9hbGxvY2F0aW9uX2lkGAYgASgNIrYCCg5HYW1lUHJvamVjdGlvbhIfCgRtb2RlGAEgASgOMhEubHlmZS52MS5HYW1lTW9kZRIqCgpydW5fc3RhdHVzGAIgASgOMhYubHlmZS52MS5HYW1lUnVuU3RhdHVzEiwKC2xvc3NfcmVhc29uGAMgASgOMhcubHlmZS52MS5HYW1lTG9zc1JlYXNvbhIdChVjb250cm9sbGVkX3NwZWNpZXNfaWQYBCABKAQSGQoRZ2FtZXBsYXlfcmV2aXNpb24YBSABKAQSDQoFZW5kZWQYBiABKAgSEgoKZW5kZWRfdGljaxgHIAEoBBInCgVyb290cxgIIAMoCzIYLmx5ZmUudjEuQWJpb2dlbmVzaXNSb290EiMKG211dGF0aW9uX2xvY2tlZF9zcGVjaWVzX2lkcxgJIAMoBCKvBQoUQWN0b3JXb3JsZFByb2plY3Rpb24SEAoId29ybGRfaWQYASABKAQSFgoOY29tcGxldGVkX3RpY2sYAiABKAQSFgoOd29ybGRfcmV2aXNpb24YAyABKAQSFwoPc2ltdWxhdGVkX2hvdXJzGAQgASgEEhsKE3RpY2tfZHVyYXRpb25faG91cnMYBSABKA0SKgoJbGlmZWN5Y2xlGAYgASgOMhcubHlmZS52MS5Xb3JsZExpZmVjeWNsZRIYChB3b3JsZF9ydWxlc19oYXNoGAcgASgJEg0KBXdpZHRoGAggASgNEg4KBmhlaWdodBgJIAEoDRIOCgZ3cmFwX3gYCiABKAgSDgoGd3JhcF95GAsgASgIEh0KFWNvbnRyb2xsZWRfc3BlY2llc19pZBgMIAEoBBImCgV0aWxlcxgNIAMoCzIXLmx5ZmUudjEuVGlsZVByb2plY3Rpb24SKwoHc3BlY2llcxgOIAMoCzIaLmx5ZmUudjEuU3BlY2llc1Byb2plY3Rpb24SKQoIZ2FtZXBsYXkYDyABKAsyFy5seWZlLnYxLkdhbWVQcm9qZWN0aW9uEjUKDmpvdXJuZXlfZXZlbnRzGBAgAygLMh0ubHlmZS52MS5PcmdhbmlzbUpvdXJuZXlFdmVudBJLChpyb3V0aW5lX2FjdGl2aXR5X3N1bW1hcmllcxgRIAMoCzInLmx5ZmUudjEuT3JnYW5pc21Sb3V0aW5lQWN0aXZpdHlTdW1tYXJ5EjwKFWFjdGl2aXR5X3B1bHNlX2V2ZW50cxgSIAMoCzIdLmx5ZmUudjEuT3JnYW5pc21Kb3VybmV5RXZlbnQSOQoUcmVzb3VyY2VfZGVmaW5pdGlvbnMYEyADKAsyGy5seWZlLnYxLlJlc291cmNlRGVmaW5pdGlvbiJ+ChJQcm9qZWN0aW9uU25hcHNob3QSHAoUcHJvamVjdGlvbl9zdHJlYW1faWQYASABKAQSFwoPc3RyZWFtX3JldmlzaW9uGAIgASgEEjEKCnByb2plY3Rpb24YAyABKAsyHS5seWZlLnYxLkFjdG9yV29ybGRQcm9qZWN0aW9uIswFCg9Qcm9qZWN0aW9uQmF0Y2gSHAoUcHJvamVjdGlvbl9zdHJlYW1faWQYASABKAQSEAoId29ybGRfaWQYAiABKAQSGAoQd29ybGRfcnVsZXNfaGFzaBgDIAEoCRIcChRiYXNlX3N0cmVhbV9yZXZpc2lvbhgEIAEoBBIeChZ0YXJnZXRfc3RyZWFtX3JldmlzaW9uGAUgASgEEhsKE2Zyb21fZXhjbHVzaXZlX3RpY2sYBiABKAQSHgoWdGhyb3VnaF9jb21wbGV0ZWRfdGljaxgHIAEoBBIWCg53b3JsZF9yZXZpc2lvbhgIIAEoBBIXCg9zaW11bGF0ZWRfaG91cnMYCSABKAQSKgoJbGlmZWN5Y2xlGAogASgOMhcubHlmZS52MS5Xb3JsZExpZmVjeWNsZRIyChF0aWxlX3JlcGxhY2VtZW50cxgLIAMoCzIXLmx5ZmUudjEuVGlsZVByb2plY3Rpb24SGAoQcmVtb3ZlZF90aWxlX2lkcxgMIAMoDRI4ChRzcGVjaWVzX3JlcGxhY2VtZW50cxgNIAMoCzIaLmx5ZmUudjEuU3BlY2llc1Byb2plY3Rpb24SGwoTcmVtb3ZlZF9zcGVjaWVzX2lkcxgOIAMoBBIpCghnYW1lcGxheRgPIAEoCzIXLmx5ZmUudjEuR2FtZVByb2plY3Rpb24SPAoVam91cm5leV9ldmVudF9hcHBlbmRzGBAgAygLMh0ubHlmZS52MS5PcmdhbmlzbUpvdXJuZXlFdmVudBJLChpyb3V0aW5lX2FjdGl2aXR5X3N1bW1hcmllcxgRIAMoCzInLmx5ZmUudjEuT3JnYW5pc21Sb3V0aW5lQWN0aXZpdHlTdW1tYXJ5EjwKFWFjdGl2aXR5X3B1bHNlX2V2ZW50cxgSIAMoCzIdLmx5ZmUudjEuT3JnYW5pc21Kb3VybmV5RXZlbnQqUwoOV29ybGRMaWZlY3ljbGUSHwobV09STERfTElGRUNZQ0xFX1VOU1BFQ0lGSUVEEAASIAocV09STERfTElGRUNZQ0xFX1BBVVNFRF9SRUFEWRABKmcKFk9yZ2FuaXNtTGlmZWN5Y2xlUGhhc2USKAokT1JHQU5JU01fTElGRUNZQ0xFX1BIQVNFX1VOU1BFQ0lGSUVEEAASIwofT1JHQU5JU01fTElGRUNZQ0xFX1BIQVNFX01BVFVSRRABKp4BChZTcGVjaWVzUG9wdWxhdGlvblNjb3BlEigKJFNQRUNJRVNfUE9QVUxBVElPTl9TQ09QRV9VTlNQRUNJRklFRBAAEigKJFNQRUNJRVNfUE9QVUxBVElPTl9TQ09QRV9XT1JMRF9FWEFDVBABEjAKLFNQRUNJRVNfUE9QVUxBVElPTl9TQ09QRV9MSVZFX1RJTEVTX09CU0VSVkVEEAIq2AEKEE9yZ2FuaXNtQmVoYXZpb3ISIQodT1JHQU5JU01fQkVIQVZJT1JfVU5TUEVDSUZJRUQQABIeChpPUkdBTklTTV9CRUhBVklPUl9CQVNFTElORRABEiAKHE9SR0FOSVNNX0JFSEFWSU9SX0NPTlNFUlZJTkcQAhIeChpPUkdBTklTTV9CRUhBVklPUl9GT1JBR0lORxADEiAKHE9SR0FOSVNNX0JFSEFWSU9SX0RJU1BFUlNJTkcQBBIdChlPUkdBTklTTV9CRUhBVklPUl9GTEVFSU5HEAUqxAEKEkJlaGF2aW9yVGFyZ2V0S2luZBIkCiBCRUhBVklPUl9UQVJHRVRfS0lORF9VTlNQRUNJRklFRBAAEiEKHUJFSEFWSU9SX1RBUkdFVF9LSU5EX09SR0FOSVNNEAESIAocQkVIQVZJT1JfVEFSR0VUX0tJTkRfUkVNTkFOVBACEh0KGUJFSEFWSU9SX1RBUkdFVF9LSU5EX0VER0UQAxIkCiBCRUhBVklPUl9UQVJHRVRfS0lORF9MT0NBTF9QT0lOVBAEKlkKCEdhbWVNb2RlEhkKFUdBTUVfTU9ERV9VTlNQRUNJRklFRBAAEhoKFkdBTUVfTU9ERV9GUkVFX1NBTkRCT1gQARIWChJHQU1FX01PREVfU1VSVklWQUwQAipmCg1HYW1lUnVuU3RhdHVzEh8KG0dBTUVfUlVOX1NUQVRVU19VTlNQRUNJRklFRBAAEhoKFkdBTUVfUlVOX1NUQVRVU19BQ1RJVkUQARIYChRHQU1FX1JVTl9TVEFUVVNfTE9TVBACKooBCg5HYW1lTG9zc1JlYXNvbhIgChxHQU1FX0xPU1NfUkVBU09OX1VOU1BFQ0lGSUVEEAASJQohR0FNRV9MT1NTX1JFQVNPTl9BTExfTElGRV9FWFRJTkNUEAESLworR0FNRV9MT1NTX1JFQVNPTl9DT05UUk9MTEVEX1NQRUNJRVNfRVhUSU5DVBACKr0DChpPcmdhbmlzbUpvdXJuZXlFdmVudEZhbWlseRItCilPUkdBTklTTV9KT1VSTkVZX0VWRU5UX0ZBTUlMWV9VTlNQRUNJRklFRBAAEicKI09SR0FOSVNNX0pPVVJORVlfRVZFTlRfRkFNSUxZX0JJUlRIEAESLgoqT1JHQU5JU01fSk9VUk5FWV9FVkVOVF9GQU1JTFlfUkVQUk9EVUNUSU9OEAISNQoxT1JHQU5JU01fSk9VUk5FWV9FVkVOVF9GQU1JTFlfUkVTT1VSQ0VfQUJTT1JQVElPThADEikKJU9SR0FOSVNNX0pPVVJORVlfRVZFTlRfRkFNSUxZX0ZFRURJTkcQBBIrCidPUkdBTklTTV9KT1VSTkVZX0VWRU5UX0ZBTUlMWV9NSUdSQVRJT04QBRInCiNPUkdBTklTTV9KT1VSTkVZX0VWRU5UX0ZBTUlMWV9ERUFUSBAGEigKJE9SR0FOSVNNX0pPVVJORVlfRVZFTlRfRkFNSUxZX1NUUkVTUxAHEjUKMU9SR0FOSVNNX0pPVVJORVlfRVZFTlRfRkFNSUxZX0JFSEFWSU9SX1RSQU5TSVRJT04QCCq3AQoWUmVzb3VyY2VCaW9sb2dpY2FsRm9ybRIoCiRSRVNPVVJDRV9CSU9MT0dJQ0FMX0ZPUk1fVU5TUEVDSUZJRUQQABImCiJSRVNPVVJDRV9CSU9MT0dJQ0FMX0ZPUk1fSU5PUkdBTklDEAESJAogUkVTT1VSQ0VfQklPTE9HSUNBTF9GT1JNX09SR0FOSUMQAhIlCiFSRVNPVVJDRV9CSU9MT0dJQ0FMX0ZPUk1fQk9VTkRBUlkQAyr1AQoaUmVzb3VyY2VFbnZpcm9ubWVudGFsUGhhc2USLAooUkVTT1VSQ0VfRU5WSVJPTk1FTlRBTF9QSEFTRV9VTlNQRUNJRklFRBAAEiQKIFJFU09VUkNFX0VOVklST05NRU5UQUxfUEhBU0VfR0FTEAESKgomUkVTT1VSQ0VfRU5WSVJPTk1FTlRBTF9QSEFTRV9ESVNTT0xWRUQQAhIpCiVSRVNPVVJDRV9FTlZJUk9OTUVOVEFMX1BIQVNFX0JPVU5EQVJZEAMSLAooUkVTT1VSQ0VfRU5WSVJPTk1FTlRBTF9QSEFTRV9QQVJUSUNVTEFURRAEKroCChBSZXNvdXJjZUZsb3dLaW5kEiIKHlJFU09VUkNFX0ZMT1dfS0lORF9VTlNQRUNJRklFRBAAEisKJ1JFU09VUkNFX0ZMT1dfS0lORF9FTlZJUk9OTUVOVEFMX1NPVVJDRRABEikKJVJFU09VUkNFX0ZMT1dfS0lORF9FTlZJUk9OTUVOVEFMX1NJTksQAhIrCidSRVNPVVJDRV9GTE9XX0tJTkRfTkVJR0hCT1JfRVhDSEFOR0VfSU4QAxIsCihSRVNPVVJDRV9GTE9XX0tJTkRfTkVJR0hCT1JfRVhDSEFOR0VfT1VUEAQSJgoiUkVTT1VSQ0VfRkxPV19LSU5EX09SR0FOSVNNX1VQVEFLRRAFEicKI1JFU09VUkNFX0ZMT1dfS0lORF9PUkdBTklTTV9SRUxFQVNFEAYqjgEKEkFjcXVpc2l0aW9uUHJvY2VzcxIjCh9BQ1FVSVNJVElPTl9QUk9DRVNTX1VOU1BFQ0lGSUVEEAASLworQUNRVUlTSVRJT05fUFJPQ0VTU19FWFRFUk5BTF9FTkVSR1lfQ0FQVFVSRRABEiIKHkFDUVVJU0lUSU9OX1BST0NFU1NfU0NBVkVOR0lORxACKusCChVBY3F1aXNpdGlvbkdhdGVSZWFzb24SJwojQUNRVUlTSVRJT05fR0FURV9SRUFTT05fVU5TUEVDSUZJRUQQABIuCipBQ1FVSVNJVElPTl9HQVRFX1JFQVNPTl9NSVNTSU5HX0NBUEFCSUxJVFkQARIuCipBQ1FVSVNJVElPTl9HQVRFX1JFQVNPTl9JTkFDQ0VTU0lCTEVfTElHSFQQAhI1CjFBQ1FVSVNJVElPTl9HQVRFX1JFQVNPTl9FTlZJUk9OTUVOVEFMX09QUE9SVFVOSVRZEAMSLQopQUNRVUlTSVRJT05fR0FURV9SRUFTT05fSU5URVJOQUxfQ0FQQUNJVFkQBBIrCidBQ1FVSVNJVElPTl9HQVRFX1JFQVNPTl9DT09MRE9XTl9BQ1RJVkUQBRI2CjJBQ1FVSVNJVElPTl9HQVRFX1JFQVNPTl9JTlNVRkZJQ0lFTlRfQUNUSU9OX0VORVJHWRAGKpYBChVPcmdhbmlzbUFjdGlvblByb2Nlc3MSJwojT1JHQU5JU01fQUNUSU9OX1BST0NFU1NfVU5TUEVDSUZJRUQQABIqCiZPUkdBTklTTV9BQ1RJT05fUFJPQ0VTU19CSU9NQVNTX0dST1dUSBABEigKJE9SR0FOSVNNX0FDVElPTl9QUk9DRVNTX1JFUFJPRFVDVElPThACKtUGChhPcmdhbmlzbUFjdGlvbkdhdGVSZWFzb24SKwonT1JHQU5JU01fQUNUSU9OX0dBVEVfUkVBU09OX1VOU1BFQ0lGSUVEEAASMgouT1JHQU5JU01fQUNUSU9OX0dBVEVfUkVBU09OX01JU1NJTkdfQ0FQQUJJTElUWRABEjMKL09SR0FOSVNNX0FDVElPTl9HQVRFX1JFQVNPTl9CRUhBVklPUl9TVVBQUkVTU0VEEAISLworT1JHQU5JU01fQUNUSU9OX0dBVEVfUkVBU09OX0NPT0xET1dOX0FDVElWRRADEjQKME9SR0FOSVNNX0FDVElPTl9HQVRFX1JFQVNPTl9IRUFMVEhfQkVMT1dfTUlOSU1VTRAEEjcKM09SR0FOSVNNX0FDVElPTl9HQVRFX1JFQVNPTl9TVFJVQ1RVUkVfQkVMT1dfTUlOSU1VTRAFEjUKMU9SR0FOSVNNX0FDVElPTl9HQVRFX1JFQVNPTl9SRVNFUlZFX0JFTE9XX01JTklNVU0QBhJICkRPUkdBTklTTV9BQ1RJT05fR0FURV9SRUFTT05fQ09OU1RJVFVUSVZFX01JQ1JPTlVUUklFTlRfUVVPVEFfTUlTU0lORxAHEkUKQU9SR0FOSVNNX0FDVElPTl9HQVRFX1JFQVNPTl9PRkZTUFJJTkdfTUlDUk9OVVRSSUVOVF9RVU9UQV9NSVNTSU5HEAgSNQoxT1JHQU5JU01fQUNUSU9OX0dBVEVfUkVBU09OX01BSU5URU5BTkNFX1NIT1JURkFMTBAJEjgKNE9SR0FOSVNNX0FDVElPTl9HQVRFX1JFQVNPTl9SRVNFUlZFX1BST1RFQ1RJT05fRkxPT1IQChIxCi1PUkdBTklTTV9BQ1RJT05fR0FURV9SRUFTT05fSU5URVJOQUxfQ0FQQUNJVFkQCxIvCitPUkdBTklTTV9BQ1RJT05fR0FURV9SRUFTT05fUkVTT1VSQ0VfU1VQUExZEAwSMAosT1JHQU5JU01fQUNUSU9OX0dBVEVfUkVBU09OX0NMQUlNX0NPTlRFTlRJT04QDRI0CjBPUkdBTklTTV9BQ1RJT05fR0FURV9SRUFTT05fTElGRUNZQ0xFX0lORUxJR0lCTEUQDkITqgIQTHlmZS5Qcm90b2NvbC5WMWIGcHJvdG8z");
 
 /**
  * @generated from message lyfe.v1.JourneyDeathCauseProbability
@@ -127,6 +127,70 @@ export const OrganismJourneyEventSchema: GenMessage<OrganismJourneyEvent> = /*@_
   messageDesc(file_lyfe_v1_projection, 1);
 
 /**
+ * @generated from message lyfe.v1.RoutineResourceAcquisition
+ */
+export type RoutineResourceAcquisition = Message<"lyfe.v1.RoutineResourceAcquisition"> & {
+  /**
+   * @generated from field: uint32 resource_id = 1;
+   */
+  resourceId: number;
+
+  /**
+   * @generated from field: sint64 amount_q = 2;
+   */
+  amountQ: bigint;
+};
+
+/**
+ * Describes the message lyfe.v1.RoutineResourceAcquisition.
+ * Use `create(RoutineResourceAcquisitionSchema)` to create a new message.
+ */
+export const RoutineResourceAcquisitionSchema: GenMessage<RoutineResourceAcquisition> = /*@__PURE__*/
+  messageDesc(file_lyfe_v1_projection, 2);
+
+/**
+ * @generated from message lyfe.v1.OrganismRoutineActivitySummary
+ */
+export type OrganismRoutineActivitySummary = Message<"lyfe.v1.OrganismRoutineActivitySummary"> & {
+  /**
+   * @generated from field: uint64 bucket_start_hour = 1;
+   */
+  bucketStartHour: bigint;
+
+  /**
+   * @generated from field: uint32 period_hours = 2;
+   */
+  periodHours: number;
+
+  /**
+   * @generated from field: uint64 subject_organism_id = 3;
+   */
+  subjectOrganismId: bigint;
+
+  /**
+   * @generated from field: uint64 subject_species_id = 4;
+   */
+  subjectSpeciesId: bigint;
+
+  /**
+   * @generated from field: uint32 tile_id = 5;
+   */
+  tileId: number;
+
+  /**
+   * @generated from field: repeated lyfe.v1.RoutineResourceAcquisition resource_acquisitions = 6;
+   */
+  resourceAcquisitions: RoutineResourceAcquisition[];
+};
+
+/**
+ * Describes the message lyfe.v1.OrganismRoutineActivitySummary.
+ * Use `create(OrganismRoutineActivitySummarySchema)` to create a new message.
+ */
+export const OrganismRoutineActivitySummarySchema: GenMessage<OrganismRoutineActivitySummary> = /*@__PURE__*/
+  messageDesc(file_lyfe_v1_projection, 3);
+
+/**
  * @generated from message lyfe.v1.ExactResourceStock
  */
 export type ExactResourceStock = Message<"lyfe.v1.ExactResourceStock"> & {
@@ -146,7 +210,219 @@ export type ExactResourceStock = Message<"lyfe.v1.ExactResourceStock"> & {
  * Use `create(ExactResourceStockSchema)` to create a new message.
  */
 export const ExactResourceStockSchema: GenMessage<ExactResourceStock> = /*@__PURE__*/
-  messageDesc(file_lyfe_v1_projection, 2);
+  messageDesc(file_lyfe_v1_projection, 4);
+
+/**
+ * @generated from message lyfe.v1.ResourceDefinition
+ */
+export type ResourceDefinition = Message<"lyfe.v1.ResourceDefinition"> & {
+  /**
+   * @generated from field: uint32 resource_id = 1;
+   */
+  resourceId: number;
+
+  /**
+   * @generated from field: string stable_key = 2;
+   */
+  stableKey: string;
+
+  /**
+   * @generated from field: string display_name = 3;
+   */
+  displayName: string;
+
+  /**
+   * @generated from field: lyfe.v1.ResourceBiologicalForm biological_form = 4;
+   */
+  biologicalForm: ResourceBiologicalForm;
+
+  /**
+   * @generated from field: lyfe.v1.ResourceEnvironmentalPhase environmental_phase = 5;
+   */
+  environmentalPhase: ResourceEnvironmentalPhase;
+};
+
+/**
+ * Describes the message lyfe.v1.ResourceDefinition.
+ * Use `create(ResourceDefinitionSchema)` to create a new message.
+ */
+export const ResourceDefinitionSchema: GenMessage<ResourceDefinition> = /*@__PURE__*/
+  messageDesc(file_lyfe_v1_projection, 5);
+
+/**
+ * @generated from message lyfe.v1.ResourceFlow
+ */
+export type ResourceFlow = Message<"lyfe.v1.ResourceFlow"> & {
+  /**
+   * @generated from field: uint32 resource_id = 1;
+   */
+  resourceId: number;
+
+  /**
+   * @generated from field: lyfe.v1.ResourceFlowKind kind = 2;
+   */
+  kind: ResourceFlowKind;
+
+  /**
+   * @generated from field: sint64 amount_q = 3;
+   */
+  amountQ: bigint;
+};
+
+/**
+ * Describes the message lyfe.v1.ResourceFlow.
+ * Use `create(ResourceFlowSchema)` to create a new message.
+ */
+export const ResourceFlowSchema: GenMessage<ResourceFlow> = /*@__PURE__*/
+  messageDesc(file_lyfe_v1_projection, 6);
+
+/**
+ * @generated from message lyfe.v1.ResourceFlowHistoryInterval
+ */
+export type ResourceFlowHistoryInterval = Message<"lyfe.v1.ResourceFlowHistoryInterval"> & {
+  /**
+   * @generated from field: uint64 completed_tick = 1;
+   */
+  completedTick: bigint;
+
+  /**
+   * @generated from field: uint64 end_simulated_hour = 2;
+   */
+  endSimulatedHour: bigint;
+
+  /**
+   * @generated from field: uint32 period_hours = 3;
+   */
+  periodHours: number;
+
+  /**
+   * @generated from field: repeated lyfe.v1.ResourceFlow resource_flows = 4;
+   */
+  resourceFlows: ResourceFlow[];
+};
+
+/**
+ * Describes the message lyfe.v1.ResourceFlowHistoryInterval.
+ * Use `create(ResourceFlowHistoryIntervalSchema)` to create a new message.
+ */
+export const ResourceFlowHistoryIntervalSchema: GenMessage<ResourceFlowHistoryInterval> = /*@__PURE__*/
+  messageDesc(file_lyfe_v1_projection, 7);
+
+/**
+ * @generated from message lyfe.v1.ResourceAcquisitionEvidence
+ */
+export type ResourceAcquisitionEvidence = Message<"lyfe.v1.ResourceAcquisitionEvidence"> & {
+  /**
+   * @generated from field: uint32 resource_id = 1;
+   */
+  resourceId: number;
+
+  /**
+   * @generated from field: sint64 requested_q = 2;
+   */
+  requestedQ: bigint;
+
+  /**
+   * @generated from field: sint64 granted_q = 3;
+   */
+  grantedQ: bigint;
+
+  /**
+   * @generated from field: bool tile_supply_constrained = 4;
+   */
+  tileSupplyConstrained: boolean;
+
+  /**
+   * @generated from field: bool claim_contention_constrained = 5;
+   */
+  claimContentionConstrained: boolean;
+};
+
+/**
+ * Describes the message lyfe.v1.ResourceAcquisitionEvidence.
+ * Use `create(ResourceAcquisitionEvidenceSchema)` to create a new message.
+ */
+export const ResourceAcquisitionEvidenceSchema: GenMessage<ResourceAcquisitionEvidence> = /*@__PURE__*/
+  messageDesc(file_lyfe_v1_projection, 8);
+
+/**
+ * @generated from message lyfe.v1.AcquisitionGateEvidence
+ */
+export type AcquisitionGateEvidence = Message<"lyfe.v1.AcquisitionGateEvidence"> & {
+  /**
+   * @generated from field: lyfe.v1.AcquisitionProcess process = 1;
+   */
+  process: AcquisitionProcess;
+
+  /**
+   * @generated from field: lyfe.v1.AcquisitionGateReason reason = 2;
+   */
+  reason: AcquisitionGateReason;
+
+  /**
+   * @generated from field: sint64 available_q = 3;
+   */
+  availableQ: bigint;
+
+  /**
+   * @generated from field: sint64 required_q = 4;
+   */
+  requiredQ: bigint;
+
+  /**
+   * @generated from field: uint64 clears_at_tick = 5;
+   */
+  clearsAtTick: bigint;
+};
+
+/**
+ * Describes the message lyfe.v1.AcquisitionGateEvidence.
+ * Use `create(AcquisitionGateEvidenceSchema)` to create a new message.
+ */
+export const AcquisitionGateEvidenceSchema: GenMessage<AcquisitionGateEvidence> = /*@__PURE__*/
+  messageDesc(file_lyfe_v1_projection, 9);
+
+/**
+ * @generated from message lyfe.v1.OrganismActionGateEvidence
+ */
+export type OrganismActionGateEvidence = Message<"lyfe.v1.OrganismActionGateEvidence"> & {
+  /**
+   * @generated from field: lyfe.v1.OrganismActionProcess process = 1;
+   */
+  process: OrganismActionProcess;
+
+  /**
+   * @generated from field: lyfe.v1.OrganismActionGateReason reason = 2;
+   */
+  reason: OrganismActionGateReason;
+
+  /**
+   * @generated from field: sint64 available_q = 3;
+   */
+  availableQ: bigint;
+
+  /**
+   * @generated from field: sint64 required_q = 4;
+   */
+  requiredQ: bigint;
+
+  /**
+   * @generated from field: uint32 resource_id = 5;
+   */
+  resourceId: number;
+
+  /**
+   * @generated from field: uint64 clears_at_tick = 6;
+   */
+  clearsAtTick: bigint;
+};
+
+/**
+ * Describes the message lyfe.v1.OrganismActionGateEvidence.
+ * Use `create(OrganismActionGateEvidenceSchema)` to create a new message.
+ */
+export const OrganismActionGateEvidenceSchema: GenMessage<OrganismActionGateEvidence> = /*@__PURE__*/
+  messageDesc(file_lyfe_v1_projection, 10);
 
 /**
  * @generated from message lyfe.v1.OrganismProjection
@@ -326,6 +602,21 @@ export type OrganismProjection = Message<"lyfe.v1.OrganismProjection"> & {
    * @generated from field: repeated lyfe.v1.ExactResourceStock free_micronutrients = 35;
    */
   freeMicronutrients: ExactResourceStock[];
+
+  /**
+   * @generated from field: repeated lyfe.v1.ResourceAcquisitionEvidence resource_acquisition_evidence = 36;
+   */
+  resourceAcquisitionEvidence: ResourceAcquisitionEvidence[];
+
+  /**
+   * @generated from field: repeated lyfe.v1.AcquisitionGateEvidence acquisition_gate_evidence = 37;
+   */
+  acquisitionGateEvidence: AcquisitionGateEvidence[];
+
+  /**
+   * @generated from field: repeated lyfe.v1.OrganismActionGateEvidence action_gate_evidence = 38;
+   */
+  actionGateEvidence: OrganismActionGateEvidence[];
 };
 
 /**
@@ -333,7 +624,7 @@ export type OrganismProjection = Message<"lyfe.v1.OrganismProjection"> & {
  * Use `create(OrganismProjectionSchema)` to create a new message.
  */
 export const OrganismProjectionSchema: GenMessage<OrganismProjection> = /*@__PURE__*/
-  messageDesc(file_lyfe_v1_projection, 3);
+  messageDesc(file_lyfe_v1_projection, 11);
 
 /**
  * @generated from message lyfe.v1.BehaviorCount
@@ -355,7 +646,7 @@ export type BehaviorCount = Message<"lyfe.v1.BehaviorCount"> & {
  * Use `create(BehaviorCountSchema)` to create a new message.
  */
 export const BehaviorCountSchema: GenMessage<BehaviorCount> = /*@__PURE__*/
-  messageDesc(file_lyfe_v1_projection, 4);
+  messageDesc(file_lyfe_v1_projection, 12);
 
 /**
  * @generated from message lyfe.v1.BehaviorDistribution
@@ -387,7 +678,7 @@ export type BehaviorDistribution = Message<"lyfe.v1.BehaviorDistribution"> & {
  * Use `create(BehaviorDistributionSchema)` to create a new message.
  */
 export const BehaviorDistributionSchema: GenMessage<BehaviorDistribution> = /*@__PURE__*/
-  messageDesc(file_lyfe_v1_projection, 5);
+  messageDesc(file_lyfe_v1_projection, 13);
 
 /**
  * @generated from message lyfe.v1.RemnantProjection
@@ -449,7 +740,7 @@ export type RemnantProjection = Message<"lyfe.v1.RemnantProjection"> & {
  * Use `create(RemnantProjectionSchema)` to create a new message.
  */
 export const RemnantProjectionSchema: GenMessage<RemnantProjection> = /*@__PURE__*/
-  messageDesc(file_lyfe_v1_projection, 6);
+  messageDesc(file_lyfe_v1_projection, 14);
 
 /**
  * @generated from message lyfe.v1.UnknownTile
@@ -462,7 +753,7 @@ export type UnknownTile = Message<"lyfe.v1.UnknownTile"> & {
  * Use `create(UnknownTileSchema)` to create a new message.
  */
 export const UnknownTileSchema: GenMessage<UnknownTile> = /*@__PURE__*/
-  messageDesc(file_lyfe_v1_projection, 7);
+  messageDesc(file_lyfe_v1_projection, 15);
 
 /**
  * @generated from message lyfe.v1.ReducedTile
@@ -489,7 +780,7 @@ export type ReducedTile = Message<"lyfe.v1.ReducedTile"> & {
  * Use `create(ReducedTileSchema)` to create a new message.
  */
 export const ReducedTileSchema: GenMessage<ReducedTile> = /*@__PURE__*/
-  messageDesc(file_lyfe_v1_projection, 8);
+  messageDesc(file_lyfe_v1_projection, 16);
 
 /**
  * @generated from message lyfe.v1.LiveTile
@@ -524,6 +815,21 @@ export type LiveTile = Message<"lyfe.v1.LiveTile"> & {
    * @generated from field: repeated lyfe.v1.BehaviorDistribution behavior_distributions = 6;
    */
   behaviorDistributions: BehaviorDistribution[];
+
+  /**
+   * @generated from field: uint32 resource_flow_period_hours = 7;
+   */
+  resourceFlowPeriodHours: number;
+
+  /**
+   * @generated from field: repeated lyfe.v1.ResourceFlow resource_flows = 8;
+   */
+  resourceFlows: ResourceFlow[];
+
+  /**
+   * @generated from field: repeated lyfe.v1.ResourceFlowHistoryInterval resource_flow_history = 9;
+   */
+  resourceFlowHistory: ResourceFlowHistoryInterval[];
 };
 
 /**
@@ -531,7 +837,7 @@ export type LiveTile = Message<"lyfe.v1.LiveTile"> & {
  * Use `create(LiveTileSchema)` to create a new message.
  */
 export const LiveTileSchema: GenMessage<LiveTile> = /*@__PURE__*/
-  messageDesc(file_lyfe_v1_projection, 9);
+  messageDesc(file_lyfe_v1_projection, 17);
 
 /**
  * @generated from message lyfe.v1.TileProjection
@@ -581,7 +887,7 @@ export type TileProjection = Message<"lyfe.v1.TileProjection"> & {
  * Use `create(TileProjectionSchema)` to create a new message.
  */
 export const TileProjectionSchema: GenMessage<TileProjection> = /*@__PURE__*/
-  messageDesc(file_lyfe_v1_projection, 10);
+  messageDesc(file_lyfe_v1_projection, 18);
 
 /**
  * @generated from message lyfe.v1.SpeciesProjection
@@ -618,7 +924,7 @@ export type SpeciesProjection = Message<"lyfe.v1.SpeciesProjection"> & {
  * Use `create(SpeciesProjectionSchema)` to create a new message.
  */
 export const SpeciesProjectionSchema: GenMessage<SpeciesProjection> = /*@__PURE__*/
-  messageDesc(file_lyfe_v1_projection, 11);
+  messageDesc(file_lyfe_v1_projection, 19);
 
 /**
  * @generated from message lyfe.v1.SpeciesEvolution
@@ -705,7 +1011,7 @@ export type SpeciesEvolution = Message<"lyfe.v1.SpeciesEvolution"> & {
  * Use `create(SpeciesEvolutionSchema)` to create a new message.
  */
 export const SpeciesEvolutionSchema: GenMessage<SpeciesEvolution> = /*@__PURE__*/
-  messageDesc(file_lyfe_v1_projection, 12);
+  messageDesc(file_lyfe_v1_projection, 20);
 
 /**
  * @generated from message lyfe.v1.AbiogenesisRoot
@@ -747,7 +1053,7 @@ export type AbiogenesisRoot = Message<"lyfe.v1.AbiogenesisRoot"> & {
  * Use `create(AbiogenesisRootSchema)` to create a new message.
  */
 export const AbiogenesisRootSchema: GenMessage<AbiogenesisRoot> = /*@__PURE__*/
-  messageDesc(file_lyfe_v1_projection, 13);
+  messageDesc(file_lyfe_v1_projection, 21);
 
 /**
  * @generated from message lyfe.v1.GameProjection
@@ -804,7 +1110,7 @@ export type GameProjection = Message<"lyfe.v1.GameProjection"> & {
  * Use `create(GameProjectionSchema)` to create a new message.
  */
 export const GameProjectionSchema: GenMessage<GameProjection> = /*@__PURE__*/
-  messageDesc(file_lyfe_v1_projection, 14);
+  messageDesc(file_lyfe_v1_projection, 22);
 
 /**
  * @generated from message lyfe.v1.ActorWorldProjection
@@ -889,6 +1195,21 @@ export type ActorWorldProjection = Message<"lyfe.v1.ActorWorldProjection"> & {
    * @generated from field: repeated lyfe.v1.OrganismJourneyEvent journey_events = 16;
    */
   journeyEvents: OrganismJourneyEvent[];
+
+  /**
+   * @generated from field: repeated lyfe.v1.OrganismRoutineActivitySummary routine_activity_summaries = 17;
+   */
+  routineActivitySummaries: OrganismRoutineActivitySummary[];
+
+  /**
+   * @generated from field: repeated lyfe.v1.OrganismJourneyEvent activity_pulse_events = 18;
+   */
+  activityPulseEvents: OrganismJourneyEvent[];
+
+  /**
+   * @generated from field: repeated lyfe.v1.ResourceDefinition resource_definitions = 19;
+   */
+  resourceDefinitions: ResourceDefinition[];
 };
 
 /**
@@ -896,7 +1217,7 @@ export type ActorWorldProjection = Message<"lyfe.v1.ActorWorldProjection"> & {
  * Use `create(ActorWorldProjectionSchema)` to create a new message.
  */
 export const ActorWorldProjectionSchema: GenMessage<ActorWorldProjection> = /*@__PURE__*/
-  messageDesc(file_lyfe_v1_projection, 15);
+  messageDesc(file_lyfe_v1_projection, 23);
 
 /**
  * @generated from message lyfe.v1.ProjectionSnapshot
@@ -923,7 +1244,7 @@ export type ProjectionSnapshot = Message<"lyfe.v1.ProjectionSnapshot"> & {
  * Use `create(ProjectionSnapshotSchema)` to create a new message.
  */
 export const ProjectionSnapshotSchema: GenMessage<ProjectionSnapshot> = /*@__PURE__*/
-  messageDesc(file_lyfe_v1_projection, 16);
+  messageDesc(file_lyfe_v1_projection, 24);
 
 /**
  * @generated from message lyfe.v1.ProjectionBatch
@@ -1008,6 +1329,16 @@ export type ProjectionBatch = Message<"lyfe.v1.ProjectionBatch"> & {
    * @generated from field: repeated lyfe.v1.OrganismJourneyEvent journey_event_appends = 16;
    */
   journeyEventAppends: OrganismJourneyEvent[];
+
+  /**
+   * @generated from field: repeated lyfe.v1.OrganismRoutineActivitySummary routine_activity_summaries = 17;
+   */
+  routineActivitySummaries: OrganismRoutineActivitySummary[];
+
+  /**
+   * @generated from field: repeated lyfe.v1.OrganismJourneyEvent activity_pulse_events = 18;
+   */
+  activityPulseEvents: OrganismJourneyEvent[];
 };
 
 /**
@@ -1015,7 +1346,7 @@ export type ProjectionBatch = Message<"lyfe.v1.ProjectionBatch"> & {
  * Use `create(ProjectionBatchSchema)` to create a new message.
  */
 export const ProjectionBatchSchema: GenMessage<ProjectionBatch> = /*@__PURE__*/
-  messageDesc(file_lyfe_v1_projection, 17);
+  messageDesc(file_lyfe_v1_projection, 25);
 
 /**
  * @generated from enum lyfe.v1.WorldLifecycle
@@ -1278,6 +1609,16 @@ export enum OrganismJourneyEventFamily {
    * @generated from enum value: ORGANISM_JOURNEY_EVENT_FAMILY_DEATH = 6;
    */
   DEATH = 6,
+
+  /**
+   * @generated from enum value: ORGANISM_JOURNEY_EVENT_FAMILY_STRESS = 7;
+   */
+  STRESS = 7,
+
+  /**
+   * @generated from enum value: ORGANISM_JOURNEY_EVENT_FAMILY_BEHAVIOR_TRANSITION = 8;
+   */
+  BEHAVIOR_TRANSITION = 8,
 }
 
 /**
@@ -1285,4 +1626,301 @@ export enum OrganismJourneyEventFamily {
  */
 export const OrganismJourneyEventFamilySchema: GenEnum<OrganismJourneyEventFamily> = /*@__PURE__*/
   enumDesc(file_lyfe_v1_projection, 8);
+
+/**
+ * @generated from enum lyfe.v1.ResourceBiologicalForm
+ */
+export enum ResourceBiologicalForm {
+  /**
+   * @generated from enum value: RESOURCE_BIOLOGICAL_FORM_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: RESOURCE_BIOLOGICAL_FORM_INORGANIC = 1;
+   */
+  INORGANIC = 1,
+
+  /**
+   * @generated from enum value: RESOURCE_BIOLOGICAL_FORM_ORGANIC = 2;
+   */
+  ORGANIC = 2,
+
+  /**
+   * @generated from enum value: RESOURCE_BIOLOGICAL_FORM_BOUNDARY = 3;
+   */
+  BOUNDARY = 3,
+}
+
+/**
+ * Describes the enum lyfe.v1.ResourceBiologicalForm.
+ */
+export const ResourceBiologicalFormSchema: GenEnum<ResourceBiologicalForm> = /*@__PURE__*/
+  enumDesc(file_lyfe_v1_projection, 9);
+
+/**
+ * @generated from enum lyfe.v1.ResourceEnvironmentalPhase
+ */
+export enum ResourceEnvironmentalPhase {
+  /**
+   * @generated from enum value: RESOURCE_ENVIRONMENTAL_PHASE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: RESOURCE_ENVIRONMENTAL_PHASE_GAS = 1;
+   */
+  GAS = 1,
+
+  /**
+   * @generated from enum value: RESOURCE_ENVIRONMENTAL_PHASE_DISSOLVED = 2;
+   */
+  DISSOLVED = 2,
+
+  /**
+   * @generated from enum value: RESOURCE_ENVIRONMENTAL_PHASE_BOUNDARY = 3;
+   */
+  BOUNDARY = 3,
+
+  /**
+   * @generated from enum value: RESOURCE_ENVIRONMENTAL_PHASE_PARTICULATE = 4;
+   */
+  PARTICULATE = 4,
+}
+
+/**
+ * Describes the enum lyfe.v1.ResourceEnvironmentalPhase.
+ */
+export const ResourceEnvironmentalPhaseSchema: GenEnum<ResourceEnvironmentalPhase> = /*@__PURE__*/
+  enumDesc(file_lyfe_v1_projection, 10);
+
+/**
+ * @generated from enum lyfe.v1.ResourceFlowKind
+ */
+export enum ResourceFlowKind {
+  /**
+   * @generated from enum value: RESOURCE_FLOW_KIND_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: RESOURCE_FLOW_KIND_ENVIRONMENTAL_SOURCE = 1;
+   */
+  ENVIRONMENTAL_SOURCE = 1,
+
+  /**
+   * @generated from enum value: RESOURCE_FLOW_KIND_ENVIRONMENTAL_SINK = 2;
+   */
+  ENVIRONMENTAL_SINK = 2,
+
+  /**
+   * @generated from enum value: RESOURCE_FLOW_KIND_NEIGHBOR_EXCHANGE_IN = 3;
+   */
+  NEIGHBOR_EXCHANGE_IN = 3,
+
+  /**
+   * @generated from enum value: RESOURCE_FLOW_KIND_NEIGHBOR_EXCHANGE_OUT = 4;
+   */
+  NEIGHBOR_EXCHANGE_OUT = 4,
+
+  /**
+   * @generated from enum value: RESOURCE_FLOW_KIND_ORGANISM_UPTAKE = 5;
+   */
+  ORGANISM_UPTAKE = 5,
+
+  /**
+   * @generated from enum value: RESOURCE_FLOW_KIND_ORGANISM_RELEASE = 6;
+   */
+  ORGANISM_RELEASE = 6,
+}
+
+/**
+ * Describes the enum lyfe.v1.ResourceFlowKind.
+ */
+export const ResourceFlowKindSchema: GenEnum<ResourceFlowKind> = /*@__PURE__*/
+  enumDesc(file_lyfe_v1_projection, 11);
+
+/**
+ * @generated from enum lyfe.v1.AcquisitionProcess
+ */
+export enum AcquisitionProcess {
+  /**
+   * @generated from enum value: ACQUISITION_PROCESS_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: ACQUISITION_PROCESS_EXTERNAL_ENERGY_CAPTURE = 1;
+   */
+  EXTERNAL_ENERGY_CAPTURE = 1,
+
+  /**
+   * @generated from enum value: ACQUISITION_PROCESS_SCAVENGING = 2;
+   */
+  SCAVENGING = 2,
+}
+
+/**
+ * Describes the enum lyfe.v1.AcquisitionProcess.
+ */
+export const AcquisitionProcessSchema: GenEnum<AcquisitionProcess> = /*@__PURE__*/
+  enumDesc(file_lyfe_v1_projection, 12);
+
+/**
+ * @generated from enum lyfe.v1.AcquisitionGateReason
+ */
+export enum AcquisitionGateReason {
+  /**
+   * @generated from enum value: ACQUISITION_GATE_REASON_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: ACQUISITION_GATE_REASON_MISSING_CAPABILITY = 1;
+   */
+  MISSING_CAPABILITY = 1,
+
+  /**
+   * @generated from enum value: ACQUISITION_GATE_REASON_INACCESSIBLE_LIGHT = 2;
+   */
+  INACCESSIBLE_LIGHT = 2,
+
+  /**
+   * @generated from enum value: ACQUISITION_GATE_REASON_ENVIRONMENTAL_OPPORTUNITY = 3;
+   */
+  ENVIRONMENTAL_OPPORTUNITY = 3,
+
+  /**
+   * @generated from enum value: ACQUISITION_GATE_REASON_INTERNAL_CAPACITY = 4;
+   */
+  INTERNAL_CAPACITY = 4,
+
+  /**
+   * @generated from enum value: ACQUISITION_GATE_REASON_COOLDOWN_ACTIVE = 5;
+   */
+  COOLDOWN_ACTIVE = 5,
+
+  /**
+   * @generated from enum value: ACQUISITION_GATE_REASON_INSUFFICIENT_ACTION_ENERGY = 6;
+   */
+  INSUFFICIENT_ACTION_ENERGY = 6,
+}
+
+/**
+ * Describes the enum lyfe.v1.AcquisitionGateReason.
+ */
+export const AcquisitionGateReasonSchema: GenEnum<AcquisitionGateReason> = /*@__PURE__*/
+  enumDesc(file_lyfe_v1_projection, 13);
+
+/**
+ * @generated from enum lyfe.v1.OrganismActionProcess
+ */
+export enum OrganismActionProcess {
+  /**
+   * @generated from enum value: ORGANISM_ACTION_PROCESS_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: ORGANISM_ACTION_PROCESS_BIOMASS_GROWTH = 1;
+   */
+  BIOMASS_GROWTH = 1,
+
+  /**
+   * @generated from enum value: ORGANISM_ACTION_PROCESS_REPRODUCTION = 2;
+   */
+  REPRODUCTION = 2,
+}
+
+/**
+ * Describes the enum lyfe.v1.OrganismActionProcess.
+ */
+export const OrganismActionProcessSchema: GenEnum<OrganismActionProcess> = /*@__PURE__*/
+  enumDesc(file_lyfe_v1_projection, 14);
+
+/**
+ * @generated from enum lyfe.v1.OrganismActionGateReason
+ */
+export enum OrganismActionGateReason {
+  /**
+   * @generated from enum value: ORGANISM_ACTION_GATE_REASON_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: ORGANISM_ACTION_GATE_REASON_MISSING_CAPABILITY = 1;
+   */
+  MISSING_CAPABILITY = 1,
+
+  /**
+   * @generated from enum value: ORGANISM_ACTION_GATE_REASON_BEHAVIOR_SUPPRESSED = 2;
+   */
+  BEHAVIOR_SUPPRESSED = 2,
+
+  /**
+   * @generated from enum value: ORGANISM_ACTION_GATE_REASON_COOLDOWN_ACTIVE = 3;
+   */
+  COOLDOWN_ACTIVE = 3,
+
+  /**
+   * @generated from enum value: ORGANISM_ACTION_GATE_REASON_HEALTH_BELOW_MINIMUM = 4;
+   */
+  HEALTH_BELOW_MINIMUM = 4,
+
+  /**
+   * @generated from enum value: ORGANISM_ACTION_GATE_REASON_STRUCTURE_BELOW_MINIMUM = 5;
+   */
+  STRUCTURE_BELOW_MINIMUM = 5,
+
+  /**
+   * @generated from enum value: ORGANISM_ACTION_GATE_REASON_RESERVE_BELOW_MINIMUM = 6;
+   */
+  RESERVE_BELOW_MINIMUM = 6,
+
+  /**
+   * @generated from enum value: ORGANISM_ACTION_GATE_REASON_CONSTITUTIVE_MICRONUTRIENT_QUOTA_MISSING = 7;
+   */
+  CONSTITUTIVE_MICRONUTRIENT_QUOTA_MISSING = 7,
+
+  /**
+   * @generated from enum value: ORGANISM_ACTION_GATE_REASON_OFFSPRING_MICRONUTRIENT_QUOTA_MISSING = 8;
+   */
+  OFFSPRING_MICRONUTRIENT_QUOTA_MISSING = 8,
+
+  /**
+   * @generated from enum value: ORGANISM_ACTION_GATE_REASON_MAINTENANCE_SHORTFALL = 9;
+   */
+  MAINTENANCE_SHORTFALL = 9,
+
+  /**
+   * @generated from enum value: ORGANISM_ACTION_GATE_REASON_RESERVE_PROTECTION_FLOOR = 10;
+   */
+  RESERVE_PROTECTION_FLOOR = 10,
+
+  /**
+   * @generated from enum value: ORGANISM_ACTION_GATE_REASON_INTERNAL_CAPACITY = 11;
+   */
+  INTERNAL_CAPACITY = 11,
+
+  /**
+   * @generated from enum value: ORGANISM_ACTION_GATE_REASON_RESOURCE_SUPPLY = 12;
+   */
+  RESOURCE_SUPPLY = 12,
+
+  /**
+   * @generated from enum value: ORGANISM_ACTION_GATE_REASON_CLAIM_CONTENTION = 13;
+   */
+  CLAIM_CONTENTION = 13,
+
+  /**
+   * @generated from enum value: ORGANISM_ACTION_GATE_REASON_LIFECYCLE_INELIGIBLE = 14;
+   */
+  LIFECYCLE_INELIGIBLE = 14,
+}
+
+/**
+ * Describes the enum lyfe.v1.OrganismActionGateReason.
+ */
+export const OrganismActionGateReasonSchema: GenEnum<OrganismActionGateReason> = /*@__PURE__*/
+  enumDesc(file_lyfe_v1_projection, 15);
 

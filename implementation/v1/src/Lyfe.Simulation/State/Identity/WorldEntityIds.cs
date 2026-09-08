@@ -34,11 +34,13 @@ public readonly record struct SpeciesId
 
     public ulong Value { get; }
 
-    internal static SpeciesId FromAllocatedValue(ulong value)
+    public static SpeciesId From(ulong value)
     {
         ArgumentOutOfRangeException.ThrowIfZero(value);
         return new SpeciesId(value);
     }
+
+    internal static SpeciesId FromAllocatedValue(ulong value) => From(value);
 
     public override string ToString() => Value.ToString(CultureInfo.InvariantCulture);
 }

@@ -7,6 +7,11 @@ using Lyfe.Simulation.State.Identity;
 
 namespace Lyfe.Simulation.Evolution;
 
+public static class SpeciationRules
+{
+    public const ulong RefractoryHours = 168;
+}
+
 public enum EvolutionAuthorityKind : byte
 {
     Controlled = 1,

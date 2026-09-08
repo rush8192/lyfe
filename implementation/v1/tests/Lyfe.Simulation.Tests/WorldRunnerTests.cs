@@ -1,7 +1,9 @@
 using System.Collections.Immutable;
 using Lyfe.Simulation.Behavior;
 using Lyfe.Simulation.Core;
+using Lyfe.Simulation.Gameplay;
 using Lyfe.Simulation.Ledger;
+using Lyfe.Simulation.Publication;
 using Lyfe.Simulation.Randomness;
 using Lyfe.Simulation.Rules.Authoring;
 using Lyfe.Simulation.Rules.Compilation;
@@ -21,6 +23,65 @@ public sealed class WorldRunnerTests
 {
     private static readonly RootRandomSeed Seed =
         RootRandomSeed.Parse("fedcba98765432100123456789abcdef");
+
+    [Fact]
+    public void ResourceFlowHistoryKeepsExactEmptyIntervalsWithinTheRollingHourWindow()
+    {
+        ImmutableArray<PublicationResourceFlowHistoryInterval> history = [];
+        for (ulong tick = 1; tick <= 170; tick++)
+        {
+            history = WorldRunner.AppendResourceFlowHistory(
+                history,
+                tick,
+                tick,
+                1,
+                []);
+        }
+
+        Assert.Equal(168, history.Length);
+        Assert.Equal(3UL, history[0].CompletedTick);
+        Assert.Equal(170UL, history[^1].CompletedTick);
+        Assert.All(history, interval => Assert.Empty(interval.ResourceFlows));
+    }
+
+    [Fact]
+    public void RoutineAcquisitionRollsExpiredHoursIntoSparseDailyBuckets()
+    {
+        var organismId = OrganismId.FromAllocatedValue(1);
+        var speciesId = SpeciesId.FromAllocatedValue(1);
+        var tileId = TileId.FromRowMajorIndex(0);
+        var resourceId = ResourceId.From(1);
+        OrganismRoutineActivitySummary Summary(ulong hour, long amount) => new(
+            hour,
+            1,
+            organismId,
+            speciesId,
+            tileId,
+            [new RoutineResourceAcquisition(resourceId, amount)]);
+        var prior = ImmutableArray.Create(Summary(0, 10), Summary(1, 20), Summary(2, 30));
+
+        var result = WorldRunner.UpdateRoutineActivitySummaries(
+            prior,
+            [],
+            170,
+            170,
+            1);
+
+        Assert.Collection(
+            result,
+            daily =>
+            {
+                Assert.Equal(0UL, daily.BucketStartHour);
+                Assert.Equal(24U, daily.PeriodHours);
+                Assert.Equal(30L, Assert.Single(daily.ResourceAcquisitions).AmountQ);
+            },
+            recent =>
+            {
+                Assert.Equal(2UL, recent.BucketStartHour);
+                Assert.Equal(1U, recent.PeriodHours);
+                Assert.Equal(30L, Assert.Single(recent.ResourceAcquisitions).AmountQ);
+            });
+    }
 
     [Fact]
     public void NewWorldStartsAtAConfiguredPublishedBoundary()

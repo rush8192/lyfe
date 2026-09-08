@@ -187,6 +187,18 @@ public sealed record PersistenceOrganismRoutineActivitySummary(
     uint TileId,
     ImmutableArray<PersistenceRoutineResourceAcquisition> ResourceAcquisitions);
 
+public readonly record struct PersistenceTileResourceFlow(
+    uint TileId,
+    uint ResourceId,
+    byte Kind,
+    long AmountQ);
+
+public sealed record PersistenceResourceFlowHistoryInterval(
+    ulong CompletedTick,
+    ulong EndSimulatedHour,
+    uint PeriodHours,
+    ImmutableArray<PersistenceTileResourceFlow> ResourceFlows);
+
 public sealed record PersistenceResourceTransaction(
     ulong Tick,
     byte Phase,
@@ -218,6 +230,7 @@ public sealed record WorldPersistenceState(
     ImmutableArray<PersistenceRemnant> Remnants,
     ImmutableArray<PersistenceOrganismJourneyEvent> JourneyEvents,
     ImmutableArray<PersistenceOrganismRoutineActivitySummary> RoutineActivitySummaries,
+    ImmutableArray<PersistenceResourceFlowHistoryInterval> ResourceFlowHistory,
     ImmutableArray<PersistenceResourceTransaction> LastCompletedTransactions,
     PersistenceGameState Gameplay);
 

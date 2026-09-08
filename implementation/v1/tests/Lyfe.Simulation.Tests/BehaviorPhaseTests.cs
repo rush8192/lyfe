@@ -34,6 +34,34 @@ public sealed class BehaviorPhaseTests
     }
 
     [Fact]
+    public void BehaviorReceiptIsOnlyRecordedForAnActualTransition()
+    {
+        var tick = 10UL;
+        var scratch = new TickScratch(tick);
+        var context = Context(tick) with { Scratch = scratch };
+        var candidate = Candidate(5_000, OrganismBehaviorState.Initial(0), 0);
+        var next = BehaviorUpdatePhase.Evaluate(candidate, context);
+
+        if (candidate.Organism.Behavior.BehaviorId != next.BehaviorId)
+        {
+            scratch.AppendBehaviorTransitionReceipt(
+                tick,
+                new BehaviorTransitionActivityReceipt(
+                    candidate.Organism.Id,
+                    candidate.Organism.SpeciesId,
+                    candidate.Organism.TileId,
+                    candidate.Organism.PositionXQ,
+                    candidate.Organism.PositionYQ,
+                    candidate.Organism.Behavior.BehaviorId,
+                    next.BehaviorId));
+        }
+
+        var receipt = Assert.Single(scratch.GetBehaviorTransitionReceipts(tick));
+        Assert.Equal(OrganismBehaviorId.Baseline, receipt.PriorBehavior);
+        Assert.Equal(OrganismBehaviorId.Conserving, receipt.CurrentBehavior);
+    }
+
+    [Fact]
     public void HysteresisExitsOnlyAfterRecoveryAndDwell()
     {
         var conserving = OrganismBehaviorState.Initial(10) with

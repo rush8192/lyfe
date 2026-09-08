@@ -164,6 +164,8 @@ public static class RulePackCompiler
 
             resources.Add(new CompiledResource(
                 id,
+                definition.StableKey,
+                definition.DisplayName,
                 biologicalForm,
                 environmentalPhase,
                 composition.OrderBy(component => component.Element).ToImmutableArray()));
@@ -481,6 +483,7 @@ public static class RulePackCompiler
             result.Add(new CompiledTrait(
                 id,
                 definition.StableKey,
+                definition.DisplayName,
                 definition.Family,
                 definition.Selectable,
                 checked(definition.MutationPointCost * 1_000_000),

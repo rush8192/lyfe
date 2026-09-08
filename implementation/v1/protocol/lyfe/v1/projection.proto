@@ -63,6 +63,33 @@ enum OrganismJourneyEventFamily {
   ORGANISM_JOURNEY_EVENT_FAMILY_FEEDING = 4;
   ORGANISM_JOURNEY_EVENT_FAMILY_MIGRATION = 5;
   ORGANISM_JOURNEY_EVENT_FAMILY_DEATH = 6;
+  ORGANISM_JOURNEY_EVENT_FAMILY_STRESS = 7;
+  ORGANISM_JOURNEY_EVENT_FAMILY_BEHAVIOR_TRANSITION = 8;
+}
+
+enum ResourceBiologicalForm {
+  RESOURCE_BIOLOGICAL_FORM_UNSPECIFIED = 0;
+  RESOURCE_BIOLOGICAL_FORM_INORGANIC = 1;
+  RESOURCE_BIOLOGICAL_FORM_ORGANIC = 2;
+  RESOURCE_BIOLOGICAL_FORM_BOUNDARY = 3;
+}
+
+enum ResourceEnvironmentalPhase {
+  RESOURCE_ENVIRONMENTAL_PHASE_UNSPECIFIED = 0;
+  RESOURCE_ENVIRONMENTAL_PHASE_GAS = 1;
+  RESOURCE_ENVIRONMENTAL_PHASE_DISSOLVED = 2;
+  RESOURCE_ENVIRONMENTAL_PHASE_BOUNDARY = 3;
+  RESOURCE_ENVIRONMENTAL_PHASE_PARTICULATE = 4;
+}
+
+enum ResourceFlowKind {
+  RESOURCE_FLOW_KIND_UNSPECIFIED = 0;
+  RESOURCE_FLOW_KIND_ENVIRONMENTAL_SOURCE = 1;
+  RESOURCE_FLOW_KIND_ENVIRONMENTAL_SINK = 2;
+  RESOURCE_FLOW_KIND_NEIGHBOR_EXCHANGE_IN = 3;
+  RESOURCE_FLOW_KIND_NEIGHBOR_EXCHANGE_OUT = 4;
+  RESOURCE_FLOW_KIND_ORGANISM_UPTAKE = 5;
+  RESOURCE_FLOW_KIND_ORGANISM_RELEASE = 6;
 }
 
 message JourneyDeathCauseProbability {
@@ -89,9 +116,109 @@ message OrganismJourneyEvent {
   repeated JourneyDeathCauseProbability death_cause_probabilities = 15;
 }
 
+message RoutineResourceAcquisition {
+  uint32 resource_id = 1;
+  sint64 amount_q = 2;
+}
+
+message OrganismRoutineActivitySummary {
+  uint64 bucket_start_hour = 1;
+  uint32 period_hours = 2;
+  uint64 subject_organism_id = 3;
+  uint64 subject_species_id = 4;
+  uint32 tile_id = 5;
+  repeated RoutineResourceAcquisition resource_acquisitions = 6;
+}
+
 message ExactResourceStock {
   uint32 resource_id = 1;
   sint64 quantity_q = 2;
+}
+
+message ResourceDefinition {
+  uint32 resource_id = 1;
+  string stable_key = 2;
+  string display_name = 3;
+  ResourceBiologicalForm biological_form = 4;
+  ResourceEnvironmentalPhase environmental_phase = 5;
+}
+
+message ResourceFlow {
+  uint32 resource_id = 1;
+  ResourceFlowKind kind = 2;
+  sint64 amount_q = 3;
+}
+
+message ResourceFlowHistoryInterval {
+  uint64 completed_tick = 1;
+  uint64 end_simulated_hour = 2;
+  uint32 period_hours = 3;
+  repeated ResourceFlow resource_flows = 4;
+}
+
+message ResourceAcquisitionEvidence {
+  uint32 resource_id = 1;
+  sint64 requested_q = 2;
+  sint64 granted_q = 3;
+  bool tile_supply_constrained = 4;
+  bool claim_contention_constrained = 5;
+}
+
+enum AcquisitionProcess {
+  ACQUISITION_PROCESS_UNSPECIFIED = 0;
+  ACQUISITION_PROCESS_EXTERNAL_ENERGY_CAPTURE = 1;
+  ACQUISITION_PROCESS_SCAVENGING = 2;
+}
+
+enum AcquisitionGateReason {
+  ACQUISITION_GATE_REASON_UNSPECIFIED = 0;
+  ACQUISITION_GATE_REASON_MISSING_CAPABILITY = 1;
+  ACQUISITION_GATE_REASON_INACCESSIBLE_LIGHT = 2;
+  ACQUISITION_GATE_REASON_ENVIRONMENTAL_OPPORTUNITY = 3;
+  ACQUISITION_GATE_REASON_INTERNAL_CAPACITY = 4;
+  ACQUISITION_GATE_REASON_COOLDOWN_ACTIVE = 5;
+  ACQUISITION_GATE_REASON_INSUFFICIENT_ACTION_ENERGY = 6;
+}
+
+message AcquisitionGateEvidence {
+  AcquisitionProcess process = 1;
+  AcquisitionGateReason reason = 2;
+  sint64 available_q = 3;
+  sint64 required_q = 4;
+  uint64 clears_at_tick = 5;
+}
+
+enum OrganismActionProcess {
+  ORGANISM_ACTION_PROCESS_UNSPECIFIED = 0;
+  ORGANISM_ACTION_PROCESS_BIOMASS_GROWTH = 1;
+  ORGANISM_ACTION_PROCESS_REPRODUCTION = 2;
+}
+
+enum OrganismActionGateReason {
+  ORGANISM_ACTION_GATE_REASON_UNSPECIFIED = 0;
+  ORGANISM_ACTION_GATE_REASON_MISSING_CAPABILITY = 1;
+  ORGANISM_ACTION_GATE_REASON_BEHAVIOR_SUPPRESSED = 2;
+  ORGANISM_ACTION_GATE_REASON_COOLDOWN_ACTIVE = 3;
+  ORGANISM_ACTION_GATE_REASON_HEALTH_BELOW_MINIMUM = 4;
+  ORGANISM_ACTION_GATE_REASON_STRUCTURE_BELOW_MINIMUM = 5;
+  ORGANISM_ACTION_GATE_REASON_RESERVE_BELOW_MINIMUM = 6;
+  ORGANISM_ACTION_GATE_REASON_CONSTITUTIVE_MICRONUTRIENT_QUOTA_MISSING = 7;
+  ORGANISM_ACTION_GATE_REASON_OFFSPRING_MICRONUTRIENT_QUOTA_MISSING = 8;
+  ORGANISM_ACTION_GATE_REASON_MAINTENANCE_SHORTFALL = 9;
+  ORGANISM_ACTION_GATE_REASON_RESERVE_PROTECTION_FLOOR = 10;
+  ORGANISM_ACTION_GATE_REASON_INTERNAL_CAPACITY = 11;
+  ORGANISM_ACTION_GATE_REASON_RESOURCE_SUPPLY = 12;
+  ORGANISM_ACTION_GATE_REASON_CLAIM_CONTENTION = 13;
+  ORGANISM_ACTION_GATE_REASON_LIFECYCLE_INELIGIBLE = 14;
+}
+
+message OrganismActionGateEvidence {
+  OrganismActionProcess process = 1;
+  OrganismActionGateReason reason = 2;
+  sint64 available_q = 3;
+  sint64 required_q = 4;
+  uint32 resource_id = 5;
+  uint64 clears_at_tick = 6;
 }
 
 message OrganismProjection {
@@ -130,6 +257,9 @@ message OrganismProjection {
   uint32 resource_pressure_q = 33;
   repeated ExactResourceStock committed_micronutrients = 34;
   repeated ExactResourceStock free_micronutrients = 35;
+  repeated ResourceAcquisitionEvidence resource_acquisition_evidence = 36;
+  repeated AcquisitionGateEvidence acquisition_gate_evidence = 37;
+  repeated OrganismActionGateEvidence action_gate_evidence = 38;
 }
 
 message BehaviorCount {
@@ -172,6 +302,9 @@ message LiveTile {
   repeated OrganismProjection organisms = 4;
   repeated RemnantProjection remnants = 5;
   repeated BehaviorDistribution behavior_distributions = 6;
+  uint32 resource_flow_period_hours = 7;
+  repeated ResourceFlow resource_flows = 8;
+  repeated ResourceFlowHistoryInterval resource_flow_history = 9;
 }
 
 message TileProjection {
@@ -250,6 +383,9 @@ message ActorWorldProjection {
   repeated SpeciesProjection species = 14;
   GameProjection gameplay = 15;
   repeated OrganismJourneyEvent journey_events = 16;
+  repeated OrganismRoutineActivitySummary routine_activity_summaries = 17;
+  repeated OrganismJourneyEvent activity_pulse_events = 18;
+  repeated ResourceDefinition resource_definitions = 19;
 }
 
 message ProjectionSnapshot {
@@ -275,4 +411,6 @@ message ProjectionBatch {
   repeated uint64 removed_species_ids = 14;
   GameProjection gameplay = 15;
   repeated OrganismJourneyEvent journey_event_appends = 16;
+  repeated OrganismRoutineActivitySummary routine_activity_summaries = 17;
+  repeated OrganismJourneyEvent activity_pulse_events = 18;
 }

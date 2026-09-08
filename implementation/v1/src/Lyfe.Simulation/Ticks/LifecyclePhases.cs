@@ -247,7 +247,8 @@ internal readonly record struct ReproductionOutcome(
     uint OffspringPositionXQ,
     uint OffspringPositionYQ,
     ulong ParentSuccessfulCount,
-    ulong ParentNotBeforeTick);
+    ulong ParentNotBeforeTick,
+    OrganismActionGateSample? Gate);
 
 internal sealed class LifecycleReproductionPhase :
     ScalarTickPhase<ReproductionView, ReproductionOutcome, ImmutableArray<ReproductionOutcome>>
@@ -293,16 +294,14 @@ internal sealed class LifecycleReproductionPhase :
                 candidate.Environment,
                 context.Tick,
                 ConditionSnapshotKind.Reproduction);
-            var commits = organism.LifecyclePhase == LifecyclePhase.Mature &&
-                organism.Behavior.BehaviorId != OrganismBehaviorId.Conserving &&
-                context.Tick >= organism.ReproductionNotBeforeTick &&
-                condition.RelativeHealthQ >= profile.MinimumHealthQ &&
-                organism.StructuralMatterQ >= profile.RequiredStructureQ &&
-                organism.ChargedReserveQ >= profile.RequiredReserveQ;
             var quota = MicronutrientInventory.Compile(
                 candidate.Physiology.CommittedMicronutrientQuotas);
-            commits = commits && organism.CommittedMicronutrients.Contains(quota) &&
-                organism.FreeMicronutrients.Contains(quota);
+            var gate = FirstReproductionGate(
+                candidate,
+                condition,
+                quota,
+                context.Tick);
+            var commits = gate is null;
             long parentStructure = organism.StructuralMatterQ;
             long offspringStructure = 0;
             long parentReserve = organism.ChargedReserveQ;
@@ -371,7 +370,8 @@ internal sealed class LifecycleReproductionPhase :
                     offspringX,
                     offspringY,
                     parentCount,
-                    parentNotBefore)));
+                    parentNotBefore,
+                    gate)));
         }
 
         return outcomes.MoveToImmutable();
@@ -388,6 +388,13 @@ internal sealed class LifecycleReproductionPhase :
         PhaseChangeBuilder changes,
         TickExecutionContext context)
     {
+        foreach (var gate in plan
+                     .Where(outcome => outcome.Gate is not null)
+                     .Select(outcome => outcome.Gate!.Value))
+        {
+            context.Scratch.AppendOrganismActionGate(context.Tick, gate);
+        }
+
         foreach (var outcome in plan.Where(outcome => outcome.Commits))
         {
             var parent = world.GetOrganism(outcome.ParentId);
@@ -493,6 +500,101 @@ internal sealed class LifecycleReproductionPhase :
             (cooldownHours + tickDurationHours - 1) / tickDurationHours);
         return checked(completedTick + cooldownTicks);
     }
+
+    private static OrganismActionGateSample? FirstReproductionGate(
+        ReproductionCandidate candidate,
+        MaterializedOrganismCondition condition,
+        MicronutrientInventory quota,
+        ulong tick)
+    {
+        var organism = candidate.Organism;
+        var profile = candidate.Physiology.Reproduction;
+        if (organism.LifecyclePhase != LifecyclePhase.Mature)
+        {
+            return ReproductionGate(
+                organism,
+                OrganismActionGateReason.LifecycleIneligible);
+        }
+        if (organism.Behavior.BehaviorId == OrganismBehaviorId.Conserving)
+        {
+            return ReproductionGate(
+                organism,
+                OrganismActionGateReason.BehaviorSuppressed);
+        }
+        if (tick < organism.ReproductionNotBeforeTick)
+        {
+            return ReproductionGate(
+                organism,
+                OrganismActionGateReason.CooldownActive,
+                clearsAtTick: organism.ReproductionNotBeforeTick);
+        }
+        if (condition.RelativeHealthQ < profile.MinimumHealthQ)
+        {
+            return ReproductionGate(
+                organism,
+                OrganismActionGateReason.HealthBelowMinimum,
+                condition.RelativeHealthQ,
+                profile.MinimumHealthQ);
+        }
+        if (organism.StructuralMatterQ < profile.RequiredStructureQ)
+        {
+            return ReproductionGate(
+                organism,
+                OrganismActionGateReason.StructureBelowMinimum,
+                organism.StructuralMatterQ,
+                profile.RequiredStructureQ);
+        }
+        if (organism.ChargedReserveQ < profile.RequiredReserveQ)
+        {
+            return ReproductionGate(
+                organism,
+                OrganismActionGateReason.ReserveBelowMinimum,
+                organism.ChargedReserveQ,
+                profile.RequiredReserveQ);
+        }
+
+        for (var slot = 0; slot < MicronutrientInventory.Count; slot++)
+        {
+            if (organism.CommittedMicronutrients[slot] < quota[slot])
+            {
+                return ReproductionGate(
+                    organism,
+                    OrganismActionGateReason.ConstitutiveMicronutrientQuotaMissing,
+                    organism.CommittedMicronutrients[slot],
+                    quota[slot],
+                    MicronutrientInventory.ResourceIdAt(slot));
+            }
+        }
+        for (var slot = 0; slot < MicronutrientInventory.Count; slot++)
+        {
+            if (organism.FreeMicronutrients[slot] < quota[slot])
+            {
+                return ReproductionGate(
+                    organism,
+                    OrganismActionGateReason.OffspringMicronutrientQuotaMissing,
+                    organism.FreeMicronutrients[slot],
+                    quota[slot],
+                    MicronutrientInventory.ResourceIdAt(slot));
+            }
+        }
+
+        return null;
+    }
+
+    private static OrganismActionGateSample ReproductionGate(
+        OrganismSnapshot organism,
+        OrganismActionGateReason reason,
+        long availableQ = 0,
+        long requiredQ = 0,
+        ResourceId? resourceId = null,
+        ulong clearsAtTick = 0) => new(
+            organism.Id,
+            OrganismActionProcessKind.Reproduction,
+            reason,
+            availableQ,
+            requiredQ,
+            resourceId,
+            clearsAtTick);
 
     private static (uint X, uint Y) PlaceOffspring(
         OrganismSnapshot parent,

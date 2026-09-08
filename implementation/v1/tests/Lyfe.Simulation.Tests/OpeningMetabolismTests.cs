@@ -1,8 +1,10 @@
 using System.Collections.Immutable;
+using Lyfe.Simulation.Behavior;
 using Lyfe.Simulation.Core;
 using Lyfe.Simulation.Gameplay;
 using Lyfe.Simulation.Ledger;
 using Lyfe.Simulation.Physiology;
+using Lyfe.Simulation.Publication;
 using Lyfe.Simulation.Randomness;
 using Lyfe.Simulation.Rules.Authoring;
 using Lyfe.Simulation.Rules.Compilation;
@@ -108,6 +110,15 @@ public sealed class OpeningMetabolismTests
 
         Assert.Single(world.GetOrganismIdsInCanonicalOrder());
         Assert.Equal(0UL, world.GetOrganism(organismId).SuccessfulReproductionCount);
+        var gate = Assert.Single(
+            Assert.Single(runner.CapturePublicationSnapshot().Organisms).ActionGateEvidence,
+            value => value.Process == PublicationOrganismActionProcessKind.Reproduction);
+        Assert.Equal(
+            PublicationOrganismActionGateReason.OffspringMicronutrientQuotaMissing,
+            gate.Reason);
+        Assert.Equal(cobalt.Id, gate.ResourceId);
+        Assert.Equal(1, gate.AvailableQ);
+        Assert.Equal(2, gate.RequiredQ);
     }
 
     [Fact]
@@ -251,6 +262,43 @@ public sealed class OpeningMetabolismTests
             transaction.Cause == LedgerCause.MandatoryMaintenance);
         Assert.DoesNotContain(internalTransactions, transaction =>
             transaction.Cause == LedgerCause.BiomassAssembly);
+        var gate = Assert.Single(
+            Assert.Single(runner.CapturePublicationSnapshot().Organisms).ActionGateEvidence,
+            value => value.Process == PublicationOrganismActionProcessKind.BiomassGrowth);
+        Assert.Equal(PublicationOrganismActionGateReason.ResourceSupply, gate.Reason);
+        Assert.Equal(phosphorus.Id, gate.ResourceId);
+        Assert.Equal(0, gate.AvailableQ);
+        Assert.Equal(2, gate.RequiredQ);
+    }
+
+    [Fact]
+    public void ConservationSuppressesOptionalGrowthAndPublishesItsGate()
+    {
+        var runner = CreateSandbox(CompileWorld(), FounderGenomeId.From(1));
+        var world = runner.MutableWorld;
+        var organismId = Assert.Single(world.GetOrganismIdsInCanonicalOrder());
+        var organism = world.GetOrganism(organismId);
+        var setup = world.BeginChanges();
+        world.SetOrganismBehavior(
+            organismId,
+            organism.Behavior with { BehaviorId = OrganismBehaviorId.Conserving },
+            setup);
+        world.SealChanges(setup);
+
+        var result = runner.AdvanceOneTick();
+
+        Assert.DoesNotContain(
+            result.Changes.Phases.Single(phase => phase.Phase == TickPhase.InternalMetabolism)
+                .ResourceTransactions,
+            transaction => transaction.Cause == LedgerCause.BiomassAssembly);
+        var gates = Assert.Single(runner.CapturePublicationSnapshot().Organisms)
+            .ActionGateEvidence;
+        Assert.Contains(gates, value =>
+            value.Process == PublicationOrganismActionProcessKind.BiomassGrowth &&
+            value.Reason == PublicationOrganismActionGateReason.BehaviorSuppressed);
+        Assert.Contains(gates, value =>
+            value.Process == PublicationOrganismActionProcessKind.Reproduction &&
+            value.Reason == PublicationOrganismActionGateReason.BehaviorSuppressed);
     }
 
     [Fact]
@@ -300,6 +348,14 @@ public sealed class OpeningMetabolismTests
         for (var tick = 13; tick <= 24; tick++)
         {
             Assert.Empty(CaptureTransactions(runner.AdvanceOneTick()));
+            var gate = Assert.Single(Assert.Single(
+                runner.CapturePublicationSnapshot().Organisms).AcquisitionGateEvidence);
+            Assert.Equal(
+                PublicationAcquisitionProcessKind.ExternalEnergyCapture,
+                gate.Process);
+            Assert.Equal(PublicationAcquisitionGateReason.InaccessibleLight, gate.Reason);
+            Assert.Equal(0, gate.AvailableQ);
+            Assert.Equal(0, gate.RequiredQ);
         }
         Assert.Equal(3_472, runner.MutableWorld.GetOrganism(organismId).ChargedReserveQ);
 

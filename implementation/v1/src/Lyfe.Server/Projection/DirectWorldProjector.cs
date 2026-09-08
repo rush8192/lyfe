@@ -33,6 +33,14 @@ public static class DirectWorldProjector
             .ToDictionary(
                 group => group.Key,
                 group => group.OrderBy(remnant => remnant.RemnantId.Value).ToImmutableArray());
+        var flowsByTile = source.ResourceFlows
+            .GroupBy(flow => flow.TileId)
+            .ToDictionary(
+                group => group.Key,
+                group => group
+                    .OrderBy(flow => flow.ResourceId.Value)
+                    .ThenBy(flow => flow.Kind)
+                    .ToImmutableArray());
         var tiles = source.Tiles
             .OrderBy(tile => tile.TileId.Value)
             .Select(tile => ProjectTile(
@@ -41,7 +49,10 @@ public static class DirectWorldProjector
                 liveTileIds,
                 discovered,
                 organismsByTile,
-                remnantsByTile))
+                remnantsByTile,
+                flowsByTile,
+                source.ResourceFlowPeriodHours,
+                source.ResourceFlowHistory))
             .ToImmutableArray();
         var species = ProjectSpecies(
             source,
@@ -109,7 +120,16 @@ public static class DirectWorldProjector
             species,
             journeyEvents,
             routineActivitySummaries,
-            activityPulseEvents);
+            activityPulseEvents,
+            source.ResourceDefinitions
+                .OrderBy(resource => resource.ResourceId.Value)
+                .Select(resource => new ResourceDefinitionProjection(
+                    resource.ResourceId,
+                    resource.StableKey,
+                    resource.DisplayName,
+                    resource.BiologicalForm,
+                    resource.EnvironmentalPhase))
+                .ToImmutableArray());
     }
 
     private static TileProjection ProjectTile(
@@ -118,7 +138,10 @@ public static class DirectWorldProjector
         HashSet<TileId> liveTileIds,
         Dictionary<TileId, DiscoveredTileKnowledge> discovered,
         Dictionary<TileId, ImmutableArray<PublicationOrganism>> organismsByTile,
-        Dictionary<TileId, ImmutableArray<PublicationRemnant>> remnantsByTile)
+        Dictionary<TileId, ImmutableArray<PublicationRemnant>> remnantsByTile,
+        Dictionary<TileId, ImmutableArray<PublicationTileResourceFlow>> flowsByTile,
+        uint resourceFlowPeriodHours,
+        ImmutableArray<PublicationResourceFlowHistoryInterval> resourceFlowHistory)
     {
         if (liveTileIds.Contains(tile.TileId))
         {
@@ -139,7 +162,27 @@ public static class DirectWorldProjector
                 remnantsByTile.GetValueOrDefault(tile.TileId, [])
                     .Select(ToProjection)
                     .ToImmutableArray(),
-                BuildBehaviorDistributions(organisms, completedTick));
+                BuildBehaviorDistributions(organisms, completedTick),
+                resourceFlowPeriodHours,
+                flowsByTile.GetValueOrDefault(tile.TileId, [])
+                    .Select(flow => new ResourceFlowProjection(
+                        flow.ResourceId,
+                        flow.Kind,
+                        flow.AmountQ))
+                    .ToImmutableArray(),
+                resourceFlowHistory.Select(interval =>
+                    new ResourceFlowHistoryIntervalProjection(
+                        interval.CompletedTick,
+                        interval.EndSimulatedHour,
+                        interval.PeriodHours,
+                        interval.ResourceFlows
+                            .Where(flow => flow.TileId == tile.TileId)
+                            .Select(flow => new ResourceFlowProjection(
+                                flow.ResourceId,
+                                flow.Kind,
+                                flow.AmountQ))
+                            .ToImmutableArray()))
+                    .ToImmutableArray());
         }
 
         if (discovered.TryGetValue(tile.TileId, out var memory))
@@ -256,7 +299,36 @@ public static class DirectWorldProjector
             organism.CommittedMicronutrients.OrderBy(stock => stock.ResourceId.Value).Select(stock =>
                 new ExactResourceStockProjection(stock.ResourceId, stock.QuantityQ)).ToImmutableArray(),
             organism.FreeMicronutrients.OrderBy(stock => stock.ResourceId.Value).Select(stock =>
-                new ExactResourceStockProjection(stock.ResourceId, stock.QuantityQ)).ToImmutableArray());
+                new ExactResourceStockProjection(stock.ResourceId, stock.QuantityQ)).ToImmutableArray(),
+            organism.ResourceAcquisitionEvidence
+                .OrderBy(value => value.ResourceId.Value)
+                .Select(value => new ResourceAcquisitionEvidenceProjection(
+                    value.ResourceId,
+                    value.RequestedQ,
+                    value.GrantedQ,
+                    value.TileSupplyConstrained,
+                    value.ClaimContentionConstrained))
+                .ToImmutableArray(),
+            organism.AcquisitionGateEvidence
+                .OrderBy(value => value.Process)
+                .ThenBy(value => value.Reason)
+                .Select(value => new AcquisitionGateEvidenceProjection(
+                    value.Process,
+                    value.Reason,
+                    value.AvailableQ,
+                    value.RequiredQ,
+                    value.ClearsAtTick))
+                .ToImmutableArray(),
+            organism.ActionGateEvidence
+                .OrderBy(value => value.Process)
+                .Select(value => new OrganismActionGateEvidenceProjection(
+                    value.Process,
+                    value.Reason,
+                    value.AvailableQ,
+                    value.RequiredQ,
+                    value.ResourceId,
+                    value.ClearsAtTick))
+                .ToImmutableArray());
 
     private static ImmutableArray<BehaviorDistributionProjection> BuildBehaviorDistributions(
         ImmutableArray<PublicationOrganism> organisms,
@@ -307,6 +379,10 @@ public static class DirectWorldProjector
             source.JourneyEvents.IsDefault ||
             source.RoutineActivitySummaries.IsDefault ||
             source.ActivityPulseEvents.IsDefault ||
+            source.ResourceDefinitions.IsDefault ||
+            source.ResourceFlows.IsDefault ||
+            source.ResourceFlowHistory.IsDefault ||
+            source.ResourceFlowPeriodHours == 0 ||
             source.Gameplay is null ||
             !Enum.IsDefined(source.Gameplay.Mode) ||
             !Enum.IsDefined(source.Gameplay.RunStatus) ||
@@ -361,6 +437,45 @@ public static class DirectWorldProjector
             }
         }
 
+        var definitionIds = new HashSet<ResourceId>();
+        foreach (var definition in source.ResourceDefinitions)
+        {
+            if (definition.ResourceId == default ||
+                string.IsNullOrWhiteSpace(definition.StableKey) ||
+                string.IsNullOrWhiteSpace(definition.DisplayName) ||
+                !Enum.IsDefined(definition.BiologicalForm) ||
+                !Enum.IsDefined(definition.EnvironmentalPhase) ||
+                !definitionIds.Add(definition.ResourceId))
+            {
+                throw new ArgumentException(
+                    "The publication source has an invalid resource definition.",
+                    nameof(source));
+            }
+        }
+        if (!resourceIds.SetEquals(definitionIds))
+        {
+            throw new ArgumentException(
+                "Published stocks and resource definitions must use the same resource set.",
+                nameof(source));
+        }
+
+        var flowKeys = new HashSet<(TileId, ResourceId, PublicationResourceFlowKind)>();
+        foreach (var flow in source.ResourceFlows)
+        {
+            if (!tiles.ContainsKey(flow.TileId) ||
+                !resourceIds.Contains(flow.ResourceId) ||
+                !Enum.IsDefined(flow.Kind) ||
+                flow.AmountQ <= 0 ||
+                !flowKeys.Add((flow.TileId, flow.ResourceId, flow.Kind)))
+            {
+                throw new ArgumentException(
+                    "The publication source has an invalid or duplicate resource flow.",
+                    nameof(source));
+            }
+        }
+
+        ValidateResourceFlowHistory(source, tiles, resourceIds);
+
         var actualPopulations = new Dictionary<SpeciesId, ulong>();
         var organismIds = new HashSet<OrganismId>();
         foreach (var organism in source.Organisms)
@@ -386,6 +501,16 @@ public static class DirectWorldProjector
                 organism.RecentAcquisitionCoverageQ > 2_000_000 ||
                 organism.LimitingMaterialDeficitQ > 1_000_000 ||
                 organism.ResourcePressureQ > 1_000_000 ||
+                !ValidResourceAcquisitionEvidence(
+                    organism.ResourceAcquisitionEvidence,
+                    resourceIds) ||
+                !ValidAcquisitionGateEvidence(
+                    organism.AcquisitionGateEvidence,
+                    source.CompletedTick) ||
+                !ValidOrganismActionGateEvidence(
+                    organism.ActionGateEvidence,
+                    source.CompletedTick,
+                    resourceIds) ||
                 !ValidMicronutrientStocks(organism.CommittedMicronutrients, resourceIds) ||
                 !ValidMicronutrientStocks(organism.FreeMicronutrients, resourceIds))
             {
@@ -515,6 +640,184 @@ public static class DirectWorldProjector
         return new SourceIndex(tiles, species, resourceIds);
     }
 
+    private static void ValidateResourceFlowHistory(
+        WorldPublicationSnapshot source,
+        Dictionary<TileId, PublicationTile> tiles,
+        HashSet<ResourceId> resourceIds)
+    {
+        if ((source.CompletedTick == 0) != source.ResourceFlowHistory.IsEmpty ||
+            source.ResourceFlowHistory.Length > 168)
+        {
+            throw new ArgumentException(
+                "Resource-flow history is missing or exceeds its exact retention window.",
+                nameof(source));
+        }
+
+        ulong priorTick = 0;
+        ulong priorEndHour = 0;
+        for (var index = 0; index < source.ResourceFlowHistory.Length; index++)
+        {
+            var interval = source.ResourceFlowHistory[index];
+            if (interval.PeriodHours != source.TickDurationHours ||
+                interval.CompletedTick == 0 ||
+                interval.EndSimulatedHour != checked(
+                    interval.CompletedTick * source.TickDurationHours) ||
+                interval.ResourceFlows.IsDefault ||
+                (index > 0 && (interval.CompletedTick != priorTick + 1 ||
+                    interval.EndSimulatedHour != priorEndHour + source.TickDurationHours)))
+            {
+                throw new ArgumentException(
+                    "Resource-flow history has an invalid interval boundary.",
+                    nameof(source));
+            }
+
+            var keys = new HashSet<(TileId, ResourceId, PublicationResourceFlowKind)>();
+            foreach (var flow in interval.ResourceFlows)
+            {
+                if (!tiles.ContainsKey(flow.TileId) ||
+                    !resourceIds.Contains(flow.ResourceId) ||
+                    !Enum.IsDefined(flow.Kind) ||
+                    flow.AmountQ <= 0 ||
+                    !keys.Add((flow.TileId, flow.ResourceId, flow.Kind)))
+                {
+                    throw new ArgumentException(
+                        "Resource-flow history contains an invalid or duplicate flow.",
+                        nameof(source));
+                }
+            }
+            priorTick = interval.CompletedTick;
+            priorEndHour = interval.EndSimulatedHour;
+        }
+
+        if (!source.ResourceFlowHistory.IsEmpty)
+        {
+            var first = source.ResourceFlowHistory[0];
+            var last = source.ResourceFlowHistory[^1];
+            if (last.CompletedTick != source.CompletedTick ||
+                last.EndSimulatedHour != source.SimulatedHours ||
+                source.SimulatedHours - (first.EndSimulatedHour - first.PeriodHours) > 168 ||
+                !CanonicalFlows(last.ResourceFlows).SequenceEqual(
+                    CanonicalFlows(source.ResourceFlows)))
+            {
+                throw new ArgumentException(
+                    "Resource-flow history does not match the current publication boundary.",
+                    nameof(source));
+            }
+        }
+    }
+
+    private static IEnumerable<PublicationTileResourceFlow> CanonicalFlows(
+        IEnumerable<PublicationTileResourceFlow> flows) => flows
+        .OrderBy(flow => flow.TileId.Value)
+        .ThenBy(flow => flow.ResourceId.Value)
+        .ThenBy(flow => flow.Kind);
+
+    private static bool ValidResourceAcquisitionEvidence(
+        ImmutableArray<PublicationResourceAcquisitionEvidence> values,
+        HashSet<ResourceId> resourceIds) =>
+        !values.IsDefault &&
+        values.All(value =>
+            resourceIds.Contains(value.ResourceId) &&
+            value.RequestedQ > 0 &&
+            value.GrantedQ >= 0 &&
+            value.GrantedQ <= value.RequestedQ) &&
+        values.Select(value => value.ResourceId).Distinct().Count() == values.Length;
+
+    private static bool ValidAcquisitionGateEvidence(
+        ImmutableArray<PublicationAcquisitionGateEvidence> values,
+        ulong completedTick) =>
+        !values.IsDefault &&
+        values.All(value =>
+            Enum.IsDefined(value.Process) &&
+            Enum.IsDefined(value.Reason) &&
+            ValidAcquisitionGatePair(value.Process, value.Reason) &&
+            value.AvailableQ >= 0 &&
+            value.RequiredQ >= 0 &&
+            (value.Reason is PublicationAcquisitionGateReason.InternalCapacity or
+                    PublicationAcquisitionGateReason.InsufficientActionEnergy
+                ? value.RequiredQ > 0 && value.AvailableQ < value.RequiredQ &&
+                    value.ClearsAtTick == 0
+                : value.Reason == PublicationAcquisitionGateReason.CooldownActive
+                    ? value.AvailableQ == 0 && value.RequiredQ == 0 &&
+                        value.ClearsAtTick > completedTick
+                    : value.AvailableQ == 0 && value.RequiredQ == 0 &&
+                        value.ClearsAtTick == 0)) &&
+        values.Select(value => (value.Process, value.Reason)).Distinct().Count() == values.Length;
+
+    private static bool ValidAcquisitionGatePair(
+        PublicationAcquisitionProcessKind process,
+        PublicationAcquisitionGateReason reason) => process switch
+        {
+            PublicationAcquisitionProcessKind.ExternalEnergyCapture => reason is
+                PublicationAcquisitionGateReason.MissingCapability or
+                PublicationAcquisitionGateReason.InaccessibleLight or
+                PublicationAcquisitionGateReason.EnvironmentalOpportunity or
+                PublicationAcquisitionGateReason.InternalCapacity,
+            PublicationAcquisitionProcessKind.Scavenging => reason is
+                PublicationAcquisitionGateReason.MissingCapability or
+                PublicationAcquisitionGateReason.InternalCapacity or
+                PublicationAcquisitionGateReason.CooldownActive or
+                PublicationAcquisitionGateReason.InsufficientActionEnergy,
+            _ => false,
+        };
+
+    private static bool ValidOrganismActionGateEvidence(
+        ImmutableArray<PublicationOrganismActionGateEvidence> values,
+        ulong completedTick,
+        HashSet<ResourceId> resourceIds) =>
+        !values.IsDefault &&
+        values.Length <= 2 &&
+        values.Select(value => value.Process).Distinct().Count() == values.Length &&
+        values.All(value =>
+            Enum.IsDefined(value.Process) &&
+            Enum.IsDefined(value.Reason) &&
+            ValidOrganismActionGatePair(value.Process, value.Reason) &&
+            value.AvailableQ >= 0 &&
+            value.RequiredQ >= 0 &&
+            (value.Reason == PublicationOrganismActionGateReason.CooldownActive
+                ? value.AvailableQ == 0 && value.RequiredQ == 0 &&
+                    value.ResourceId is null && value.ClearsAtTick > completedTick
+                : value.Reason is PublicationOrganismActionGateReason.MissingCapability or
+                        PublicationOrganismActionGateReason.BehaviorSuppressed or
+                        PublicationOrganismActionGateReason.LifecycleIneligible
+                    ? value.AvailableQ == 0 && value.RequiredQ == 0 &&
+                        value.ResourceId is null && value.ClearsAtTick == 0
+                    : value.RequiredQ > 0 && value.AvailableQ < value.RequiredQ &&
+                        value.ClearsAtTick == 0 &&
+                        (value.Reason is
+                            PublicationOrganismActionGateReason
+                                .ConstitutiveMicronutrientQuotaMissing or
+                            PublicationOrganismActionGateReason
+                                .OffspringMicronutrientQuotaMissing or
+                            PublicationOrganismActionGateReason.ResourceSupply
+                                ? value.ResourceId is not null &&
+                                    resourceIds.Contains(value.ResourceId.Value)
+                                : value.ResourceId is null)));
+
+    private static bool ValidOrganismActionGatePair(
+        PublicationOrganismActionProcessKind process,
+        PublicationOrganismActionGateReason reason) => process switch
+        {
+            PublicationOrganismActionProcessKind.BiomassGrowth => reason is
+                PublicationOrganismActionGateReason.MissingCapability or
+                PublicationOrganismActionGateReason.BehaviorSuppressed or
+                PublicationOrganismActionGateReason.MaintenanceShortfall or
+                PublicationOrganismActionGateReason.ReserveProtectionFloor or
+                PublicationOrganismActionGateReason.InternalCapacity or
+                PublicationOrganismActionGateReason.ResourceSupply or
+                PublicationOrganismActionGateReason.ClaimContention,
+            PublicationOrganismActionProcessKind.Reproduction => reason is
+                PublicationOrganismActionGateReason.BehaviorSuppressed or
+                PublicationOrganismActionGateReason.CooldownActive or
+                PublicationOrganismActionGateReason.HealthBelowMinimum or
+                PublicationOrganismActionGateReason.StructureBelowMinimum or
+                PublicationOrganismActionGateReason.ReserveBelowMinimum or
+                PublicationOrganismActionGateReason.ConstitutiveMicronutrientQuotaMissing or
+                PublicationOrganismActionGateReason.OffspringMicronutrientQuotaMissing or
+                PublicationOrganismActionGateReason.LifecycleIneligible,
+            _ => false,
+        };
+
     private static OrganismJourneyEventProjection ToProjection(
         Simulation.Gameplay.OrganismJourneyEvent value) => new(
             value.EventId,
@@ -540,8 +843,8 @@ public static class DirectWorldProjector
     private static void ValidateJourneyEvent(
         Simulation.Gameplay.OrganismJourneyEvent value,
         WorldPublicationSnapshot source,
-        IReadOnlyDictionary<TileId, PublicationTile> tiles,
-        IReadOnlyDictionary<SpeciesId, PublicationSpecies> species)
+        Dictionary<TileId, PublicationTile> tiles,
+        Dictionary<SpeciesId, PublicationSpecies> species)
     {
         if (value.EventId == 0 ||
             value.Tick > source.CompletedTick ||

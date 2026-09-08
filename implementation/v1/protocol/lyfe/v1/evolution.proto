@@ -1,0 +1,108 @@
+syntax = "proto3";
+
+package lyfe.v1;
+
+option csharp_namespace = "Lyfe.Protocol.V1";
+
+enum SpeciationFailure {
+  SPECIATION_FAILURE_NONE = 0;
+  SPECIATION_FAILURE_WRONG_CONTROLLER = 1;
+  SPECIATION_FAILURE_SPECIES_LOCKED = 2;
+  SPECIATION_FAILURE_SPECIES_EXTINCT = 3;
+  SPECIATION_FAILURE_STALE_EVOLUTION_REVISION = 4;
+  SPECIATION_FAILURE_GENOME_CHANGED = 5;
+  SPECIATION_FAILURE_SPECIATION_COOLDOWN = 6;
+  SPECIATION_FAILURE_UNKNOWN_TRAIT = 7;
+  SPECIATION_FAILURE_TRAIT_ALREADY_ACQUIRED = 8;
+  SPECIATION_FAILURE_MISSING_PREREQUISITE = 9;
+  SPECIATION_FAILURE_INCOMPATIBLE_TRAIT = 10;
+  SPECIATION_FAILURE_CHANGE_COMPLEXITY_EXCEEDED = 11;
+  SPECIATION_FAILURE_INSUFFICIENT_MUTATION_POINTS = 12;
+  SPECIATION_FAILURE_INVALID_TILE_COUNT = 13;
+  SPECIATION_FAILURE_TILE_NOT_OCCUPIED = 14;
+  SPECIATION_FAILURE_ANCESTOR_WOULD_BE_DEPLETED = 15;
+}
+
+message EvolutionTraitOption {
+  uint32 trait_id = 1;
+  string stable_key = 2;
+  string display_name = 3;
+  string family = 4;
+  bool selectable = 5;
+  bool acquired = 6;
+  sint64 mutation_point_cost_q = 7;
+  uint32 change_complexity = 8;
+  repeated uint32 prerequisite_trait_ids = 9;
+  repeated uint32 incompatible_trait_ids = 10;
+}
+
+message EvolutionOccupiedTile {
+  uint32 tile_id = 1;
+  uint64 population = 2;
+}
+
+message EvolutionDecisionSurface {
+  uint64 world_id = 1;
+  uint64 completed_tick = 2;
+  uint64 world_revision = 3;
+  uint32 tick_duration_hours = 4;
+  uint64 controlled_species_id = 5;
+  uint64 controlled_population = 6;
+  uint64 evolution_revision = 7;
+  string genome_hash = 8;
+  sint64 mutation_balance_q = 9;
+  sint64 last_mutation_income_q = 10;
+  uint32 average_health_q = 11;
+  uint32 mutation_income_modifier_q = 12;
+  uint64 speciation_not_before_tick = 13;
+  uint32 maximum_change_complexity = 14;
+  repeated EvolutionTraitOption traits = 15;
+  repeated EvolutionOccupiedTile occupied_tiles = 16;
+}
+
+message SpeciationProposalRequest {
+  uint64 world_id = 1;
+  uint64 ancestor_species_id = 2;
+  uint64 expected_evolution_revision = 3;
+  string expected_genome_hash = 4;
+  repeated uint32 new_trait_ids = 5;
+  repeated uint32 selected_tile_ids = 6;
+  bool follow_descendant_if_permitted = 7;
+}
+
+message SpeciationFounderCount {
+  uint32 tile_id = 1;
+  uint32 count = 2;
+}
+
+message SpeciationProposal {
+  bool accepted = 1;
+  SpeciationFailure failure = 2;
+  sint64 mutation_price_q = 3;
+  uint32 change_complexity = 4;
+  repeated SpeciationFounderCount founder_counts = 5;
+  string proposed_genome_hash = 6;
+  sint64 balance_before_q = 7;
+  sint64 duplicated_balance_after_q = 8;
+  uint64 ancestor_population_before = 9;
+  uint64 ancestor_population_after = 10;
+  uint64 descendant_population = 11;
+  uint64 resulting_speciation_not_before_tick = 12;
+}
+
+message ApplySpeciationRequest {
+  string client_command_id = 1;
+  SpeciationProposalRequest proposal = 2;
+}
+
+message ApplySpeciationResponse {
+  string client_command_id = 1;
+  uint64 command_order = 2;
+  SpeciationProposal proposal = 3;
+  bool applied = 4;
+  uint64 event_id = 5;
+  uint64 descendant_species_id = 6;
+  uint64 descendant_genome_id = 7;
+  uint64 application_tick = 8;
+  uint64 world_revision = 9;
+}

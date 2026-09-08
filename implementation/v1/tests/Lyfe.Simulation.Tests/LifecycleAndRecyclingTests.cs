@@ -3,6 +3,7 @@ using Lyfe.Simulation.Core;
 using Lyfe.Simulation.Gameplay;
 using Lyfe.Simulation.Ledger;
 using Lyfe.Simulation.Physiology;
+using Lyfe.Simulation.Publication;
 using Lyfe.Simulation.Randomness;
 using Lyfe.Simulation.Rules.Authoring;
 using Lyfe.Simulation.Rules.Compilation;
@@ -79,6 +80,19 @@ public sealed class LifecycleAndRecyclingTests
             value.SubjectOrganismId == offspring.Id));
         Assert.Equal(parent.Id, birth.RelatedOrganismId);
         Assert.True(birth.EventId > reproduction.EventId);
+
+        runner.AdvanceOneTick();
+
+        foreach (var current in runner.CapturePublicationSnapshot().Organisms)
+        {
+            var gate = Assert.Single(
+                current.ActionGateEvidence,
+                value => value.Process ==
+                    PublicationOrganismActionProcessKind.Reproduction);
+            Assert.Equal(PublicationOrganismActionGateReason.CooldownActive, gate.Reason);
+            Assert.Equal(world.GetOrganism(current.OrganismId).ReproductionNotBeforeTick,
+                gate.ClearsAtTick);
+        }
     }
 
     [Fact]
@@ -247,6 +261,32 @@ public sealed class LifecycleAndRecyclingTests
         Assert.True(ResourceLedgerOracle.Reconcile(
             runner.Rules.RulePack,
             [digestion]).IsBalanced);
+
+        var cooldownSetup = world.BeginChanges();
+        world.CreateRemnant(
+            new RemnantInitialState(
+                organism.Id,
+                organism.SpeciesId,
+                2,
+                organism.TileId,
+                organism.PositionXQ,
+                organism.PositionYQ,
+                1_000,
+                1_000,
+                0,
+                0),
+            cooldownSetup);
+        world.SealChanges(cooldownSetup);
+        runner.AdvanceOneTick();
+
+        var gate = Assert.Single(
+            Assert.Single(runner.CapturePublicationSnapshot().Organisms)
+                .AcquisitionGateEvidence,
+            value => value.Process == PublicationAcquisitionProcessKind.Scavenging);
+        Assert.Equal(PublicationAcquisitionGateReason.CooldownActive, gate.Reason);
+        Assert.Equal(0, gate.AvailableQ);
+        Assert.Equal(0, gate.RequiredQ);
+        Assert.Equal(3UL, gate.ClearsAtTick);
     }
 
     [Fact]
@@ -281,10 +321,122 @@ public sealed class LifecycleAndRecyclingTests
         Assert.Equal(0UL, organism.ScavengeNotBeforeTick);
         Assert.Equal(100, remnant.StructuralMatterQ);
         Assert.Equal(1_000, remnant.ChargedReserveQ);
+        Assert.DoesNotContain(
+            Assert.Single(runner.CapturePublicationSnapshot().Organisms)
+                .AcquisitionGateEvidence,
+            value => value.Process == PublicationAcquisitionProcessKind.Scavenging);
+    }
+
+    [Fact]
+    public void LocalRemnantPublishesMissingScavengingCapabilityGate()
+    {
+        var runner = CreateRunner();
+        var world = runner.MutableWorld;
+        var organism = world.GetOrganism(Assert.Single(world.GetOrganismIdsInCanonicalOrder()));
+        var setup = world.BeginChanges();
+        world.CreateRemnant(
+            new RemnantInitialState(
+                organism.Id,
+                organism.SpeciesId,
+                1,
+                organism.TileId,
+                organism.PositionXQ,
+                organism.PositionYQ,
+                100,
+                1_000,
+                0,
+                0),
+            setup);
+        world.SealChanges(setup);
+
+        runner.AdvanceOneTick();
+
+        var gate = Assert.Single(
+            Assert.Single(runner.CapturePublicationSnapshot().Organisms)
+                .AcquisitionGateEvidence,
+            value => value.Process == PublicationAcquisitionProcessKind.Scavenging);
+        Assert.Equal(PublicationAcquisitionGateReason.MissingCapability, gate.Reason);
+    }
+
+    [Fact]
+    public void LocalRemnantPublishesScavengingEnergyAndDigestionCapacityGates()
+    {
+        var energyRunner = CreateRunner(
+            enableParticulateScavenging: true,
+            scavengeActionCostQ: 6_000,
+            scavengeRangeQ: uint.MaxValue);
+        var energyWorld = energyRunner.MutableWorld;
+        var energyOrganism = energyWorld.GetOrganism(
+            Assert.Single(energyWorld.GetOrganismIdsInCanonicalOrder()));
+        var energySetup = energyWorld.BeginChanges();
+        energyWorld.CreateRemnant(
+            new RemnantInitialState(
+                energyOrganism.Id,
+                energyOrganism.SpeciesId,
+                1,
+                energyOrganism.TileId,
+                energyOrganism.PositionXQ,
+                energyOrganism.PositionYQ,
+                0,
+                1_000,
+                0,
+                0),
+            energySetup);
+        energyWorld.SealChanges(energySetup);
+
+        energyRunner.AdvanceOneTick();
+
+        var energyGate = Assert.Single(
+            Assert.Single(energyRunner.CapturePublicationSnapshot().Organisms)
+                .AcquisitionGateEvidence,
+            value => value.Process == PublicationAcquisitionProcessKind.Scavenging);
+        Assert.Equal(PublicationAcquisitionGateReason.InsufficientActionEnergy,
+            energyGate.Reason);
+        Assert.Equal(5_000, energyGate.AvailableQ);
+        Assert.Equal(6_000, energyGate.RequiredQ);
+
+        var capacityRunner = CreateRunner(
+            enableParticulateScavenging: true,
+            scavengeRangeQ: uint.MaxValue);
+        var capacityWorld = capacityRunner.MutableWorld;
+        var capacityOrganism = capacityWorld.GetOrganism(
+            Assert.Single(capacityWorld.GetOrganismIdsInCanonicalOrder()));
+        var capacitySetup = capacityWorld.BeginChanges();
+        capacityWorld.AdjustOrganismIngestedStructuralMatter(
+            capacityOrganism.Id,
+            250,
+            capacitySetup);
+        capacityWorld.CreateRemnant(
+            new RemnantInitialState(
+                capacityOrganism.Id,
+                capacityOrganism.SpeciesId,
+                1,
+                capacityOrganism.TileId,
+                capacityOrganism.PositionXQ,
+                capacityOrganism.PositionYQ,
+                1_000,
+                0,
+                0,
+                0),
+            capacitySetup);
+        capacityWorld.SealChanges(capacitySetup);
+
+        capacityRunner.AdvanceOneTick();
+
+        var capacityGate = Assert.Single(
+            Assert.Single(capacityRunner.CapturePublicationSnapshot().Organisms)
+                .AcquisitionGateEvidence,
+            value => value.Process == PublicationAcquisitionProcessKind.Scavenging);
+        Assert.Equal(PublicationAcquisitionGateReason.InternalCapacity,
+            capacityGate.Reason);
+        Assert.Equal(0, capacityGate.AvailableQ);
+        Assert.Equal(1, capacityGate.RequiredQ);
     }
 
     private static WorldRunner CreateRunner(
         bool enableParticulateScavenging = false,
+        long? scavengeActionCostQ = null,
+        uint? scavengeRangeQ = null,
         uint tickDurationHours = 1)
     {
         var rulesLoad = RulePackSourceLoader.Load(new CopiedPackageSource("OfficialRules"));
@@ -308,6 +460,13 @@ public sealed class LifecycleAndRecyclingTests
                                 Recycling = founder.Physiology.Recycling with
                                 {
                                     SimpleRemnantScavenging = true,
+                                    ScavengeActionCostQ = scavengeActionCostQ ??
+                                        founder.Physiology.Recycling.ScavengeActionCostQ,
+                                    ParticulateScavengeActionCostQ = scavengeActionCostQ ??
+                                        founder.Physiology.Recycling
+                                            .ParticulateScavengeActionCostQ,
+                                    ScavengeRangeQ = scavengeRangeQ ??
+                                        founder.Physiology.Recycling.ScavengeRangeQ,
                                 },
                             },
                         }

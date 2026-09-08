@@ -44,8 +44,41 @@ public static class ProjectionProtocolMapper
         result.SpeciesReplacements.Add(source.SpeciesReplacements.Select(ToProtocol));
         result.RemovedSpeciesIds.Add(source.RemovedSpeciesIds.Select(id => id.Value));
         result.JourneyEventAppends.Add(source.JourneyEventAppends.Select(ToProtocol));
+        result.RoutineActivitySummaries.Add(
+            source.RoutineActivitySummaries.Select(ToProtocol));
+        result.ActivityPulseEvents.Add(source.ActivityPulseEvents.Select(ToProtocol));
         return result;
     }
+
+    private static Proto.ResourceDefinition ToProtocol(
+        Domain.ResourceDefinitionProjection source) => new()
+        {
+            ResourceId = source.ResourceId.Value,
+            StableKey = source.StableKey,
+            DisplayName = source.DisplayName,
+            BiologicalForm = source.BiologicalForm switch
+            {
+                Simulation.Rules.Runtime.BiologicalForm.Inorganic =>
+                    Proto.ResourceBiologicalForm.Inorganic,
+                Simulation.Rules.Runtime.BiologicalForm.Organic =>
+                    Proto.ResourceBiologicalForm.Organic,
+                Simulation.Rules.Runtime.BiologicalForm.Boundary =>
+                    Proto.ResourceBiologicalForm.Boundary,
+                _ => throw new ArgumentOutOfRangeException(nameof(source)),
+            },
+            EnvironmentalPhase = source.EnvironmentalPhase switch
+            {
+                Simulation.Rules.Runtime.EnvironmentalPhase.Gas =>
+                    Proto.ResourceEnvironmentalPhase.Gas,
+                Simulation.Rules.Runtime.EnvironmentalPhase.Dissolved =>
+                    Proto.ResourceEnvironmentalPhase.Dissolved,
+                Simulation.Rules.Runtime.EnvironmentalPhase.Boundary =>
+                    Proto.ResourceEnvironmentalPhase.Boundary,
+                Simulation.Rules.Runtime.EnvironmentalPhase.Particulate =>
+                    Proto.ResourceEnvironmentalPhase.Particulate,
+                _ => throw new ArgumentOutOfRangeException(nameof(source)),
+            },
+        };
 
     public static Proto.ActorWorldProjection ToProtocol(Domain.ActorWorldProjection source)
     {
@@ -74,6 +107,10 @@ public static class ProjectionProtocolMapper
         result.Tiles.Add(source.Tiles.Select(ToProtocol));
         result.Species.Add(source.Species.Select(ToProtocol));
         result.JourneyEvents.Add(source.JourneyEvents.Select(ToProtocol));
+        result.RoutineActivitySummaries.Add(
+            source.RoutineActivitySummaries.Select(ToProtocol));
+        result.ActivityPulseEvents.Add(source.ActivityPulseEvents.Select(ToProtocol));
+        result.ResourceDefinitions.Add(source.ResourceDefinitions.Select(ToProtocol));
         return result;
     }
 
@@ -99,6 +136,10 @@ public static class ProjectionProtocolMapper
                     Proto.OrganismJourneyEventFamily.Migration,
                 Simulation.Gameplay.OrganismJourneyEventFamily.Death =>
                     Proto.OrganismJourneyEventFamily.Death,
+                Simulation.Gameplay.OrganismJourneyEventFamily.Stress =>
+                    Proto.OrganismJourneyEventFamily.Stress,
+                Simulation.Gameplay.OrganismJourneyEventFamily.BehaviorTransition =>
+                    Proto.OrganismJourneyEventFamily.BehaviorTransition,
                 _ => throw new ArgumentOutOfRangeException(nameof(source)),
             },
             SubjectOrganismId = source.SubjectOrganismId.Value,
@@ -118,6 +159,26 @@ public static class ProjectionProtocolMapper
                 Cause = (uint)cause.Cause,
                 ProbabilityQ = cause.ProbabilityQ,
                 Triggered = cause.Triggered,
+            }));
+        return result;
+    }
+
+    private static Proto.OrganismRoutineActivitySummary ToProtocol(
+        Domain.OrganismRoutineActivitySummaryProjection source)
+    {
+        var result = new Proto.OrganismRoutineActivitySummary
+        {
+            BucketStartHour = source.BucketStartHour,
+            PeriodHours = source.PeriodHours,
+            SubjectOrganismId = source.SubjectOrganismId.Value,
+            SubjectSpeciesId = source.SubjectSpeciesId.Value,
+            TileId = source.TileId.Value,
+        };
+        result.ResourceAcquisitions.Add(source.ResourceAcquisitions.Select(resource =>
+            new Proto.RoutineResourceAcquisition
+            {
+                ResourceId = resource.ResourceId.Value,
+                AmountQ = resource.AmountQ,
             }));
         return result;
     }
@@ -192,6 +253,7 @@ public static class ProjectionProtocolMapper
                 {
                     ElevationMeters = live.ElevationMeters,
                     ObservedAtTick = live.ObservedAtTick,
+                    ResourceFlowPeriodHours = live.ResourceFlowPeriodHours,
                 };
                 result.Live.ResourceStocks.Add(live.ResourceStocks.Select(stock =>
                     new Proto.ExactResourceStock
@@ -203,6 +265,45 @@ public static class ProjectionProtocolMapper
                 result.Live.Remnants.Add(live.Remnants.Select(ToProtocol));
                 result.Live.BehaviorDistributions.Add(
                     live.BehaviorDistributions.Select(ToProtocol));
+                result.Live.ResourceFlows.Add(live.ResourceFlows.Select(flow =>
+                    new Proto.ResourceFlow
+                    {
+                        ResourceId = flow.ResourceId.Value,
+                        Kind = flow.Kind switch
+                        {
+                            Simulation.Publication.PublicationResourceFlowKind.EnvironmentalSource =>
+                                Proto.ResourceFlowKind.EnvironmentalSource,
+                            Simulation.Publication.PublicationResourceFlowKind.EnvironmentalSink =>
+                                Proto.ResourceFlowKind.EnvironmentalSink,
+                            Simulation.Publication.PublicationResourceFlowKind.NeighborExchangeIn =>
+                                Proto.ResourceFlowKind.NeighborExchangeIn,
+                            Simulation.Publication.PublicationResourceFlowKind.NeighborExchangeOut =>
+                                Proto.ResourceFlowKind.NeighborExchangeOut,
+                            Simulation.Publication.PublicationResourceFlowKind.OrganismUptake =>
+                                Proto.ResourceFlowKind.OrganismUptake,
+                            Simulation.Publication.PublicationResourceFlowKind.OrganismRelease =>
+                                Proto.ResourceFlowKind.OrganismRelease,
+                            _ => throw new ArgumentOutOfRangeException(nameof(source)),
+                        },
+                        AmountQ = flow.AmountQ,
+                    }));
+                result.Live.ResourceFlowHistory.Add(live.ResourceFlowHistory.Select(interval =>
+                {
+                    var encoded = new Proto.ResourceFlowHistoryInterval
+                    {
+                        CompletedTick = interval.CompletedTick,
+                        EndSimulatedHour = interval.EndSimulatedHour,
+                        PeriodHours = interval.PeriodHours,
+                    };
+                    encoded.ResourceFlows.Add(interval.ResourceFlows.Select(flow =>
+                        new Proto.ResourceFlow
+                        {
+                            ResourceId = flow.ResourceId.Value,
+                            Kind = ToProtocol(flow.Kind),
+                            AmountQ = flow.AmountQ,
+                        }));
+                    return encoded;
+                }));
                 break;
             default:
                 throw new ArgumentOutOfRangeException(nameof(source), "Unsupported tile projection.");
@@ -259,6 +360,97 @@ public static class ProjectionProtocolMapper
             ToProtocolResource));
         result.FreeMicronutrients.Add(source.FreeMicronutrients.Select(
             ToProtocolResource));
+        result.ResourceAcquisitionEvidence.Add(source.ResourceAcquisitionEvidence.Select(value =>
+            new Proto.ResourceAcquisitionEvidence
+            {
+                ResourceId = value.ResourceId.Value,
+                RequestedQ = value.RequestedQ,
+                GrantedQ = value.GrantedQ,
+                TileSupplyConstrained = value.TileSupplyConstrained,
+                ClaimContentionConstrained = value.ClaimContentionConstrained,
+            }));
+        result.AcquisitionGateEvidence.Add(source.AcquisitionGateEvidence.Select(value =>
+            new Proto.AcquisitionGateEvidence
+            {
+                Process = value.Process switch
+                {
+                    Simulation.Publication.PublicationAcquisitionProcessKind.ExternalEnergyCapture =>
+                        Proto.AcquisitionProcess.ExternalEnergyCapture,
+                    Simulation.Publication.PublicationAcquisitionProcessKind.Scavenging =>
+                        Proto.AcquisitionProcess.Scavenging,
+                    _ => throw new ArgumentOutOfRangeException(nameof(source)),
+                },
+                Reason = value.Reason switch
+                {
+                    Simulation.Publication.PublicationAcquisitionGateReason.MissingCapability =>
+                        Proto.AcquisitionGateReason.MissingCapability,
+                    Simulation.Publication.PublicationAcquisitionGateReason.InaccessibleLight =>
+                        Proto.AcquisitionGateReason.InaccessibleLight,
+                    Simulation.Publication.PublicationAcquisitionGateReason.EnvironmentalOpportunity =>
+                        Proto.AcquisitionGateReason.EnvironmentalOpportunity,
+                    Simulation.Publication.PublicationAcquisitionGateReason.InternalCapacity =>
+                        Proto.AcquisitionGateReason.InternalCapacity,
+                    Simulation.Publication.PublicationAcquisitionGateReason.CooldownActive =>
+                        Proto.AcquisitionGateReason.CooldownActive,
+                    Simulation.Publication.PublicationAcquisitionGateReason.InsufficientActionEnergy =>
+                        Proto.AcquisitionGateReason.InsufficientActionEnergy,
+                    _ => throw new ArgumentOutOfRangeException(nameof(source)),
+                },
+                AvailableQ = value.AvailableQ,
+                RequiredQ = value.RequiredQ,
+                ClearsAtTick = value.ClearsAtTick,
+            }));
+        result.ActionGateEvidence.Add(source.ActionGateEvidence.Select(value =>
+            new Proto.OrganismActionGateEvidence
+            {
+                Process = value.Process switch
+                {
+                    Simulation.Publication.PublicationOrganismActionProcessKind.BiomassGrowth =>
+                        Proto.OrganismActionProcess.BiomassGrowth,
+                    Simulation.Publication.PublicationOrganismActionProcessKind.Reproduction =>
+                        Proto.OrganismActionProcess.Reproduction,
+                    _ => throw new ArgumentOutOfRangeException(nameof(source)),
+                },
+                Reason = value.Reason switch
+                {
+                    Simulation.Publication.PublicationOrganismActionGateReason.MissingCapability =>
+                        Proto.OrganismActionGateReason.MissingCapability,
+                    Simulation.Publication.PublicationOrganismActionGateReason.BehaviorSuppressed =>
+                        Proto.OrganismActionGateReason.BehaviorSuppressed,
+                    Simulation.Publication.PublicationOrganismActionGateReason.CooldownActive =>
+                        Proto.OrganismActionGateReason.CooldownActive,
+                    Simulation.Publication.PublicationOrganismActionGateReason.HealthBelowMinimum =>
+                        Proto.OrganismActionGateReason.HealthBelowMinimum,
+                    Simulation.Publication.PublicationOrganismActionGateReason.StructureBelowMinimum =>
+                        Proto.OrganismActionGateReason.StructureBelowMinimum,
+                    Simulation.Publication.PublicationOrganismActionGateReason.ReserveBelowMinimum =>
+                        Proto.OrganismActionGateReason.ReserveBelowMinimum,
+                    Simulation.Publication.PublicationOrganismActionGateReason
+                        .ConstitutiveMicronutrientQuotaMissing =>
+                        Proto.OrganismActionGateReason.ConstitutiveMicronutrientQuotaMissing,
+                    Simulation.Publication.PublicationOrganismActionGateReason
+                        .OffspringMicronutrientQuotaMissing =>
+                        Proto.OrganismActionGateReason.OffspringMicronutrientQuotaMissing,
+                    Simulation.Publication.PublicationOrganismActionGateReason.MaintenanceShortfall =>
+                        Proto.OrganismActionGateReason.MaintenanceShortfall,
+                    Simulation.Publication.PublicationOrganismActionGateReason
+                        .ReserveProtectionFloor =>
+                        Proto.OrganismActionGateReason.ReserveProtectionFloor,
+                    Simulation.Publication.PublicationOrganismActionGateReason.InternalCapacity =>
+                        Proto.OrganismActionGateReason.InternalCapacity,
+                    Simulation.Publication.PublicationOrganismActionGateReason.ResourceSupply =>
+                        Proto.OrganismActionGateReason.ResourceSupply,
+                    Simulation.Publication.PublicationOrganismActionGateReason.ClaimContention =>
+                        Proto.OrganismActionGateReason.ClaimContention,
+                    Simulation.Publication.PublicationOrganismActionGateReason.LifecycleIneligible =>
+                        Proto.OrganismActionGateReason.LifecycleIneligible,
+                    _ => throw new ArgumentOutOfRangeException(nameof(source)),
+                },
+                AvailableQ = value.AvailableQ,
+                RequiredQ = value.RequiredQ,
+                ResourceId = value.ResourceId?.Value ?? 0,
+                ClearsAtTick = value.ClearsAtTick,
+            }));
         return result;
     }
 
@@ -285,6 +477,24 @@ public static class ProjectionProtocolMapper
         {
             ResourceId = source.ResourceId.Value,
             QuantityQ = source.QuantityQ,
+        };
+
+    private static Proto.ResourceFlowKind ToProtocol(
+        Simulation.Publication.PublicationResourceFlowKind kind) => kind switch
+        {
+            Simulation.Publication.PublicationResourceFlowKind.EnvironmentalSource =>
+                Proto.ResourceFlowKind.EnvironmentalSource,
+            Simulation.Publication.PublicationResourceFlowKind.EnvironmentalSink =>
+                Proto.ResourceFlowKind.EnvironmentalSink,
+            Simulation.Publication.PublicationResourceFlowKind.NeighborExchangeIn =>
+                Proto.ResourceFlowKind.NeighborExchangeIn,
+            Simulation.Publication.PublicationResourceFlowKind.NeighborExchangeOut =>
+                Proto.ResourceFlowKind.NeighborExchangeOut,
+            Simulation.Publication.PublicationResourceFlowKind.OrganismUptake =>
+                Proto.ResourceFlowKind.OrganismUptake,
+            Simulation.Publication.PublicationResourceFlowKind.OrganismRelease =>
+                Proto.ResourceFlowKind.OrganismRelease,
+            _ => throw new ArgumentOutOfRangeException(nameof(kind)),
         };
 
     private static Proto.SpeciesProjection ToProtocol(Domain.SpeciesProjection source)

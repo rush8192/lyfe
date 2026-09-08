@@ -61,6 +61,7 @@ public sealed class WorldRestoreException : InvalidOperationException
 
 public sealed class WorldRunner
 {
+    public const ulong ResourceFlowHistoryRetentionHours = 168;
     public const uint DefaultFoundationPopulation = 100;
     public const uint MaximumFoundationPopulation = 100_000;
     public const long FoundationStructuralMatterQ = 1_000;
@@ -74,6 +75,10 @@ public sealed class WorldRunner
     private readonly SemanticRandomOracle randomOracle;
     private WorldSnapshot publishedSnapshot;
     private ImmutableArray<ResourceTransaction> lastCompletedTransactions = [];
+    private ImmutableArray<PublicationResourceFlowHistoryInterval> resourceFlowHistory = [];
+    private ImmutableArray<AcquisitionCoverageSample> lastCompletedAcquisitionSamples = [];
+    private ImmutableArray<AcquisitionGateSample> lastCompletedAcquisitionGateSamples = [];
+    private ImmutableArray<OrganismActionGateSample> lastCompletedActionGateSamples = [];
     private ImmutableArray<OrganismJourneyEvent> journeyEvents = [];
     private ImmutableArray<OrganismRoutineActivitySummary> routineActivitySummaries = [];
     private ImmutableArray<OrganismJourneyEvent> lastActivityPulseEvents = [];
@@ -157,6 +162,19 @@ public sealed class WorldRunner
                 persisted.State.LastCompletedTransactions,
                 metadata.Boundary.CompletedTick,
                 world);
+            resourceFlowHistory = RestoreResourceFlowHistory(
+                persisted.State.ResourceFlowHistory,
+                metadata.Boundary.CompletedTick,
+                metadata.Boundary.SimulatedHours,
+                runtimeRules.TickDurationHours,
+                world);
+            if (!resourceFlowHistory.IsEmpty &&
+                !resourceFlowHistory[^1].ResourceFlows.SequenceEqual(
+                    BuildPublicationResourceFlows(lastCompletedTransactions)))
+            {
+                throw new WorldRestoreException(
+                    "Persisted resource-flow history disagrees with the completed ledger boundary.");
+            }
             journeyEvents = persisted.State.JourneyEvents
                 .Select(ToJourneyEvent)
                 .ToImmutableArray();
@@ -337,8 +355,20 @@ public sealed class WorldRunner
                         state.Lineage.ExtinctTick);
                 })
                 .ToImmutableArray();
+            var acquisitionByOrganism = lastCompletedAcquisitionSamples
+                .ToDictionary(sample => sample.OrganismId);
+            var acquisitionGatesByOrganism = lastCompletedAcquisitionGateSamples
+                .GroupBy(sample => sample.OrganismId)
+                .ToDictionary(group => group.Key, group => group.ToImmutableArray());
+            var actionGatesByOrganism = lastCompletedActionGateSamples
+                .GroupBy(sample => sample.OrganismId)
+                .ToDictionary(group => group.Key, group => group.ToImmutableArray());
             var organisms = world.GetOrganismIdsInCanonicalOrder()
-                .Select(id => ToPublicationOrganism(world.GetOrganism(id)))
+                .Select(id => ToPublicationOrganism(
+                    world.GetOrganism(id),
+                    acquisitionByOrganism.GetValueOrDefault(id).Resources,
+                    acquisitionGatesByOrganism.GetValueOrDefault(id, []),
+                    actionGatesByOrganism.GetValueOrDefault(id, [])))
                 .ToImmutableArray();
             var remnants = world.GetRemnantIdsInCanonicalOrder()
                 .Select(id => ToPublicationRemnant(world.GetRemnant(id)))
@@ -379,9 +409,93 @@ public sealed class WorldRunner
                 remnants,
                 journeyEvents,
                 routineActivitySummaries,
-                lastActivityPulseEvents);
+                lastActivityPulseEvents,
+                Rules.RulePack.Resources
+                    .OrderBy(resource => resource.Id.Value)
+                    .Select(resource => new PublicationResourceDefinition(
+                        resource.Id,
+                        resource.StableKey,
+                        resource.DisplayName,
+                        resource.BiologicalForm,
+                        resource.EnvironmentalPhase))
+                    .ToImmutableArray(),
+                BuildPublicationResourceFlows(lastCompletedTransactions),
+                Rules.TickDurationHours,
+                resourceFlowHistory);
         }
     }
+
+    private static ImmutableArray<PublicationTileResourceFlow> BuildPublicationResourceFlows(
+        ImmutableArray<ResourceTransaction> transactions) => transactions
+        .SelectMany(transaction => transaction.MatterEntries
+            .Where(entry => entry.Account.OwnerKind == MatterAccountOwnerKind.Tile &&
+                entry.DeltaQ != 0)
+            .Select(entry => new
+            {
+                TileId = TileId.FromRowMajorIndex(checked((uint)entry.Account.OwnerId)),
+                entry.Account.ResourceId,
+                Kind = ToPublicationFlowKind(transaction.Cause, entry.DeltaQ),
+                AmountQ = checked(Math.Abs(entry.DeltaQ)),
+            }))
+        .GroupBy(value => (value.TileId, value.ResourceId, value.Kind))
+        .OrderBy(group => group.Key.TileId.Value)
+        .ThenBy(group => group.Key.ResourceId.Value)
+        .ThenBy(group => group.Key.Kind)
+        .Select(group => new PublicationTileResourceFlow(
+            group.Key.TileId,
+            group.Key.ResourceId,
+            group.Key.Kind,
+            group.Sum(value => value.AmountQ)))
+        .ToImmutableArray();
+
+    internal static ImmutableArray<PublicationResourceFlowHistoryInterval>
+        AppendResourceFlowHistory(
+            ImmutableArray<PublicationResourceFlowHistoryInterval> history,
+            ulong completedTick,
+            ulong endSimulatedHour,
+            uint periodHours,
+            ImmutableArray<ResourceTransaction> transactions)
+    {
+        var retainedAfterHour = endSimulatedHour > ResourceFlowHistoryRetentionHours
+            ? endSimulatedHour - ResourceFlowHistoryRetentionHours
+            : 0;
+        return history
+            .Add(new PublicationResourceFlowHistoryInterval(
+                completedTick,
+                endSimulatedHour,
+                periodHours,
+                BuildPublicationResourceFlows(transactions)))
+            .Where(interval => interval.EndSimulatedHour > retainedAfterHour)
+            .ToImmutableArray();
+    }
+
+    private static PublicationResourceFlowKind ToPublicationFlowKind(
+        LedgerCause cause,
+        long deltaQ) => cause switch
+    {
+        LedgerCause.EnvironmentalGasSource when deltaQ > 0 =>
+            PublicationResourceFlowKind.EnvironmentalSource,
+        LedgerCause.EnvironmentalGasSink when deltaQ < 0 =>
+            PublicationResourceFlowKind.EnvironmentalSink,
+        LedgerCause.EnvironmentalGasExchange when deltaQ > 0 =>
+            PublicationResourceFlowKind.NeighborExchangeIn,
+        LedgerCause.EnvironmentalGasExchange when deltaQ < 0 =>
+            PublicationResourceFlowKind.NeighborExchangeOut,
+        LedgerCause.ExternalEnergyCapture or
+        LedgerCause.ParticulateDigestion or
+        LedgerCause.MandatoryMaintenance or
+        LedgerCause.BiomassAssembly or
+        LedgerCause.MicronutrientUptake when deltaQ > 0 =>
+            PublicationResourceFlowKind.OrganismRelease,
+        LedgerCause.ExternalEnergyCapture or
+        LedgerCause.ParticulateDigestion or
+        LedgerCause.MandatoryMaintenance or
+        LedgerCause.BiomassAssembly or
+        LedgerCause.MicronutrientUptake when deltaQ < 0 =>
+            PublicationResourceFlowKind.OrganismUptake,
+        _ => throw new InvalidOperationException(
+            $"Ledger cause {cause} produced an invalid tile delta {deltaQ}."),
+    };
 
     public WorldPersistenceMetadata CapturePersistenceMetadata()
     {
@@ -518,6 +632,17 @@ public sealed class WorldRunner
             var transactions = lastCompletedTransactions
                 .Select(ToPersistenceTransaction)
                 .ToImmutableArray();
+            var persistedResourceFlowHistory = resourceFlowHistory
+                .Select(value => new PersistenceResourceFlowHistoryInterval(
+                    value.CompletedTick,
+                    value.EndSimulatedHour,
+                    value.PeriodHours,
+                    value.ResourceFlows.Select(flow => new PersistenceTileResourceFlow(
+                        flow.TileId.Value,
+                        flow.ResourceId.Value,
+                        (byte)flow.Kind,
+                        flow.AmountQ)).ToImmutableArray()))
+                .ToImmutableArray();
             var persistedJourneyEvents = journeyEvents
                 .Select(ToPersistenceJourneyEvent)
                 .ToImmutableArray();
@@ -559,6 +684,7 @@ public sealed class WorldRunner
                     remnants,
                     persistedJourneyEvents,
                     persistedRoutineSummaries,
+                    persistedResourceFlowHistory,
                     transactions,
                     persistedGame));
         }
@@ -595,6 +721,12 @@ public sealed class WorldRunner
             {
                 var changes = tickPipeline.Execute(world, context);
                 var completedTransactions = GetTransactions(changes);
+                var nextResourceFlowHistory = AppendResourceFlowHistory(
+                    resourceFlowHistory,
+                    nextTick,
+                    nextSimulatedHours,
+                    Rules.TickDurationHours,
+                    completedTransactions);
                 var completedJourneyEvents = BuildJourneyEvents(
                     nextTick,
                     changes,
@@ -619,7 +751,13 @@ public sealed class WorldRunner
                 LastIntrinsicDeathAssessments =
                     scratch.RequireIntrinsicDeathAssessments(nextTick);
                 LastDeathRecords = scratch.RequireDeathRecords(nextTick);
+                lastCompletedAcquisitionSamples =
+                    scratch.RequireAcquisitionSamples(nextTick);
+                lastCompletedAcquisitionGateSamples =
+                    scratch.RequireAcquisitionGateSamples(nextTick);
+                lastCompletedActionGateSamples = scratch.GetOrganismActionGates(nextTick);
                 lastCompletedTransactions = completedTransactions;
+                resourceFlowHistory = nextResourceFlowHistory;
                 publishedSnapshot = nextSnapshot;
                 return new TickResult(nextSnapshot, changes, LastDeathRecords);
             }
@@ -844,7 +982,7 @@ public sealed class WorldRunner
             .ToImmutableArray();
     }
 
-    private static ImmutableArray<OrganismRoutineActivitySummary>
+    internal static ImmutableArray<OrganismRoutineActivitySummary>
         UpdateRoutineActivitySummaries(
             ImmutableArray<OrganismRoutineActivitySummary> prior,
             ImmutableArray<OrganismJourneyEvent> completedEvents,
@@ -1591,7 +1729,11 @@ public sealed class WorldRunner
             .OrderBy(transaction => transaction.Key)
             .ToImmutableArray();
 
-    private PublicationOrganism ToPublicationOrganism(OrganismSnapshot organism)
+    private PublicationOrganism ToPublicationOrganism(
+        OrganismSnapshot organism,
+        ImmutableArray<ResourceAcquisitionSample> acquisitionEvidence,
+        ImmutableArray<AcquisitionGateSample> acquisitionGateEvidence,
+        ImmutableArray<OrganismActionGateSample> actionGateEvidence)
     {
         var physiology = world.GetCompiledPhenotype(organism.SpeciesId).Physiology;
         var capacity = physiology.ChargedReserveCapacityQ;
@@ -1636,7 +1778,102 @@ public sealed class WorldRunner
             organism.Behavior.LimitingMaterialDeficitQ,
             ComputeResourcePressureQ(organism),
             ToPublicationMicronutrients(organism.CommittedMicronutrients),
-            ToPublicationMicronutrients(organism.FreeMicronutrients));
+            ToPublicationMicronutrients(organism.FreeMicronutrients),
+            (acquisitionEvidence.IsDefault ? [] : acquisitionEvidence)
+                .OrderBy(value => value.ResourceId.Value)
+                .Select(value => new PublicationResourceAcquisitionEvidence(
+                    value.ResourceId,
+                    value.RequestedQ,
+                    value.GrantedQ,
+                    value.ConstraintFlags.HasFlag(AcquisitionConstraintFlags.TileSupply),
+                    value.ConstraintFlags.HasFlag(AcquisitionConstraintFlags.ClaimContention)))
+                .ToImmutableArray(),
+            (acquisitionGateEvidence.IsDefault ? [] : acquisitionGateEvidence)
+                .OrderBy(value => value.Process)
+                .ThenBy(value => value.Reason)
+                .Select(value => new PublicationAcquisitionGateEvidence(
+                    value.Process switch
+                    {
+                        AcquisitionProcessKind.ExternalEnergyCapture =>
+                            PublicationAcquisitionProcessKind.ExternalEnergyCapture,
+                        AcquisitionProcessKind.Scavenging =>
+                            PublicationAcquisitionProcessKind.Scavenging,
+                        _ => throw new InvalidOperationException(
+                            $"Unsupported acquisition process {value.Process}."),
+                    },
+                    value.Reason switch
+                    {
+                        AcquisitionGateReason.MissingCapability =>
+                            PublicationAcquisitionGateReason.MissingCapability,
+                        AcquisitionGateReason.InaccessibleLight =>
+                            PublicationAcquisitionGateReason.InaccessibleLight,
+                        AcquisitionGateReason.EnvironmentalOpportunity =>
+                            PublicationAcquisitionGateReason.EnvironmentalOpportunity,
+                        AcquisitionGateReason.InternalCapacity =>
+                            PublicationAcquisitionGateReason.InternalCapacity,
+                        AcquisitionGateReason.CooldownActive =>
+                            PublicationAcquisitionGateReason.CooldownActive,
+                        AcquisitionGateReason.InsufficientActionEnergy =>
+                            PublicationAcquisitionGateReason.InsufficientActionEnergy,
+                        _ => throw new InvalidOperationException(
+                            $"Unsupported acquisition gate reason {value.Reason}."),
+                    },
+                    value.AvailableQ,
+                    value.RequiredQ,
+                    value.ClearsAtTick))
+                .ToImmutableArray(),
+            (actionGateEvidence.IsDefault ? [] : actionGateEvidence)
+                .OrderBy(value => value.Process)
+                .Select(value => new PublicationOrganismActionGateEvidence(
+                    value.Process switch
+                    {
+                        OrganismActionProcessKind.BiomassGrowth =>
+                            PublicationOrganismActionProcessKind.BiomassGrowth,
+                        OrganismActionProcessKind.Reproduction =>
+                            PublicationOrganismActionProcessKind.Reproduction,
+                        _ => throw new InvalidOperationException(
+                            $"Unsupported organism action process {value.Process}."),
+                    },
+                    value.Reason switch
+                    {
+                        OrganismActionGateReason.MissingCapability =>
+                            PublicationOrganismActionGateReason.MissingCapability,
+                        OrganismActionGateReason.BehaviorSuppressed =>
+                            PublicationOrganismActionGateReason.BehaviorSuppressed,
+                        OrganismActionGateReason.CooldownActive =>
+                            PublicationOrganismActionGateReason.CooldownActive,
+                        OrganismActionGateReason.HealthBelowMinimum =>
+                            PublicationOrganismActionGateReason.HealthBelowMinimum,
+                        OrganismActionGateReason.StructureBelowMinimum =>
+                            PublicationOrganismActionGateReason.StructureBelowMinimum,
+                        OrganismActionGateReason.ReserveBelowMinimum =>
+                            PublicationOrganismActionGateReason.ReserveBelowMinimum,
+                        OrganismActionGateReason.ConstitutiveMicronutrientQuotaMissing =>
+                            PublicationOrganismActionGateReason
+                                .ConstitutiveMicronutrientQuotaMissing,
+                        OrganismActionGateReason.OffspringMicronutrientQuotaMissing =>
+                            PublicationOrganismActionGateReason
+                                .OffspringMicronutrientQuotaMissing,
+                        OrganismActionGateReason.MaintenanceShortfall =>
+                            PublicationOrganismActionGateReason.MaintenanceShortfall,
+                        OrganismActionGateReason.ReserveProtectionFloor =>
+                            PublicationOrganismActionGateReason.ReserveProtectionFloor,
+                        OrganismActionGateReason.InternalCapacity =>
+                            PublicationOrganismActionGateReason.InternalCapacity,
+                        OrganismActionGateReason.ResourceSupply =>
+                            PublicationOrganismActionGateReason.ResourceSupply,
+                        OrganismActionGateReason.ClaimContention =>
+                            PublicationOrganismActionGateReason.ClaimContention,
+                        OrganismActionGateReason.LifecycleIneligible =>
+                            PublicationOrganismActionGateReason.LifecycleIneligible,
+                        _ => throw new InvalidOperationException(
+                            $"Unsupported organism action gate reason {value.Reason}."),
+                    },
+                    value.AvailableQ,
+                    value.RequiredQ,
+                    value.ResourceId,
+                    value.ClearsAtTick))
+                .ToImmutableArray());
     }
 
     private static uint ComputeResourcePressureQ(OrganismSnapshot organism)
@@ -1904,6 +2141,85 @@ public sealed class WorldRunner
         }
 
         return restored.MoveToImmutable();
+    }
+
+    private static ImmutableArray<PublicationResourceFlowHistoryInterval>
+        RestoreResourceFlowHistory(
+            ImmutableArray<PersistenceResourceFlowHistoryInterval> persisted,
+            ulong completedTick,
+            ulong simulatedHours,
+            uint tickDurationHours,
+            MutableWorldState world)
+    {
+        if (persisted.IsDefault ||
+            (completedTick == 0) != persisted.IsEmpty ||
+            persisted.Length > checked((int)ResourceFlowHistoryRetentionHours))
+        {
+            throw new ArgumentException("Persisted resource-flow history is incomplete or oversized.");
+        }
+
+        var result = ImmutableArray.CreateBuilder<PublicationResourceFlowHistoryInterval>(
+            persisted.Length);
+        ulong priorTick = 0;
+        ulong priorEndHour = 0;
+        for (var index = 0; index < persisted.Length; index++)
+        {
+            var interval = persisted[index];
+            if (interval.PeriodHours != tickDurationHours ||
+                interval.CompletedTick == 0 ||
+                interval.EndSimulatedHour != checked(interval.CompletedTick * tickDurationHours) ||
+                (index > 0 && (interval.CompletedTick != priorTick + 1 ||
+                    interval.EndSimulatedHour != priorEndHour + tickDurationHours)) ||
+                interval.ResourceFlows.IsDefault)
+            {
+                throw new ArgumentException("A persisted resource-flow interval is invalid.");
+            }
+
+            var flows = ImmutableArray.CreateBuilder<PublicationTileResourceFlow>(
+                interval.ResourceFlows.Length);
+            (uint TileId, uint ResourceId, byte Kind)? priorKey = null;
+            foreach (var flow in interval.ResourceFlows)
+            {
+                if (!Enum.IsDefined((PublicationResourceFlowKind)flow.Kind) || flow.AmountQ <= 0)
+                {
+                    throw new ArgumentException("A persisted resource flow is invalid.");
+                }
+                var key = (flow.TileId, flow.ResourceId, flow.Kind);
+                if (priorKey is { } previous && previous.CompareTo(key) >= 0)
+                {
+                    throw new ArgumentException("Persisted resource flows are not canonical.");
+                }
+                var tileId = TileId.FromRowMajorIndex(flow.TileId);
+                var resourceId = ResourceId.From(flow.ResourceId);
+                _ = world.GetTile(tileId);
+                _ = world.GetResourceHandle(resourceId);
+                flows.Add(new PublicationTileResourceFlow(
+                    tileId,
+                    resourceId,
+                    (PublicationResourceFlowKind)flow.Kind,
+                    flow.AmountQ));
+                priorKey = key;
+            }
+
+            result.Add(new PublicationResourceFlowHistoryInterval(
+                interval.CompletedTick,
+                interval.EndSimulatedHour,
+                interval.PeriodHours,
+                flows.MoveToImmutable()));
+            priorTick = interval.CompletedTick;
+            priorEndHour = interval.EndSimulatedHour;
+        }
+
+        if (result.Count > 0 &&
+            (result[^1].CompletedTick != completedTick ||
+                result[^1].EndSimulatedHour != simulatedHours ||
+                simulatedHours - checked(result[0].EndSimulatedHour - tickDurationHours) >
+                    ResourceFlowHistoryRetentionHours))
+        {
+            throw new ArgumentException("Persisted resource-flow history does not end at the save boundary.");
+        }
+
+        return result.MoveToImmutable();
     }
 
     private static void ValidateRestoreCompatibility(

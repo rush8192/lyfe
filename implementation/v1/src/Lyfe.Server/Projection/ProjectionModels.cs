@@ -5,6 +5,7 @@ using Lyfe.Simulation.Gameplay;
 using Lyfe.Simulation.Physiology;
 using Lyfe.Simulation.Publication;
 using Lyfe.Simulation.Rules.Identity;
+using Lyfe.Simulation.Rules.Runtime;
 using Lyfe.Simulation.State.Identity;
 using Lyfe.Simulation.Ticks;
 
@@ -35,6 +36,46 @@ public sealed record ActorKnowledgeSnapshot(
 public readonly record struct ExactResourceStockProjection(
     ResourceId ResourceId,
     long QuantityQ);
+
+public readonly record struct ResourceDefinitionProjection(
+    ResourceId ResourceId,
+    string StableKey,
+    string DisplayName,
+    BiologicalForm BiologicalForm,
+    EnvironmentalPhase EnvironmentalPhase);
+
+public readonly record struct ResourceFlowProjection(
+    ResourceId ResourceId,
+    PublicationResourceFlowKind Kind,
+    long AmountQ);
+
+public sealed record ResourceFlowHistoryIntervalProjection(
+    ulong CompletedTick,
+    ulong EndSimulatedHour,
+    uint PeriodHours,
+    ImmutableArray<ResourceFlowProjection> ResourceFlows);
+
+public readonly record struct ResourceAcquisitionEvidenceProjection(
+    ResourceId ResourceId,
+    long RequestedQ,
+    long GrantedQ,
+    bool TileSupplyConstrained,
+    bool ClaimContentionConstrained);
+
+public readonly record struct AcquisitionGateEvidenceProjection(
+    PublicationAcquisitionProcessKind Process,
+    PublicationAcquisitionGateReason Reason,
+    long AvailableQ,
+    long RequiredQ,
+    ulong ClearsAtTick);
+
+public readonly record struct OrganismActionGateEvidenceProjection(
+    PublicationOrganismActionProcessKind Process,
+    PublicationOrganismActionGateReason Reason,
+    long AvailableQ,
+    long RequiredQ,
+    ResourceId? ResourceId,
+    ulong ClearsAtTick);
 
 public sealed record OrganismProjection(
     OrganismId OrganismId,
@@ -71,7 +112,10 @@ public sealed record OrganismProjection(
     uint LimitingMaterialDeficitQ,
     uint ResourcePressureQ,
     ImmutableArray<ExactResourceStockProjection> CommittedMicronutrients,
-    ImmutableArray<ExactResourceStockProjection> FreeMicronutrients);
+    ImmutableArray<ExactResourceStockProjection> FreeMicronutrients,
+    ImmutableArray<ResourceAcquisitionEvidenceProjection> ResourceAcquisitionEvidence = default,
+    ImmutableArray<AcquisitionGateEvidenceProjection> AcquisitionGateEvidence = default,
+    ImmutableArray<OrganismActionGateEvidenceProjection> ActionGateEvidence = default);
 
 public readonly record struct BehaviorCountProjection(
     OrganismBehaviorId BehaviorId,
@@ -158,7 +202,10 @@ public sealed record LiveTileProjection(
     ImmutableArray<ExactResourceStockProjection> ResourceStocks,
     ImmutableArray<OrganismProjection> Organisms,
     ImmutableArray<RemnantProjection> Remnants,
-    ImmutableArray<BehaviorDistributionProjection> BehaviorDistributions) :
+    ImmutableArray<BehaviorDistributionProjection> BehaviorDistributions,
+    uint ResourceFlowPeriodHours = 0,
+    ImmutableArray<ResourceFlowProjection> ResourceFlows = default,
+    ImmutableArray<ResourceFlowHistoryIntervalProjection> ResourceFlowHistory = default) :
     TileProjection(TileId, X, Y, TileVisibility.Live);
 
 public sealed record SpeciesProjection(
@@ -220,4 +267,5 @@ public sealed record ActorWorldProjection(
     ImmutableArray<SpeciesProjection> Species,
     ImmutableArray<OrganismJourneyEventProjection> JourneyEvents,
     ImmutableArray<OrganismRoutineActivitySummaryProjection> RoutineActivitySummaries,
-    ImmutableArray<OrganismJourneyEventProjection> ActivityPulseEvents);
+    ImmutableArray<OrganismJourneyEventProjection> ActivityPulseEvents,
+    ImmutableArray<ResourceDefinitionProjection> ResourceDefinitions = default);

@@ -27,7 +27,7 @@ public sealed class WorldPayloadException : IOException
 
 public static class WorldPayloadCodec
 {
-    public const uint SchemaVersion = 11;
+    public const uint SchemaVersion = 12;
     public const int MaximumTileResourceCount = 4_000_000;
     public const int MaximumGenomeCount = 1_000_000;
     public const int MaximumSpeciesCount = 1_000_000;
@@ -36,6 +36,9 @@ public static class WorldPayloadCodec
     public const int MaximumRemnantCount = 1_000_000;
     public const int MaximumJourneyEventCount = 10_000_000;
     public const int MaximumRoutineActivitySummaryCount = 10_000_000;
+    public const int MaximumResourceFlowHistoryIntervalCount = 168;
+    public const int MaximumResourceFlowsPerInterval = 4_000_000;
+    public const int MaximumResourceFlowHistoryTotalFlows = 10_000_000;
     public const int MaximumTransactionCount = 1_000_000;
     public const int MaximumEntriesPerTransaction = 128;
 
@@ -65,6 +68,7 @@ public static class WorldPayloadCodec
         WriteCount(writer, state.Remnants.Length);
         WriteCount(writer, state.JourneyEvents.Length);
         WriteCount(writer, state.RoutineActivitySummaries.Length);
+        WriteCount(writer, state.ResourceFlowHistory.Length);
         WriteCount(writer, state.LastCompletedTransactions.Length);
         writer.WriteByte(state.Gameplay.Mode);
         writer.WriteByte(state.Gameplay.RunStatus);
@@ -261,6 +265,21 @@ public static class WorldPayloadCodec
             }
         }
 
+        foreach (var interval in state.ResourceFlowHistory)
+        {
+            writer.WriteUInt64(interval.CompletedTick);
+            writer.WriteUInt64(interval.EndSimulatedHour);
+            writer.WriteUInt32(interval.PeriodHours);
+            WriteCount(writer, interval.ResourceFlows.Length);
+            foreach (var flow in interval.ResourceFlows)
+            {
+                writer.WriteUInt32(flow.TileId);
+                writer.WriteUInt32(flow.ResourceId);
+                writer.WriteByte(flow.Kind);
+                writer.WriteInt64(flow.AmountQ);
+            }
+        }
+
         foreach (var transaction in state.LastCompletedTransactions)
         {
             writer.WriteUInt64(transaction.Tick);
@@ -335,6 +354,9 @@ public static class WorldPayloadCodec
         var routineSummaryCount = ReadCount(
             reader.ReadUInt32(),
             MaximumRoutineActivitySummaryCount);
+        var resourceFlowHistoryCount = ReadCount(
+            reader.ReadUInt32(),
+            MaximumResourceFlowHistoryIntervalCount);
         var transactionCount = ReadCount(reader.ReadUInt32(), MaximumTransactionCount);
         var gameMode = reader.ReadByte();
         var gameRunStatus = reader.ReadByte();
@@ -585,6 +607,41 @@ public static class WorldPayloadCodec
                 resources.MoveToImmutable()));
         }
 
+        var resourceFlowHistory =
+            ImmutableArray.CreateBuilder<PersistenceResourceFlowHistoryInterval>(
+                resourceFlowHistoryCount);
+        var totalHistoricalFlows = 0;
+        for (var index = 0; index < resourceFlowHistoryCount; index++)
+        {
+            var completedTick = reader.ReadUInt64();
+            var endSimulatedHour = reader.ReadUInt64();
+            var periodHours = reader.ReadUInt32();
+            var flowCount = ReadCount(
+                reader.ReadUInt32(),
+                MaximumResourceFlowsPerInterval);
+            totalHistoricalFlows = checked(totalHistoricalFlows + flowCount);
+            if (totalHistoricalFlows > MaximumResourceFlowHistoryTotalFlows)
+            {
+                throw Failure(
+                    WorldPayloadFailureCode.InvalidCount,
+                    "Resource-flow history exceeds its aggregate limit.");
+            }
+            var flows = ImmutableArray.CreateBuilder<PersistenceTileResourceFlow>(flowCount);
+            for (var flowIndex = 0; flowIndex < flowCount; flowIndex++)
+            {
+                flows.Add(new PersistenceTileResourceFlow(
+                    reader.ReadUInt32(),
+                    reader.ReadUInt32(),
+                    reader.ReadByte(),
+                    reader.ReadInt64()));
+            }
+            resourceFlowHistory.Add(new PersistenceResourceFlowHistoryInterval(
+                completedTick,
+                endSimulatedHour,
+                periodHours,
+                flows.MoveToImmutable()));
+        }
+
         var transactions = ImmutableArray.CreateBuilder<PersistenceResourceTransaction>(transactionCount);
         for (var index = 0; index < transactionCount; index++)
         {
@@ -658,6 +715,7 @@ public static class WorldPayloadCodec
             remnants.MoveToImmutable(),
             journeyEvents.MoveToImmutable(),
             routineSummaries.MoveToImmutable(),
+            resourceFlowHistory.MoveToImmutable(),
             transactions.MoveToImmutable(),
             gameplay);
         ValidateDecodedStateValues(result);
@@ -674,6 +732,7 @@ public static class WorldPayloadCodec
             state.SpeciationEvents.IsDefault ||
             state.Organisms.IsDefault || state.Remnants.IsDefault || state.JourneyEvents.IsDefault ||
             state.RoutineActivitySummaries.IsDefault ||
+            state.ResourceFlowHistory.IsDefault ||
             state.LastCompletedTransactions.IsDefault || state.Gameplay is null ||
             state.Gameplay.Roots.IsDefault || state.Gameplay.MutationLockedSpeciesIds.IsDefault)
         {
@@ -702,6 +761,17 @@ public static class WorldPayloadCodec
             state.RoutineActivitySummaries.Length,
             MaximumRoutineActivitySummaryCount,
             nameof(state.RoutineActivitySummaries));
+        RequireCount(
+            state.ResourceFlowHistory.Length,
+            MaximumResourceFlowHistoryIntervalCount,
+            nameof(state.ResourceFlowHistory));
+        if (state.ResourceFlowHistory.Sum(interval => (long)interval.ResourceFlows.Length) >
+            MaximumResourceFlowHistoryTotalFlows)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(state),
+                "Resource-flow history exceeds its aggregate limit.");
+        }
         RequireCount(
             state.LastCompletedTransactions.Length,
             MaximumTransactionCount,
@@ -762,6 +832,15 @@ public static class WorldPayloadCodec
             {
                 throw new ArgumentException(
                     "A routine activity summary has invalid persisted state.",
+                    nameof(state));
+            }
+        }
+        foreach (var interval in state.ResourceFlowHistory)
+        {
+            if (HasInvalidResourceFlowHistoryInterval(interval))
+            {
+                throw new ArgumentException(
+                    "A resource-flow history interval has invalid state.",
                     nameof(state));
             }
         }
@@ -830,6 +909,12 @@ public static class WorldPayloadCodec
             throw Failure(
                 WorldPayloadFailureCode.InvalidValue,
                 "A routine activity summary is invalid.");
+        }
+        if (state.ResourceFlowHistory.Any(HasInvalidResourceFlowHistoryInterval))
+        {
+            throw Failure(
+                WorldPayloadFailureCode.InvalidValue,
+                "A resource-flow history interval is invalid.");
         }
     }
 
@@ -900,6 +985,18 @@ public static class WorldPayloadCodec
             resource.ResourceId == 0 || resource.AmountQ <= 0) ||
         value.ResourceAcquisitions.Select(resource => resource.ResourceId).Distinct().Count() !=
             value.ResourceAcquisitions.Length;
+
+    private static bool HasInvalidResourceFlowHistoryInterval(
+        PersistenceResourceFlowHistoryInterval value) =>
+        value.CompletedTick == 0 ||
+        value.EndSimulatedHour == 0 ||
+        value.PeriodHours == 0 ||
+        value.ResourceFlows.IsDefault ||
+        value.ResourceFlows.Length > MaximumResourceFlowsPerInterval ||
+        value.ResourceFlows.Any(flow =>
+            flow.ResourceId == 0 ||
+            flow.Kind is < 1 or > 6 ||
+            flow.AmountQ <= 0);
 
     private static bool HasInvalidGameplay(PersistenceGameState game) =>
         game.Mode is < 1 or > 2 ||
@@ -978,6 +1075,32 @@ public static class WorldPayloadCodec
                     "Routine activity summaries are not canonical.");
             }
         }
+        for (var index = 0; index < state.ResourceFlowHistory.Length; index++)
+        {
+            var current = state.ResourceFlowHistory[index];
+            if (index > 0)
+            {
+                var prior = state.ResourceFlowHistory[index - 1];
+                if (current.CompletedTick != prior.CompletedTick + 1 ||
+                    current.EndSimulatedHour != prior.EndSimulatedHour + current.PeriodHours)
+                {
+                    throw Failure(
+                        WorldPayloadFailureCode.InvalidOrdering,
+                        "Resource-flow history intervals are not contiguous.");
+                }
+            }
+            for (var flowIndex = 1; flowIndex < current.ResourceFlows.Length; flowIndex++)
+            {
+                if (CompareResourceFlows(
+                        current.ResourceFlows[flowIndex - 1],
+                        current.ResourceFlows[flowIndex]) >= 0)
+                {
+                    throw Failure(
+                        WorldPayloadFailureCode.InvalidOrdering,
+                        "Resource flows within a history interval are not canonical.");
+                }
+            }
+        }
         RequireAscending(state.Gameplay.Roots.Select(value => value.SpeciesId), "gameplay roots");
         RequireAscending(state.Gameplay.MutationLockedSpeciesIds, "gameplay locks");
         for (var index = 1; index < state.LastCompletedTransactions.Length; index++)
@@ -1005,6 +1128,16 @@ public static class WorldPayloadCodec
         if (comparison != 0) return comparison;
         comparison = left.KeyReactionId.CompareTo(right.KeyReactionId);
         return comparison != 0 ? comparison : left.LocalOrdinal.CompareTo(right.LocalOrdinal);
+    }
+
+    private static int CompareResourceFlows(
+        PersistenceTileResourceFlow left,
+        PersistenceTileResourceFlow right)
+    {
+        var comparison = left.TileId.CompareTo(right.TileId);
+        if (comparison != 0) return comparison;
+        comparison = left.ResourceId.CompareTo(right.ResourceId);
+        return comparison != 0 ? comparison : left.Kind.CompareTo(right.Kind);
     }
 
     private static int CompareRoutineSummaries(

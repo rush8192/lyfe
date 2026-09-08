@@ -4,6 +4,7 @@ using Lyfe.Simulation.Core;
 using Lyfe.Simulation.Evolution;
 using Lyfe.Simulation.Gameplay;
 using Lyfe.Simulation.Rules.Identity;
+using Lyfe.Simulation.Rules.Runtime;
 using Lyfe.Simulation.State.Identity;
 
 namespace Lyfe.Simulation.Publication;
@@ -21,6 +22,97 @@ public enum PublicationLifecyclePhase : byte
 public readonly record struct PublicationResourceStock(
     ResourceId ResourceId,
     long QuantityQ);
+
+public readonly record struct PublicationResourceAcquisitionEvidence(
+    ResourceId ResourceId,
+    long RequestedQ,
+    long GrantedQ,
+    bool TileSupplyConstrained,
+    bool ClaimContentionConstrained);
+
+public enum PublicationAcquisitionProcessKind : byte
+{
+    ExternalEnergyCapture = 1,
+    Scavenging = 2,
+}
+
+public enum PublicationAcquisitionGateReason : byte
+{
+    MissingCapability = 1,
+    InaccessibleLight = 2,
+    EnvironmentalOpportunity = 3,
+    InternalCapacity = 4,
+    CooldownActive = 5,
+    InsufficientActionEnergy = 6,
+}
+
+public readonly record struct PublicationAcquisitionGateEvidence(
+    PublicationAcquisitionProcessKind Process,
+    PublicationAcquisitionGateReason Reason,
+    long AvailableQ,
+    long RequiredQ,
+    ulong ClearsAtTick);
+
+public enum PublicationOrganismActionProcessKind : byte
+{
+    BiomassGrowth = 1,
+    Reproduction = 2,
+}
+
+public enum PublicationOrganismActionGateReason : byte
+{
+    MissingCapability = 1,
+    BehaviorSuppressed = 2,
+    CooldownActive = 3,
+    HealthBelowMinimum = 4,
+    StructureBelowMinimum = 5,
+    ReserveBelowMinimum = 6,
+    ConstitutiveMicronutrientQuotaMissing = 7,
+    OffspringMicronutrientQuotaMissing = 8,
+    MaintenanceShortfall = 9,
+    ReserveProtectionFloor = 10,
+    InternalCapacity = 11,
+    ResourceSupply = 12,
+    ClaimContention = 13,
+    LifecycleIneligible = 14,
+}
+
+public readonly record struct PublicationOrganismActionGateEvidence(
+    PublicationOrganismActionProcessKind Process,
+    PublicationOrganismActionGateReason Reason,
+    long AvailableQ,
+    long RequiredQ,
+    ResourceId? ResourceId,
+    ulong ClearsAtTick);
+
+public readonly record struct PublicationResourceDefinition(
+    ResourceId ResourceId,
+    string StableKey,
+    string DisplayName,
+    BiologicalForm BiologicalForm,
+    EnvironmentalPhase EnvironmentalPhase);
+
+public enum PublicationResourceFlowKind : byte
+{
+    EnvironmentalSource = 1,
+    EnvironmentalSink = 2,
+    NeighborExchangeIn = 3,
+    NeighborExchangeOut = 4,
+    OrganismUptake = 5,
+    OrganismRelease = 6,
+}
+
+public readonly record struct PublicationTileResourceFlow(
+    TileId TileId,
+    ResourceId ResourceId,
+    PublicationResourceFlowKind Kind,
+    long AmountQ);
+
+public sealed record PublicationResourceFlowHistoryInterval(
+    ulong CompletedTick,
+    ulong EndSimulatedHour,
+    uint PeriodHours,
+    ImmutableArray<PublicationTileResourceFlow> ResourceFlows);
 
 public sealed record PublicationTile(
     TileId TileId,
@@ -102,7 +194,10 @@ public sealed record PublicationOrganism(
     uint LimitingMaterialDeficitQ,
     uint ResourcePressureQ,
     ImmutableArray<PublicationResourceStock> CommittedMicronutrients,
-    ImmutableArray<PublicationResourceStock> FreeMicronutrients);
+    ImmutableArray<PublicationResourceStock> FreeMicronutrients,
+    ImmutableArray<PublicationResourceAcquisitionEvidence> ResourceAcquisitionEvidence = default,
+    ImmutableArray<PublicationAcquisitionGateEvidence> AcquisitionGateEvidence = default,
+    ImmutableArray<PublicationOrganismActionGateEvidence> ActionGateEvidence = default);
 
 public sealed record PublicationRemnant(
     RemnantId RemnantId,
@@ -136,4 +231,8 @@ public sealed record WorldPublicationSnapshot(
     ImmutableArray<PublicationRemnant> Remnants,
     ImmutableArray<OrganismJourneyEvent> JourneyEvents,
     ImmutableArray<OrganismRoutineActivitySummary> RoutineActivitySummaries,
-    ImmutableArray<OrganismJourneyEvent> ActivityPulseEvents);
+    ImmutableArray<OrganismJourneyEvent> ActivityPulseEvents,
+    ImmutableArray<PublicationResourceDefinition> ResourceDefinitions = default,
+    ImmutableArray<PublicationTileResourceFlow> ResourceFlows = default,
+    uint ResourceFlowPeriodHours = 0,
+    ImmutableArray<PublicationResourceFlowHistoryInterval> ResourceFlowHistory = default);

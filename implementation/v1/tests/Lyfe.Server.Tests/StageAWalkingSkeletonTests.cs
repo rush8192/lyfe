@@ -63,7 +63,9 @@ public sealed class StageAWalkingSkeletonTests
             Assert.Equal(1UL, decodedBatch.BaseStreamRevision);
             Assert.Equal(2UL, decodedBatch.TargetStreamRevision);
             Assert.Single(decodedBatch.TileReplacements);
-            Assert.NotEmpty(decodedBatch.JourneyEventAppends);
+            Assert.Empty(decodedBatch.JourneyEventAppends);
+            Assert.NotEmpty(decodedBatch.RoutineActivitySummaries);
+            Assert.NotEmpty(decodedBatch.ActivityPulseEvents);
             Assert.Equal(100, decodedBatch.TileReplacements[0].Live.Organisms.Count);
             Assert.All(
                 decodedBatch.TileReplacements[0].Live.Organisms,

@@ -99,11 +99,10 @@ function addActivityPulses(
   width: number,
   height: number,
 ) {
-  if (world.journeyEvents.length === 0) return;
+  if (world.activityPulseEvents.length === 0) return;
 
-  const latestTick = world.journeyEvents.at(-1)?.tick ?? 0n;
-  const events = world.journeyEvents
-    .filter((event) => event.tick === latestTick && enabled.has(event.family))
+  const events = world.activityPulseEvents
+    .filter((event) => enabled.has(event.family))
     .slice(-160);
   const startedAt = performance.now();
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -168,6 +167,10 @@ function eventVisual(family: OrganismJourneyEventFamily) {
       return { glyph: "→", color: 0xd8b870 };
     case OrganismJourneyEventFamily.DEATH:
       return { glyph: "×", color: 0xed756d };
+    case OrganismJourneyEventFamily.STRESS:
+      return { glyph: "!", color: 0xe49a62 };
+    case OrganismJourneyEventFamily.BEHAVIOR_TRANSITION:
+      return { glyph: "~", color: 0xc4b987 };
     default:
       return { glyph: "•", color: 0xc4b987 };
   }

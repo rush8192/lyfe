@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using Lyfe.Simulation.Core;
 using Lyfe.Simulation.Ledger;
+using Lyfe.Simulation.Publication;
 using Lyfe.Simulation.Randomness;
 using Lyfe.Simulation.Rules.Authoring;
 using Lyfe.Simulation.Rules.Compilation;
@@ -102,7 +103,7 @@ public sealed class ResourceLedgerTests
                 tileId,
                 first.MutableWorld.GetResourceHandle(ResourceId.From(1))));
         Assert.Equal(
-            0,
+            96,
             first.MutableWorld.GetTileResource(
                 tileId,
                 first.MutableWorld.GetResourceHandle(ResourceId.From(2))));
@@ -113,6 +114,23 @@ public sealed class ResourceLedgerTests
                 .Select(id => first.MutableWorld.GetOrganism(id).ChargedReserveQ)
                 .Order()
                 .ToArray());
+
+        var published = first.CapturePublicationSnapshot();
+        Assert.All(published.Organisms, organism =>
+        {
+            var hydrogen = Assert.Single(organism.ResourceAcquisitionEvidence,
+                value => value.ResourceId == ResourceId.From(1));
+            var carbonDioxide = Assert.Single(organism.ResourceAcquisitionEvidence,
+                value => value.ResourceId == ResourceId.From(2));
+            Assert.Equal(800, hydrogen.RequestedQ);
+            Assert.True(hydrogen.GrantedQ is 0 or 4);
+            Assert.True(hydrogen.TileSupplyConstrained);
+            Assert.False(hydrogen.ClaimContentionConstrained);
+            Assert.Equal(400, carbonDioxide.RequestedQ);
+            Assert.True(carbonDioxide.GrantedQ is 0 or 2);
+            Assert.False(carbonDioxide.TileSupplyConstrained);
+            Assert.False(carbonDioxide.ClaimContentionConstrained);
+        });
     }
 
     [Fact]
@@ -157,6 +175,12 @@ public sealed class ResourceLedgerTests
             runner.MutableWorld.GetTileResource(
                 TileId.FromRowMajorIndex(0),
                 runner.MutableWorld.GetResourceHandle(ResourceId.From(1))));
+        var gate = Assert.Single(Assert.Single(
+            runner.CapturePublicationSnapshot().Organisms).AcquisitionGateEvidence);
+        Assert.Equal(PublicationAcquisitionProcessKind.ExternalEnergyCapture, gate.Process);
+        Assert.Equal(PublicationAcquisitionGateReason.InternalCapacity, gate.Reason);
+        Assert.Equal(0, gate.AvailableQ);
+        Assert.Equal(2, gate.RequiredQ);
     }
 
     [Fact]
@@ -200,7 +224,7 @@ public sealed class ResourceLedgerTests
     {
         var runner = CreateRunner(founderCount: 3);
         SetTileResource(runner, ResourceId.From(1), 8);
-        SetTileResource(runner, ResourceId.From(2), 4);
+        SetTileResource(runner, ResourceId.From(2), 100);
         return runner;
     }
 

@@ -6,10 +6,12 @@ import {
 } from "./generated/lyfe/v1/projection_pb";
 import {
   formatSimulationHour,
-  readActiveWorldProjection,
+  readActiveWorldState,
   type ServerConnection,
 } from "./api/server";
 import { WorldCanvas } from "./rendering/WorldCanvas";
+import { EvolutionPanel } from "./components/EvolutionPanel";
+import { ResourcePressurePanel } from "./components/ResourcePressurePanel";
 
 export function App() {
   const [connection, setConnection] = useState<ServerConnection>({
@@ -17,14 +19,15 @@ export function App() {
   });
   const [enabledEventFamilies, setEnabledEventFamilies] = useState<
     ReadonlySet<OrganismJourneyEventFamily>
-  >(() => new Set(ACTIVITY_FAMILIES.map((item) => item.family)));
+  >(() => new Set(DEFAULT_ACTIVITY_FAMILIES));
   const [selectedOrganismId, setSelectedOrganismId] = useState<bigint | null>(null);
+  const [reloadRevision, setReloadRevision] = useState(0);
 
   useEffect(() => {
     const controller = new AbortController();
 
-    readActiveWorldProjection(controller.signal)
-      .then((cache) => setConnection({ status: "online", cache }))
+    readActiveWorldState(controller.signal)
+      .then(({ cache, evolution }) => setConnection({ status: "online", cache, evolution }))
       .catch((error: unknown) => {
         if (!controller.signal.aborted) {
           setConnection({
@@ -35,7 +38,7 @@ export function App() {
       });
 
     return () => controller.abort();
-  }, []);
+  }, [reloadRevision]);
 
   const world = connection.status === "online" ? connection.cache.world : null;
   const visibleOrganisms = useMemo(
@@ -47,6 +50,12 @@ export function App() {
     ? []
     : world.journeyEvents
         .filter((event) => event.subjectOrganismId === activeOrganismId)
+        .slice()
+        .reverse();
+  const routineActivity = world === null
+    ? []
+    : world.routineActivitySummaries
+        .filter((summary) => summary.subjectOrganismId === activeOrganismId)
         .slice()
         .reverse();
 
@@ -134,11 +143,43 @@ export function App() {
                     <JourneyEntry key={event.eventId.toString()} event={event} />
                   ))}
                 </ol>
+                {routineActivity.length > 0 ? (
+                  <>
+                    <p className="section-label routine-title">Routine uptake</p>
+                    <ol className="journey-list routine-list">
+                      {routineActivity.slice(0, 24).map((summary) => (
+                        <li key={`${summary.bucketStartHour}:${summary.periodHours}:${summary.tileId}`}>
+                          <span className="event-key positive" aria-hidden="true">↟</span>
+                          <div>
+                            <strong>{summary.periodHours === 24 ? "Daily uptake" : "Recent uptake"}</strong>
+                            <small>
+                              Hour {summary.bucketStartHour.toLocaleString("en-US")} · tile {summary.tileId} · {summary.resourceAcquisitions.map((resource) =>
+                                `resource ${resource.resourceId}: ${resource.amountQ.toLocaleString("en-US")} q`
+                              ).join("; ")}
+                            </small>
+                          </div>
+                        </li>
+                      ))}
+                    </ol>
+                  </>
+                ) : null}
               </section>
             </>
           ) : null}
         </div>
       </section>
+      {world !== null ? (
+        <ResourcePressurePanel
+          world={world}
+          selectedOrganismId={activeOrganismId}
+        />
+      ) : null}
+      {connection.status === "online" ? (
+        <EvolutionPanel
+          surface={connection.evolution}
+          onApplied={() => setReloadRevision((value) => value + 1)}
+        />
+      ) : null}
     </main>
   );
 }
@@ -150,6 +191,16 @@ const ACTIVITY_FAMILIES = [
   { family: OrganismJourneyEventFamily.FEEDING, label: "Feeding", glyph: "◆", tone: "positive" },
   { family: OrganismJourneyEventFamily.MIGRATION, label: "Migration", glyph: "→", tone: "neutral" },
   { family: OrganismJourneyEventFamily.DEATH, label: "Death", glyph: "×", tone: "negative" },
+  { family: OrganismJourneyEventFamily.STRESS, label: "Stress", glyph: "!", tone: "negative" },
+  { family: OrganismJourneyEventFamily.BEHAVIOR_TRANSITION, label: "Behavior", glyph: "~", tone: "neutral" },
+] as const;
+
+const DEFAULT_ACTIVITY_FAMILIES = [
+  OrganismJourneyEventFamily.BIRTH,
+  OrganismJourneyEventFamily.REPRODUCTION,
+  OrganismJourneyEventFamily.RESOURCE_ABSORPTION,
+  OrganismJourneyEventFamily.FEEDING,
+  OrganismJourneyEventFamily.DEATH,
 ] as const;
 
 function controlledOrganisms(world: ActorWorldProjection) {

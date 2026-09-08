@@ -12,8 +12,6 @@ namespace Lyfe.Simulation.Evolution;
 
 internal static class SpeciationEngine
 {
-    public const ulong RefractoryHours = 168;
-
     public static SpeciationPreview Preview(
         MutableWorldState world,
         SpeciationCommand command,
@@ -70,9 +68,6 @@ internal static class SpeciationEngine
         }
         if (complexity > world.GetCompiledPhenotype(ancestor.Id).MaximumChangeComplexity)
             return Reject(SpeciationFailure.ChangeComplexityExceeded);
-        if (priceQ > ancestor.Evolution.MutationBalanceQ)
-            return Reject(SpeciationFailure.InsufficientMutationPoints);
-
         var tileIds = command.SelectedTileIds.IsDefault
             ? []
             : command.SelectedTileIds.Distinct().OrderBy(id => id.Value).ToImmutableArray();
@@ -110,6 +105,16 @@ internal static class SpeciationEngine
             ancestorGenome.FounderGenomeId,
             ancestorGenome.FounderAllocationId,
             allTraits);
+        if (priceQ > ancestor.Evolution.MutationBalanceQ)
+        {
+            return new SpeciationPreview(
+                false,
+                SpeciationFailure.InsufficientMutationPoints,
+                priceQ,
+                complexity,
+                founders.MoveToImmutable(),
+                phenotype.CanonicalCompiledHash);
+        }
         return new SpeciationPreview(
             true,
             SpeciationFailure.None,
@@ -165,7 +170,7 @@ internal static class SpeciationEngine
             traits,
             changes);
         var postPrice = checked(ancestor.Evolution.MutationBalanceQ - preview.MutationPriceQ);
-        var cooldownTicks = checked((RefractoryHours + world.Rules.TickDurationHours - 1) /
+        var cooldownTicks = checked((SpeciationRules.RefractoryHours + world.Rules.TickDurationHours - 1) /
             world.Rules.TickDurationHours);
         var notBefore = checked(completedTick + cooldownTicks);
         var descendantAccount = ancestor.Evolution with

@@ -1,6 +1,6 @@
 # Server API and Client Protocol
 
-Status: Stage-A generated projection snapshot and absolute-batch subset implemented; commands, hosted stream transport, retention, cadence, and richer gameplay schemas remain
+Status: Stage-A generated projection snapshot/absolute-batch subset and first synchronous local speciation query/preview/apply bridge implemented; hosted command queue, actor sessions, stream transport, durable command replay, retention, cadence, and richer gameplay schemas remain
 
 Sources: [SIMULATION vision](../../vision/SIMULATION.md), [INTERFACE vision](../../vision/INTERFACE.md), [player loop and narrative](PLAYER_LOOP_AND_NARRATIVE.md), [behavior and resource pressure](BEHAVIOR_AND_RESOURCE_PRESSURE.md), [state change and client synchronization](STATE_CHANGE_AND_CLIENT_SYNC.md), [moddability](MODDABILITY.md), and [technology decisions](TECHNOLOGY.md).
 
@@ -62,6 +62,15 @@ A live selected-organism behavior projection may expose selected behavior, autho
 Behavior-distribution projections carry observation tick, species ID, optional tile ID, observed population, and counts by stable behavior ID; percentages are derived client-side or supplied with the same deterministic rounding rule. Live tiles may carry exact per-species distributions, and the controlled species may receive an exact world-wide aggregate plus its per-tile breakdown. Another species receives only an explicitly scoped observed aggregate over authorized live tiles. A reduced tile may carry its retained last-observed distribution and timestamp, while an unknown tile carries none. Subscription and projection choices cannot affect aggregation or organism decisions.
 
 Live organism projections for carrier-retaining species distinguish charged reserve from zero-energy spent-carrier quantity; summing them as stored energy is a client error. Storage-capable projections also distinguish current commissioned capacity, compiled maximum capacity, storage structure/target, and any organization activation gate. Live tile/resource flow projections distinguish atmospheric O2 environmental loss/exchange, biological production, and respiratory consumption, plus fuel-specific requested, granted, and consumed extents.
+
+Each completed tick appends one world-owned resource-flow history interval containing its boundary
+tick/hour, duration, and canonical sparse tile/resource/kind totals. V1 retains exact intervals for
+the latest 168 simulated hours and persists them in save schema 12. Actor projection filters every
+interval to currently live tiles; reduced and unknown tiles receive none. Historical stock is not
+duplicated: clients reconstruct it exactly from current authorized stock by walking signed interval
+net changes backward. This diagnostic history does not affect future simulation or
+`WorldStateHashV9`, but save compatibility preserves it so restore does not erase the player's
+recent view. Seasonal compaction is future work.
 
 Movement and migration events expose active, Brownian-like passive, and directional environmental displacement contributions plus the admitted crossing cause. The passive contribution reflects the organism's compiled environmental-spread multiplier. Directional environmental contribution is always zero under the v1 rule pack, but the protocol field is versioned now so later current- or wind-driven dispersal does not masquerade as active locomotion or require a breaking event-shape change. These fields remain subject to ordinary tile/species visibility.
 

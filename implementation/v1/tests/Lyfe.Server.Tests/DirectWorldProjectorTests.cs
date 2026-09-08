@@ -55,6 +55,12 @@ public sealed class DirectWorldProjectorTests
         Assert.Equal(source.CompletedTick, live.ObservedAtTick);
         Assert.Equal(source.Tiles[0].ResourceStocks.Length, live.ResourceStocks.Length);
         Assert.Equal(100, live.Organisms.Length);
+        Assert.Equal(source.ResourceFlowPeriodHours, live.ResourceFlowPeriodHours);
+        Assert.Empty(live.ResourceFlows);
+        Assert.Empty(live.ResourceFlowHistory);
+        Assert.Equal(
+            source.ResourceDefinitions.Select(value => value.DisplayName),
+            projection.ResourceDefinitions.Select(value => value.DisplayName));
         Assert.All(live.Organisms, organism => Assert.Equal(controlled, organism.SpeciesId));
         Assert.All(live.Organisms, organism =>
         {
@@ -101,6 +107,179 @@ public sealed class DirectWorldProjectorTests
         Assert.DoesNotContain(
             typeof(UnknownTileProjection).GetProperties(),
             property => property.Name is "ElevationMeters" or "ResourceStocks" or "Organisms");
+    }
+
+    [Fact]
+    public void LiveResourceFlowsComeFromAppliedLedgerEntriesForThatTileOnly()
+    {
+        var runner = CreateRunner();
+        runner.AdvanceOneTick();
+        var source = runner.CapturePublicationSnapshot();
+        var controlled = Assert.Single(source.Species).SpeciesId;
+
+        var projection = DirectWorldProjector.Project(
+            source,
+            new ActorKnowledgeSnapshot(controlled, []));
+        var live = Assert.IsType<LiveTileProjection>(projection.Tiles[0]);
+        var expected = source.ResourceFlows
+            .Where(flow => flow.TileId == live.TileId)
+            .OrderBy(flow => flow.ResourceId.Value)
+            .ThenBy(flow => flow.Kind)
+            .Select(flow => new ResourceFlowProjection(
+                flow.ResourceId,
+                flow.Kind,
+                flow.AmountQ));
+
+        Assert.NotEmpty(live.ResourceFlows);
+        Assert.Equal(expected, live.ResourceFlows);
+        Assert.All(live.ResourceFlows, flow => Assert.True(flow.AmountQ > 0));
+        var interval = Assert.Single(live.ResourceFlowHistory);
+        Assert.Equal(source.CompletedTick, interval.CompletedTick);
+        Assert.Equal(source.SimulatedHours, interval.EndSimulatedHour);
+        Assert.Equal(expected, interval.ResourceFlows);
+        var sourceOrganism = source.Organisms[0];
+        var projectedOrganism = live.Organisms.Single(value =>
+            value.OrganismId == sourceOrganism.OrganismId);
+        Assert.NotEmpty(projectedOrganism.ResourceAcquisitionEvidence);
+        Assert.Equal(
+            sourceOrganism.ResourceAcquisitionEvidence.Select(value =>
+                new ResourceAcquisitionEvidenceProjection(
+                    value.ResourceId,
+                    value.RequestedQ,
+                    value.GrantedQ,
+                    value.TileSupplyConstrained,
+                    value.ClaimContentionConstrained)),
+            projectedOrganism.ResourceAcquisitionEvidence);
+    }
+
+    [Fact]
+    public void LiveOrganismCarriesAuthoritativeAcquisitionGateEvidence()
+    {
+        var runner = CreateRunner();
+        var source = runner.CapturePublicationSnapshot();
+        var organismId = source.Organisms[0].OrganismId;
+        source = source with
+        {
+            Organisms = source.Organisms.SetItem(
+                0,
+                source.Organisms[0] with
+                {
+                    AcquisitionGateEvidence =
+                    [
+                        new PublicationAcquisitionGateEvidence(
+                            PublicationAcquisitionProcessKind.ExternalEnergyCapture,
+                            PublicationAcquisitionGateReason.InternalCapacity,
+                            0,
+                            2,
+                            0),
+                        new PublicationAcquisitionGateEvidence(
+                            PublicationAcquisitionProcessKind.Scavenging,
+                            PublicationAcquisitionGateReason.CooldownActive,
+                            0,
+                            0,
+                            source.CompletedTick + 1),
+                    ],
+                    ActionGateEvidence =
+                    [
+                        new PublicationOrganismActionGateEvidence(
+                            PublicationOrganismActionProcessKind.Reproduction,
+                            PublicationOrganismActionGateReason.CooldownActive,
+                            0,
+                            0,
+                            null,
+                            source.CompletedTick + 1),
+                    ],
+                }),
+        };
+        var controlled = Assert.Single(source.Species).SpeciesId;
+
+        var projection = DirectWorldProjector.Project(
+            source,
+            new ActorKnowledgeSnapshot(controlled, []));
+        var live = Assert.IsType<LiveTileProjection>(projection.Tiles[0]);
+        var organism = live.Organisms.Single(value => value.OrganismId == organismId);
+        Assert.Equal(2, organism.AcquisitionGateEvidence.Length);
+        var gate = organism.AcquisitionGateEvidence[0];
+
+        Assert.Equal(PublicationAcquisitionProcessKind.ExternalEnergyCapture, gate.Process);
+        Assert.Equal(PublicationAcquisitionGateReason.InternalCapacity, gate.Reason);
+        Assert.Equal(0, gate.AvailableQ);
+        Assert.Equal(2, gate.RequiredQ);
+        Assert.Equal(0UL, gate.ClearsAtTick);
+        var cooldownGate = organism.AcquisitionGateEvidence[1];
+        Assert.Equal(PublicationAcquisitionProcessKind.Scavenging, cooldownGate.Process);
+        Assert.Equal(PublicationAcquisitionGateReason.CooldownActive, cooldownGate.Reason);
+        Assert.Equal(source.CompletedTick + 1, cooldownGate.ClearsAtTick);
+        var actionGate = Assert.Single(organism.ActionGateEvidence);
+        Assert.Equal(PublicationOrganismActionProcessKind.Reproduction,
+            actionGate.Process);
+        Assert.Equal(PublicationOrganismActionGateReason.CooldownActive,
+            actionGate.Reason);
+        Assert.Equal(source.CompletedTick + 1, actionGate.ClearsAtTick);
+
+        var invalid = source with
+        {
+            Organisms = source.Organisms.SetItem(
+                0,
+                source.Organisms[0] with
+                {
+                    AcquisitionGateEvidence =
+                    [
+                        new PublicationAcquisitionGateEvidence(
+                            PublicationAcquisitionProcessKind.ExternalEnergyCapture,
+                            PublicationAcquisitionGateReason.InternalCapacity,
+                            2,
+                            2,
+                            0),
+                    ],
+                }),
+        };
+        Assert.Throws<ArgumentException>(() => DirectWorldProjector.Project(
+            invalid,
+            new ActorKnowledgeSnapshot(controlled, [])));
+
+        var invalidPair = source with
+        {
+            Organisms = source.Organisms.SetItem(
+                0,
+                source.Organisms[0] with
+                {
+                    AcquisitionGateEvidence =
+                    [
+                        new PublicationAcquisitionGateEvidence(
+                            PublicationAcquisitionProcessKind.ExternalEnergyCapture,
+                            PublicationAcquisitionGateReason.CooldownActive,
+                            0,
+                            0,
+                            source.CompletedTick + 1),
+                    ],
+                }),
+        };
+        Assert.Throws<ArgumentException>(() => DirectWorldProjector.Project(
+            invalidPair,
+            new ActorKnowledgeSnapshot(controlled, [])));
+
+        var invalidActionPair = source with
+        {
+            Organisms = source.Organisms.SetItem(
+                0,
+                source.Organisms[0] with
+                {
+                    ActionGateEvidence =
+                    [
+                        new PublicationOrganismActionGateEvidence(
+                            PublicationOrganismActionProcessKind.BiomassGrowth,
+                            PublicationOrganismActionGateReason.CooldownActive,
+                            0,
+                            0,
+                            null,
+                            source.CompletedTick + 1),
+                    ],
+                }),
+        };
+        Assert.Throws<ArgumentException>(() => DirectWorldProjector.Project(
+            invalidActionPair,
+            new ActorKnowledgeSnapshot(controlled, [])));
     }
 
     [Fact]
@@ -175,6 +354,8 @@ public sealed class DirectWorldProjectorTests
                     Micronutrients = remnant.Micronutrients.Reverse().ToImmutableArray(),
                 })
                 .ToImmutableArray(),
+            ResourceDefinitions = source.ResourceDefinitions.Reverse().ToImmutableArray(),
+            ResourceFlows = source.ResourceFlows.Reverse().ToImmutableArray(),
         };
 
         var first = DirectWorldProjector.Project(source, knowledge);
@@ -329,6 +510,9 @@ public sealed class DirectWorldProjectorTests
                 $"{live.ObservedAtTick}:" +
                 string.Join(',', live.ResourceStocks.Select(stock =>
                     $"{stock.ResourceId.Value}={stock.QuantityQ}")) +
+                ':' +
+                string.Join(',', live.ResourceFlows.Select(flow =>
+                    $"{flow.ResourceId.Value}={(byte)flow.Kind}={flow.AmountQ}")) +
                 ':' +
                 string.Join(',', live.Organisms.Select(organism =>
                     $"{organism.OrganismId.Value}={organism.SpeciesId.Value}=" +

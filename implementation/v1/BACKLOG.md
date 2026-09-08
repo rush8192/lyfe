@@ -21,8 +21,29 @@ Status values are `Done`, `In progress`, `Ready`, `Planned`, `Blocked`, and `Def
 Stage A and the complete executable opening through `OPENING-200` are complete.
 `UI-200` is in progress: its first slice now carries save-stable authoritative organism
 journey events through actor projection, protobuf snapshots/deltas, atomic client apply,
-configurable map pulses, and organism inspection. Routine-event compaction, stress and
-behavior-transition facts, mutation controls, and resource-flow views remain.
+configurable map pulses, and organism inspection. Its retention slice keeps exact landmarks,
+rolls routine uptake from a 168-hour window into sparse daily summaries, and publishes
+worsening stress-band crossings plus actual behavior transitions without per-tick noise.
+The mutation-control slice now exposes the controlled species' compiled
+trait catalogue and occupied tiles, prerequisite-closing client selection, authoritative
+preview, and idempotent apply with optimistic genome/evolution identity. The first resource
+diagnostic publishes moddable compound names/forms plus sparse source, sink, neighbor-exchange,
+organism-uptake, and organism-release totals directly from the balanced ledger. A save-stable
+rolling history retains each exact interval for up to 168 simulated hours; only live tiles receive
+exact stocks and current/history flows. The client reconstructs stock history from current stock
+plus sparse net changes and shows gross in/out and net without
+conflating compound and elemental quantities, ties organism resource pressure to the selected
+live tile, and hides absent compounds by default. Per-organism last-tick acquisition evidence
+now reports exact requested/granted quantities per named compound and distinguishes an actual
+tile-supply constraint from scavenging claim contention; coupled co-inputs are reduced without
+being falsely named as the limiting material. This per-organism evidence is intentionally transient
+across save restoration. The same last-tick channel now
+reports why recurring external energy capture emitted no resource request: no compiled pathway,
+zero accessible light/environmental opportunity, or less reserve room than one reaction extent
+requires. Conservation behavior deliberately remains absent from this list because it cannot
+suppress useful passive capture. Rich activation warnings, proposal comparison/goals, compacted
+long-horizon resource histories, species/reaction contributors, opportunistic scavenging and other action-gate
+failures, richer event prose/linking, cold historical segments, and the hosted command queue remain.
 
 # Foundation and developer experience
 
@@ -80,7 +101,7 @@ behavior-transition facts, mutation controls, and resource-flow views remain.
 | EVO-200 | Done | Implement mutation income, trait trees, compiled phenotype updates, speciation, lineage, and autonomous opportunity scoring | BEHAVIOR-200 | A compiler-owned and fingerprinted effective-population table drives fixed-point phase-10 income equally for controlled and autonomous species; strict prerequisite-bearing traits recompile immutable genomes/phenotypes; validated atomic speciation uses deterministic founders and exact 50/20/8/3% per-tile fractions, duplicates post-price balances/remainders, preserves organism matter/state, records lineage/events, survives save/load continuation, and exposes controlled evolution through absolute projections/deltas; prerequisite-closed pressure scoring passes frozen fixtures |
 | GAME-200 | Done | Implement survival and sandbox setup/control/loss state machines | EVO-200, DELTA-100 | Typed setup creates one sandbox root or two independent adjacent survival roots; sandbox supports optimistic-revision control transfer and persistent mutation locks; survival follows every player descendant and loses on controlled-species extinction while sandbox loses only on total extinction; terminal state blocks further ticks/evolution and mode/root/control/lock/outcome state is covered by journals, `WorldStateHashV9`, save schema 9, authorized projections, protobuf snapshots/deltas, and atomic client apply. Multiplayer ownership remains out of the world runner. |
 | OPENING-200 | Done | Implement hydrogen and sulfide founder paths plus bounded starting trade-off packages | GAME-200, GAS-200 | Two founder genomes and three allocations compile six distinct choices; survival fixes the opposite metabolism to Balanced. Exact capture, maintenance, needs-only CHNOPS assembly, reserve-floor protection, and failure death/remnants are executable. Fourteen tile/organism/remnant micronutrients use fixed-width persistent committed/free inventories; founders debit one committed quota, keyed needs-only uptake fills at most one quantum per organism-hour opportunity, reproduction requires and transfers one complete extra quota without creating matter, and death/terminal decay recycle every unit. Schema-9 save/hash/publication/protobuf/client paths preserve the state. The generated-world matrix passed all six choices across 64 seeds: `384/384` reproduced, retained at least `95/100` founders at first reproduction, and reached 40 MP within 720 hours. |
-| UI-200 | In progress | Add knowledge-limited map, organism/species inspection, lifecycle activity pulses and journey logs, mutation decisions, behavior summaries, and resource-flow views | OPENING-200 | Player can observe, diagnose, choose, and review consequences without hidden-state leakage; completed birth/reproduction, feeding, uptake, stress, migration/state-transition, and death facts drive configurable accessible on-map icons with bounded wall-clock fading, while exact landmarks plus compacted routine summaries provide a save-stable authorized journey for every inspectable organism |
+| UI-200 | In progress | Add knowledge-limited map, organism/species inspection, lifecycle activity pulses and journey logs, mutation decisions, behavior summaries, and resource-flow views | OPENING-200 | Player can observe, diagnose, choose, and review consequences without hidden-state leakage; completed birth/reproduction, feeding, uptake, stress, migration/state-transition, and death facts drive configurable accessible on-map icons with bounded wall-clock fading; exact landmarks plus compacted routine summaries provide a save-stable authorized journey; live tiles expose named exact compound stocks, gross last-tick ledger flow categories, and a save-stable 168-hour exact sparse-flow history used to reconstruct stock trends without leaking non-live tile values; selected live organisms expose exact last-tick compound demand/grant plus bounded engine-authored capture, scavenging, biomass-growth, and reproduction blockers with applicable resource, threshold, capacity, action-energy, behavior, and cooldown evidence |
 | PERF-200 | Planned | Profile the full default-grid opening around 10,000 organisms | UI-200 | Stage-B workload records tick, memory, GC, save, projection, wire, apply, and frame metrics |
 | STAGE-B | Planned | Demonstrate a playable survival opening and free sandbox | PERF-200 | Coupled opening/lifecycle/resource scenarios and the end-to-end player loop pass at representative scale |
 

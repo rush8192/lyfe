@@ -23,10 +23,13 @@ internal sealed class TickScratch
     private bool hasDeathRecords;
     private ImmutableArray<AcquisitionCoverageSample> acquisitionSamples;
     private bool hasAcquisitionSamples;
+    private ImmutableArray<AcquisitionGateSample> acquisitionGateSamples;
+    private bool hasAcquisitionGateSamples;
     private readonly List<ReproductionActivityReceipt> reproductionReceipts = [];
     private readonly List<ScavengeActivityReceipt> scavengeReceipts = [];
     private readonly List<StressActivityReceipt> stressReceipts = [];
     private readonly List<BehaviorTransitionActivityReceipt> behaviorTransitionReceipts = [];
+    private readonly List<OrganismActionGateSample> organismActionGateSamples = [];
 
     public TickScratch(ulong tick)
     {
@@ -156,6 +159,31 @@ internal sealed class TickScratch
         return acquisitionSamples;
     }
 
+    public void PublishAcquisitionGateSamples(
+        ulong tick,
+        ImmutableArray<AcquisitionGateSample> samples)
+    {
+        if (tick != Tick || hasAcquisitionGateSamples)
+        {
+            throw new InvalidOperationException(
+                "Acquisition gate samples must be published exactly once for their tick.");
+        }
+
+        acquisitionGateSamples = samples;
+        hasAcquisitionGateSamples = true;
+    }
+
+    public ImmutableArray<AcquisitionGateSample> RequireAcquisitionGateSamples(ulong tick)
+    {
+        if (tick != Tick || !hasAcquisitionGateSamples)
+        {
+            throw new InvalidOperationException(
+                "Acquisition gate samples are not available for this tick.");
+        }
+
+        return acquisitionGateSamples;
+    }
+
     public void AppendReproductionReceipt(ulong tick, ReproductionActivityReceipt receipt)
     {
         RequireTick(tick);
@@ -215,6 +243,24 @@ internal sealed class TickScratch
             .ToImmutableArray();
     }
 
+    public void AppendOrganismActionGate(
+        ulong tick,
+        OrganismActionGateSample sample)
+    {
+        RequireTick(tick);
+        organismActionGateSamples.Add(sample);
+    }
+
+    public ImmutableArray<OrganismActionGateSample> GetOrganismActionGates(ulong tick)
+    {
+        RequireTick(tick);
+        return organismActionGateSamples
+            .OrderBy(value => value.OrganismId.Value)
+            .ThenBy(value => value.Process)
+            .ThenBy(value => value.Reason)
+            .ToImmutableArray();
+    }
+
     private void RequireTick(ulong tick)
     {
         if (tick != Tick)
@@ -227,7 +273,53 @@ internal sealed class TickScratch
 internal readonly record struct AcquisitionCoverageSample(
     OrganismId OrganismId,
     long UsefulDemandQ,
-    long GrantedQ);
+    long GrantedQ,
+    ImmutableArray<ResourceAcquisitionSample> Resources);
+
+[Flags]
+internal enum AcquisitionConstraintFlags : byte
+{
+    None = 0,
+    TileSupply = 1,
+    ClaimContention = 2,
+}
+
+internal readonly record struct ResourceAcquisitionSample(
+    ResourceId ResourceId,
+    long RequestedQ,
+    long GrantedQ,
+    AcquisitionConstraintFlags ConstraintFlags);
+
+internal readonly record struct OrganismResourceAcquisitionSample(
+    OrganismId OrganismId,
+    ResourceId ResourceId,
+    long RequestedQ,
+    long GrantedQ,
+    AcquisitionConstraintFlags ConstraintFlags);
+
+internal enum AcquisitionProcessKind : byte
+{
+    ExternalEnergyCapture = 1,
+    Scavenging = 2,
+}
+
+internal enum AcquisitionGateReason : byte
+{
+    MissingCapability = 1,
+    InaccessibleLight = 2,
+    EnvironmentalOpportunity = 3,
+    InternalCapacity = 4,
+    CooldownActive = 5,
+    InsufficientActionEnergy = 6,
+}
+
+internal readonly record struct AcquisitionGateSample(
+    OrganismId OrganismId,
+    AcquisitionProcessKind Process,
+    AcquisitionGateReason Reason,
+    long AvailableQ,
+    long RequiredQ,
+    ulong ClearsAtTick);
 
 internal readonly record struct ScavengeActivityReceipt(
     OrganismId OrganismId,
@@ -266,7 +358,8 @@ internal readonly record struct ExternalCaptureIntent(
     long RequestedScavengeReserveQ,
     long RequestedScavengeStructureQ,
     long ScavengeActionCostQ,
-    ulong ScavengeCooldownHours);
+    ulong ScavengeCooldownHours,
+    ImmutableArray<AcquisitionGateSample> Gates);
 
 internal readonly record struct ExternalIntentCandidate(
     OrganismId OrganismId,
@@ -406,21 +499,64 @@ internal sealed class ExternalCaptureIntentPhase :
             view.Candidates.Length);
         foreach (var candidate in view.Candidates)
         {
+            var gates = ImmutableArray.CreateBuilder<AcquisitionGateSample>();
             var requestedExtent = 0L;
             var reactionId = 0U;
             var reactionHandle = candidate.Reaction.GetValueOrDefault();
-            if (candidate.Reaction is not null)
+            if (candidate.Reaction is null)
+            {
+                gates.Add(new AcquisitionGateSample(
+                    candidate.OrganismId,
+                    AcquisitionProcessKind.ExternalEnergyCapture,
+                    AcquisitionGateReason.MissingCapability,
+                    0,
+                    0,
+                    0));
+            }
+            else
             {
                 reactionId = reactionHandle.Id.Value;
                 var reaction = RequireReaction(view.Rules, reactionHandle);
                 var reserveOutputPerExtent = reaction.StoredEnergyQ;
-                if (reserveOutputPerExtent > 0 && candidate.CaptureExtentLimit > 0 &&
-                    candidate.CurrentReserveQ < candidate.ReserveCapacityQ)
+                if (reserveOutputPerExtent <= 0)
                 {
-                    var capacityExtent =
-                        (candidate.ReserveCapacityQ - candidate.CurrentReserveQ) /
-                        reserveOutputPerExtent;
-                    requestedExtent = Math.Min(candidate.CaptureExtentLimit, capacityExtent);
+                    throw new InvalidOperationException(
+                        "An external energy-capture reaction must store positive energy.");
+                }
+                if (candidate.CaptureExtentLimit <= 0)
+                {
+                    gates.Add(new AcquisitionGateSample(
+                        candidate.OrganismId,
+                        AcquisitionProcessKind.ExternalEnergyCapture,
+                        candidate.OpeningMetabolism.RequiresLight
+                            ? AcquisitionGateReason.InaccessibleLight
+                            : AcquisitionGateReason.EnvironmentalOpportunity,
+                        0,
+                        0,
+                        0));
+                }
+                else
+                {
+                    var availableCapacityQ = Math.Max(
+                        0,
+                        candidate.ReserveCapacityQ - candidate.CurrentReserveQ);
+                    var capacityExtent = availableCapacityQ / reserveOutputPerExtent;
+                    if (capacityExtent <= 0)
+                    {
+                        gates.Add(new AcquisitionGateSample(
+                            candidate.OrganismId,
+                            AcquisitionProcessKind.ExternalEnergyCapture,
+                            AcquisitionGateReason.InternalCapacity,
+                            availableCapacityQ,
+                            reserveOutputPerExtent,
+                            0));
+                    }
+                    else
+                    {
+                        requestedExtent = Math.Min(
+                            candidate.CaptureExtentLimit,
+                            capacityExtent);
+                    }
                 }
             }
 
@@ -428,59 +564,130 @@ internal sealed class ExternalCaptureIntentPhase :
             RemnantId? targetId = null;
             var requestedScavenge = 0L;
             var requestedStructure = 0L;
-            if ((candidate.Recycling.SimpleRemnantScavenging ||
-                    candidate.SupportsParticulateDigestion) &&
-                context.Tick >= candidate.ScavengeNotBeforeTick &&
-                candidate.CurrentReserveQ >= candidate.Recycling.ScavengeActionCostQ)
+            var scavengeActionCost = 0L;
+            if (!view.Remnants.IsEmpty)
             {
-                var target = view.SpatialIndex
+                var localRemnants = view.SpatialIndex
                     .QueryRemnantsForFeeding(
                         candidate.TileId,
                         candidate.PositionXQ,
                         candidate.PositionYQ,
                         candidate.Recycling.ScavengeRangeQ)
-                    .Select(indexed => view.Remnants[indexed.Id])
-                    .Where(remnant =>
+                    .Select(indexed => view.Remnants[indexed.Id]);
+                var canScavenge = candidate.Recycling.SimpleRemnantScavenging ||
+                    candidate.SupportsParticulateDigestion;
+                var target = canScavenge
+                    ? localRemnants.FirstOrDefault(remnant =>
                         (candidate.Recycling.SimpleRemnantScavenging &&
                             remnant.ChargedReserveQ > 0) ||
                         (candidate.SupportsParticulateDigestion &&
                             remnant.StructuralMatterQ > 0))
-                    .FirstOrDefault();
+                    : localRemnants.FirstOrDefault(remnant =>
+                        remnant.ChargedReserveQ > 0 || remnant.StructuralMatterQ > 0);
+
                 if (target.Id != default)
                 {
-                    targetId = target.Id;
-                    if (candidate.Recycling.SimpleRemnantScavenging)
+                    if (!canScavenge)
                     {
-                        requestedScavenge = Math.Min(
-                            candidate.Recycling.ScavengeReserveCapQ,
-                            target.ChargedReserveQ);
+                        gates.Add(new AcquisitionGateSample(
+                            candidate.OrganismId,
+                            AcquisitionProcessKind.Scavenging,
+                            AcquisitionGateReason.MissingCapability,
+                            0,
+                            0,
+                            0));
                     }
-                    if (candidate.SupportsParticulateDigestion)
+                    else if (context.Tick < candidate.ScavengeNotBeforeTick)
                     {
-                        requestedStructure = Math.Min(
-                            Math.Min(candidate.MatureStructureQ / 20, target.StructuralMatterQ),
+                        gates.Add(new AcquisitionGateSample(
+                            candidate.OrganismId,
+                            AcquisitionProcessKind.Scavenging,
+                            AcquisitionGateReason.CooldownActive,
+                            0,
+                            0,
+                            candidate.ScavengeNotBeforeTick));
+                    }
+                    else
+                    {
+                        if (candidate.Recycling.SimpleRemnantScavenging)
+                        {
+                            requestedScavenge = Math.Min(
+                                candidate.Recycling.ScavengeReserveCapQ,
+                                target.ChargedReserveQ);
+                        }
+
+                        var unboundedStructureRequest = candidate.SupportsParticulateDigestion
+                            ? Math.Min(candidate.MatureStructureQ / 20,
+                                target.StructuralMatterQ)
+                            : 0;
+                        var availableIngestionCapacityQ = Math.Max(
+                            0,
                             candidate.IngestedMatterCapacityQ -
                                 candidate.IngestedStructuralMatterQ);
+                        requestedStructure = Math.Min(
+                            unboundedStructureRequest,
+                            availableIngestionCapacityQ);
+
+                        if (requestedScavenge == 0 &&
+                            unboundedStructureRequest > 0 &&
+                            requestedStructure == 0)
+                        {
+                            gates.Add(new AcquisitionGateSample(
+                                candidate.OrganismId,
+                                AcquisitionProcessKind.Scavenging,
+                                AcquisitionGateReason.InternalCapacity,
+                                availableIngestionCapacityQ,
+                                1,
+                                0));
+                        }
+                        else
+                        {
+                            var blockedByParticulateEnergy = false;
+                            if (requestedStructure > 0 &&
+                                candidate.CurrentReserveQ <
+                                    candidate.Recycling.ParticulateScavengeActionCostQ)
+                            {
+                                requestedStructure = 0;
+                                if (requestedScavenge == 0)
+                                {
+                                    gates.Add(new AcquisitionGateSample(
+                                        candidate.OrganismId,
+                                        AcquisitionProcessKind.Scavenging,
+                                        AcquisitionGateReason.InsufficientActionEnergy,
+                                        candidate.CurrentReserveQ,
+                                        candidate.Recycling.ParticulateScavengeActionCostQ,
+                                        0));
+                                    blockedByParticulateEnergy = true;
+                                }
+                            }
+                            scavengeActionCost = blockedByParticulateEnergy
+                                ? 0
+                                : requestedStructure > 0
+                                    ? candidate.Recycling.ParticulateScavengeActionCostQ
+                                    : candidate.Recycling.ScavengeActionCostQ;
+                            if (!blockedByParticulateEnergy &&
+                                (requestedScavenge > 0 || requestedStructure > 0) &&
+                                candidate.CurrentReserveQ < scavengeActionCost)
+                            {
+                                gates.Add(new AcquisitionGateSample(
+                                    candidate.OrganismId,
+                                    AcquisitionProcessKind.Scavenging,
+                                    AcquisitionGateReason.InsufficientActionEnergy,
+                                    candidate.CurrentReserveQ,
+                                    scavengeActionCost,
+                                    0));
+                                requestedScavenge = 0;
+                                requestedStructure = 0;
+                                scavengeActionCost = 0;
+                            }
+                            else if (!blockedByParticulateEnergy &&
+                                (requestedScavenge > 0 || requestedStructure > 0))
+                            {
+                                targetId = target.Id;
+                            }
+                        }
                     }
                 }
-            }
-
-            if (requestedStructure > 0 &&
-                candidate.CurrentReserveQ < candidate.Recycling.ParticulateScavengeActionCostQ)
-            {
-                requestedStructure = 0;
-            }
-            var scavengeActionCost = requestedStructure > 0
-                ? candidate.Recycling.ParticulateScavengeActionCostQ
-                : candidate.Recycling.ScavengeActionCostQ;
-            if (targetId is not null &&
-                (requestedScavenge == 0 && requestedStructure == 0 ||
-                    candidate.CurrentReserveQ < scavengeActionCost))
-            {
-                targetId = null;
-                requestedScavenge = 0;
-                requestedStructure = 0;
-                scavengeActionCost = 0;
             }
 
             outcomes.Add(new PhaseOutcome<ExternalCaptureIntent>(
@@ -503,7 +710,8 @@ internal sealed class ExternalCaptureIntentPhase :
                     requestedScavenge,
                     requestedStructure,
                     scavengeActionCost,
-                    candidate.Recycling.ScavengeCooldownHours)));
+                    candidate.Recycling.ScavengeCooldownHours,
+                    gates.ToImmutable())));
         }
 
         return outcomes.MoveToImmutable();
@@ -513,17 +721,27 @@ internal sealed class ExternalCaptureIntentPhase :
         ExternalIntentView view,
         ImmutableArray<PhaseOutcome<ExternalCaptureIntent>> outcomes,
         TickExecutionContext context) =>
-        outcomes
-            .Select(outcome => outcome.Payload)
-            .Where(intent => intent.RequestedExtent > 0 || intent.ScavengeTargetId is not null)
-            .ToImmutableArray();
+        outcomes.Select(outcome => outcome.Payload).ToImmutableArray();
 
     protected override void Commit(
         MutableWorldState world,
         ImmutableArray<ExternalCaptureIntent> plan,
         PhaseChangeBuilder changes,
-        TickExecutionContext context) =>
-        context.Scratch.PublishExternalCaptureIntents(context.Tick, plan);
+        TickExecutionContext context)
+    {
+        context.Scratch.PublishExternalCaptureIntents(
+            context.Tick,
+            plan.Where(intent =>
+                    intent.RequestedExtent > 0 || intent.ScavengeTargetId is not null)
+                .ToImmutableArray());
+        context.Scratch.PublishAcquisitionGateSamples(
+            context.Tick,
+            plan.SelectMany(intent => intent.Gates)
+                .OrderBy(value => value.OrganismId.Value)
+                .ThenBy(value => value.Process)
+                .ThenBy(value => value.Reason)
+                .ToImmutableArray());
+    }
 
     private static CompiledReaction RequireReaction(
         CompiledRulePack rules,
@@ -760,6 +978,7 @@ internal sealed class ExternalCaptureResolutionPhase :
         TickExecutionContext context)
     {
         var admitted = new List<ExternalCaptureIntent>();
+        var supplyConstrainedInputs = new HashSet<(TileId, ReactionHandle, ResourceId)>();
         var groups = outcomes
             .Select(outcome => outcome.Payload)
             .Where(intent => intent.RequestedExtent > 0)
@@ -777,11 +996,13 @@ internal sealed class ExternalCaptureResolutionPhase :
             }
 
             var supplyExtent = long.MaxValue;
+            var inputSupplyExtents = new List<(CompiledResourceTerm Input, long Extent)>();
             foreach (var input in reaction.Inputs)
             {
-                supplyExtent = Math.Min(
-                    supplyExtent,
-                    view.GetTileResource(group.Key.TileId, input.Resource) / input.Quantity);
+                var inputExtent = view.GetTileResource(group.Key.TileId, input.Resource) /
+                    input.Quantity;
+                inputSupplyExtents.Add((input, inputExtent));
+                supplyExtent = Math.Min(supplyExtent, inputExtent);
             }
 
             var candidates = group.OrderBy(intent => intent.OrganismId.Value).ToArray();
@@ -789,6 +1010,15 @@ internal sealed class ExternalCaptureResolutionPhase :
                 0L,
                 static (sum, intent) => checked(sum + intent.RequestedExtent));
             var grantedTotal = Math.Min(supplyExtent, totalDemand);
+            if (grantedTotal < totalDemand)
+            {
+                foreach (var (input, extent) in inputSupplyExtents.Where(value =>
+                             value.Extent == supplyExtent))
+                {
+                    supplyConstrainedInputs.Add(
+                        (group.Key.TileId, group.Key.Reaction, input.Resource.Id));
+                }
+            }
             if (grantedTotal == totalDemand)
             {
                 admitted.AddRange(candidates);
@@ -849,12 +1079,39 @@ internal sealed class ExternalCaptureResolutionPhase :
         var grantedCapture = admitted
             .GroupBy(intent => intent.OrganismId)
             .ToDictionary(group => group.Key, group => group.Sum(intent => intent.RequestedExtent));
+        var grantedCaptureByProcess = admitted
+            .GroupBy(intent => (intent.OrganismId, intent.Reaction))
+            .ToDictionary(
+                group => group.Key,
+                group => group.Sum(intent => intent.RequestedExtent));
         var grantedScavenge = scavengeTransfers
             .GroupBy(transfer => transfer.OrganismId)
             .ToDictionary(
                 group => group.Key,
                 group => group.Sum(transfer => checked(
                     transfer.GrantedReserveQ + transfer.GrantedStructureQ)));
+        var resourceSamples = view.Intents
+            .SelectMany(intent => BuildResourceAcquisitionSamples(
+                view.Rules,
+                intent,
+                grantedCaptureByProcess.GetValueOrDefault(
+                    (intent.OrganismId, intent.Reaction)),
+                supplyConstrainedInputs,
+                scavengeTransfers))
+            .GroupBy(sample => sample.OrganismId)
+            .ToDictionary(
+                group => group.Key,
+                group => group
+                    .OrderBy(sample => sample.ResourceId.Value)
+                    .GroupBy(sample => sample.ResourceId)
+                    .Select(resource => new ResourceAcquisitionSample(
+                        resource.Key,
+                        resource.Sum(sample => sample.RequestedQ),
+                        resource.Sum(sample => sample.GrantedQ),
+                        resource.Aggregate(
+                            AcquisitionConstraintFlags.None,
+                            (flags, sample) => flags | sample.ConstraintFlags)))
+                    .ToImmutableArray());
         var acquisitionSamples = view.Intents
             .GroupBy(intent => intent.OrganismId)
             .OrderBy(group => group.Key.Value)
@@ -864,7 +1121,8 @@ internal sealed class ExternalCaptureResolutionPhase :
                     intent.RequestedExtent + intent.RequestedScavengeReserveQ +
                     intent.RequestedScavengeStructureQ)),
                 checked(grantedCapture.GetValueOrDefault(group.Key) +
-                    grantedScavenge.GetValueOrDefault(group.Key))))
+                    grantedScavenge.GetValueOrDefault(group.Key)),
+                resourceSamples.GetValueOrDefault(group.Key, [])))
             .Where(sample => sample.UsefulDemandQ > 0)
             .ToImmutableArray();
         return new ExternalResolutionPlan(
@@ -873,6 +1131,60 @@ internal sealed class ExternalCaptureResolutionPhase :
             expectedFinalBalances,
             scavengeTransfers,
             acquisitionSamples);
+    }
+
+    private static ImmutableArray<OrganismResourceAcquisitionSample>
+        BuildResourceAcquisitionSamples(
+            CompiledRulePack rules,
+            ExternalCaptureIntent intent,
+            long grantedExtent,
+            HashSet<(TileId, ReactionHandle, ResourceId)> supplyConstrainedInputs,
+            ImmutableArray<ScavengeTransfer> scavengeTransfers)
+    {
+        var result = ImmutableArray.CreateBuilder<OrganismResourceAcquisitionSample>();
+        if (intent.RequestedExtent > 0)
+        {
+            var reaction = RequireReaction(rules, intent.Reaction);
+            foreach (var input in reaction.Inputs)
+            {
+                result.Add(new OrganismResourceAcquisitionSample(
+                    intent.OrganismId,
+                    input.Resource.Id,
+                    checked(input.Quantity * intent.RequestedExtent),
+                    checked(input.Quantity * grantedExtent),
+                    supplyConstrainedInputs.Contains(
+                        (intent.TileId, intent.Reaction, input.Resource.Id))
+                        ? AcquisitionConstraintFlags.TileSupply
+                        : AcquisitionConstraintFlags.None));
+            }
+        }
+
+        var scavenge = scavengeTransfers.FirstOrDefault(value =>
+            value.OrganismId == intent.OrganismId);
+        if (intent.RequestedScavengeReserveQ > 0)
+        {
+            result.Add(new OrganismResourceAcquisitionSample(
+                intent.OrganismId,
+                ResourceId.From(3),
+                intent.RequestedScavengeReserveQ,
+                scavenge.GrantedReserveQ,
+                scavenge.GrantedReserveQ < intent.RequestedScavengeReserveQ
+                    ? AcquisitionConstraintFlags.ClaimContention
+                    : AcquisitionConstraintFlags.None));
+        }
+        if (intent.RequestedScavengeStructureQ > 0)
+        {
+            result.Add(new OrganismResourceAcquisitionSample(
+                intent.OrganismId,
+                ResourceId.From(5),
+                intent.RequestedScavengeStructureQ,
+                scavenge.GrantedStructureQ,
+                scavenge.GrantedStructureQ < intent.RequestedScavengeStructureQ
+                    ? AcquisitionConstraintFlags.ClaimContention
+                    : AcquisitionConstraintFlags.None));
+        }
+
+        return result.ToImmutable();
     }
 
     protected override void Commit(

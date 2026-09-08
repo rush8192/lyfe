@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using Lyfe.Simulation.Behavior;
 using Lyfe.Simulation.Ledger;
 using Lyfe.Simulation.Physiology;
 using Lyfe.Simulation.Randomness;
@@ -41,12 +42,14 @@ internal readonly record struct InternalMetabolismIntent(
     long DigestionExtent,
     long MaintenanceExtent,
     long RequestedAssemblyExtent,
-    MicronutrientInventory RequestedMicronutrients);
+    MicronutrientInventory RequestedMicronutrients,
+    OrganismActionGateSample? GrowthGate);
 
 internal sealed record InternalMetabolismPlan(
     ImmutableArray<ResourceTransaction> Transactions,
     LedgerReconciliationReport Reconciliation,
-    ImmutableArray<MaintenanceFailure> MaintenanceFailures);
+    ImmutableArray<MaintenanceFailure> MaintenanceFailures,
+    ImmutableArray<OrganismActionGateSample> ActionGates);
 
 internal readonly record struct MaintenanceFailure(
     OrganismId OrganismId,
@@ -166,7 +169,29 @@ internal sealed class InternalMetabolismPhase :
             reserve = checked(reserve - maintenance);
 
             var assemblyExtent = 0L;
-            if (candidate.AssemblyReaction is not null && maintenance == requiredMaintenance)
+            OrganismActionGateSample? growthGate = null;
+            if (candidate.AssemblyReaction is null)
+            {
+                growthGate = GrowthGate(
+                    candidate,
+                    OrganismActionGateReason.MissingCapability);
+            }
+            else if (maintenance != requiredMaintenance)
+            {
+                growthGate = GrowthGate(
+                    candidate,
+                    OrganismActionGateReason.MaintenanceShortfall,
+                    maintenance,
+                    requiredMaintenance);
+            }
+            else if (candidate.Organism.Behavior.BehaviorId ==
+                OrganismBehaviorId.Conserving)
+            {
+                growthGate = GrowthGate(
+                    candidate,
+                    OrganismActionGateReason.BehaviorSuppressed);
+            }
+            else
             {
                 var assembly = view.Rules.Reactions[candidate.AssemblyReaction.Value.DenseSlot];
                 var reserveInput = assembly.Inputs.Single(input =>
@@ -176,11 +201,31 @@ internal sealed class InternalMetabolismPhase :
                 var throughput = checked((long)
                     candidate.Physiology.OpeningMetabolism.StructuralGrowthExtentsPerHour *
                     context.TickDurationHours);
+                var stagingLoad = FounderMetabolismTransactionFactory.StagingLoadPerExtent(
+                    view.Rules,
+                    candidate.AssemblyReaction.Value);
                 var capacityExtents = candidate.Physiology.DissolvedMacronutrientCapacityLoadQ /
-                    FounderMetabolismTransactionFactory.StagingLoadPerExtent(
-                        view.Rules,
-                        candidate.AssemblyReaction.Value);
-                assemblyExtent = Math.Min(throughput, Math.Min(affordable, capacityExtents));
+                    stagingLoad;
+                if (affordable <= 0)
+                {
+                    growthGate = GrowthGate(
+                        candidate,
+                        OrganismActionGateReason.ReserveProtectionFloor,
+                        reserve,
+                        checked(protectedReserve + reserveInput));
+                }
+                else if (capacityExtents <= 0)
+                {
+                    growthGate = GrowthGate(
+                        candidate,
+                        OrganismActionGateReason.InternalCapacity,
+                        candidate.Physiology.DissolvedMacronutrientCapacityLoadQ,
+                        stagingLoad);
+                }
+                else
+                {
+                    assemblyExtent = Math.Min(throughput, Math.Min(affordable, capacityExtents));
+                }
             }
 
             var secondary = candidate.AssemblyReaction?.Id.Value ??
@@ -204,7 +249,8 @@ internal sealed class InternalMetabolismPhase :
                     candidate.MaximumDigestionExtent,
                     maintenance,
                     assemblyExtent,
-                    requestedMicronutrients)));
+                    requestedMicronutrients,
+                    growthGate)));
         }
         return outcomes.MoveToImmutable();
     }
@@ -217,6 +263,13 @@ internal sealed class InternalMetabolismPhase :
         var intents = outcomes.Select(outcome => outcome.Payload).ToArray();
         var grantedAssembly = ResolveAssemblyContention(view, intents, context);
         var grantedMicronutrients = ResolveMicronutrientContention(view, intents, context);
+        var actionGates = intents
+            .Select(intent => intent.GrowthGate ??
+                BuildAssemblyResolutionGate(view, intent, grantedAssembly))
+            .Where(gate => gate is not null)
+            .Select(gate => gate!.Value)
+            .OrderBy(gate => gate.OrganismId.Value)
+            .ToImmutableArray();
         var transactions = ImmutableArray.CreateBuilder<ResourceTransaction>();
         foreach (var intent in intents.OrderBy(intent => intent.Candidate.Organism.Id.Value))
         {
@@ -288,7 +341,8 @@ internal sealed class InternalMetabolismPhase :
         return new InternalMetabolismPlan(
             ordered,
             ResourceLedgerOracle.Reconcile(view.Rules, ordered),
-            failures);
+            failures,
+            actionGates);
     }
 
     protected override void Commit(
@@ -297,6 +351,11 @@ internal sealed class InternalMetabolismPhase :
         PhaseChangeBuilder changes,
         TickExecutionContext context)
     {
+        foreach (var gate in plan.ActionGates)
+        {
+            context.Scratch.AppendOrganismActionGate(context.Tick, gate);
+        }
+
         foreach (var transaction in plan.Transactions)
         {
             foreach (var entry in transaction.MatterEntries)
@@ -470,6 +529,61 @@ internal sealed class InternalMetabolismPhase :
         }
         return result;
     }
+
+    private static OrganismActionGateSample? BuildAssemblyResolutionGate(
+        InternalMetabolismView view,
+        InternalMetabolismIntent intent,
+        IReadOnlyDictionary<OrganismId, long> grantedAssembly)
+    {
+        if (intent.RequestedAssemblyExtent <= 0 ||
+            grantedAssembly.GetValueOrDefault(intent.Candidate.Organism.Id) > 0)
+        {
+            return null;
+        }
+
+        var reaction = view.Rules.Reactions[intent.Candidate.AssemblyReaction!.Value.DenseSlot];
+        var limiting = reaction.Inputs
+            .Where(input => input.Resource.Id != ResourceId.From(3))
+            .Select(input => new
+            {
+                Input = input,
+                AvailableQ = view.GetTileResource(
+                    intent.Candidate.Organism.TileId,
+                    input.Resource),
+            })
+            .OrderBy(value => value.AvailableQ / value.Input.Quantity)
+            .ThenBy(value => value.Input.Resource.Id.Value)
+            .First();
+        if (limiting.AvailableQ / limiting.Input.Quantity <= 0)
+        {
+            return GrowthGate(
+                intent.Candidate,
+                OrganismActionGateReason.ResourceSupply,
+                limiting.AvailableQ,
+                limiting.Input.Quantity,
+                limiting.Input.Resource.Id);
+        }
+
+        return GrowthGate(
+            intent.Candidate,
+            OrganismActionGateReason.ClaimContention,
+            0,
+            1);
+    }
+
+    private static OrganismActionGateSample GrowthGate(
+        InternalMetabolismCandidate candidate,
+        OrganismActionGateReason reason,
+        long availableQ = 0,
+        long requiredQ = 0,
+        ResourceId? resourceId = null) => new(
+            candidate.Organism.Id,
+            OrganismActionProcessKind.BiomassGrowth,
+            reason,
+            availableQ,
+            requiredQ,
+            resourceId,
+            0);
 
     private static MicronutrientInventory BuildMicronutrientRequest(
         InternalMetabolismView view,

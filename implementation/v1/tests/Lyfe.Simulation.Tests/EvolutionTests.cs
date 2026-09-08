@@ -197,6 +197,27 @@ public sealed class EvolutionTests
         Assert.True(accepted.Preview.Accepted);
     }
 
+    [Fact]
+    public void InsufficientBalancePreviewRetainsACompletePlanningResult()
+    {
+        var runner = CreateRunner();
+        var species = Assert.Single(runner.CapturePublicationSnapshot().Species);
+
+        var preview = runner.PreviewSpeciation(new SpeciationCommand(
+            species.SpeciesId,
+            species.EvolutionRevision,
+            species.GenomeHash,
+            [TraitId.From(3)],
+            [TileId.FromRowMajorIndex(0)]));
+
+        Assert.False(preview.Accepted);
+        Assert.Equal(SpeciationFailure.InsufficientMutationPoints, preview.Failure);
+        Assert.Equal(40 * MutationIncomeMath.MutationPointScale, preview.MutationPriceQ);
+        Assert.Equal(1U, preview.ChangeComplexity);
+        Assert.Equal(50U, Assert.Single(preview.FounderCounts).Count);
+        Assert.Equal(64, preview.ProposedGenomeHash.Length);
+    }
+
     [Theory]
     [InlineData(1, 12)]
     [InlineData(2, 5)]

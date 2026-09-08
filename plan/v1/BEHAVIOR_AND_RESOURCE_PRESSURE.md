@@ -156,6 +156,10 @@ In ordinary conservation:
 
 Critical conservation applies the same rules but admits no optional paid action except immediate fleeing, an affordable lifecycle transition, or a positive-return feeding action that is the organism's compiled acquisition route. Behavior never suppresses mandatory maintenance, and conservation cannot promise survival when no viable resource route remains.
 
+The executable v1 engine applies the stored prior-tick `Conserving` state to both biomass assembly
+and reproduction. Its transient action-gate evidence reports `BehaviorSuppressed` as the first
+blocker for each process; it does not infer suppression from low output or later state.
+
 The initial general behavior dwell is four simulated hours. A behavior selected at tick `T` is normally retained until `minimum_dwell_until_tick`; immediate threat response, hard target invalidation, and an admitted emergency dormancy policy may interrupt it. The moisture-specific dormancy policy retains its independently calibrated 24-hour lifecycle dwell.
 
 # Reproduction readiness

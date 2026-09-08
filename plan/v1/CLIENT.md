@@ -201,6 +201,44 @@ Plan views that can answer:
 
 Views must distinguish authoritative named-compound quantities from elemental totals calculated by expanding their composition vectors. They may show both, but must not add a compound and its constituent elements as if they were separate matter.
 
+The first executable diagnostic uses per-organism, per-compound acquisition evidence from the
+last completed tick. It shows exact requested and granted quantities and separately labels
+tile-supply scarcity or claim contention. For an atomic coupled reaction, all inputs show the
+same granted extent, but only the input or tied inputs whose available stoichiometric extent set
+that grant may be called limiting; another reduced co-input is not independent scarcity
+evidence. A zero-request process blocked by light, capability, reserve capacity, or another
+upstream gate requires separate activation evidence and must not be misreported as material
+abundance. The first gate-evidence slices cover recurring external energy capture and
+opportunity-qualified scavenging. Capture can name a missing compiled pathway, zero accessible
+light, another zero environmental opportunity, or inadequate reserve room for one reaction
+extent. Scavenging can name a missing capability, active cooldown, inadequate action energy, or
+full particulate-intake capacity, but only when consumable remains are currently inside the
+organism's interaction range. The UI must not turn absence of a target into a warning or reveal
+out-of-range remains. Quantity gates carry exact available-versus-needed values and cooldown
+evidence carries its exact clearing tick. Conservation behavior is not a capture gate because v1
+behavior cannot suppress useful passive acquisition; later optional active-transport rules may
+add an explicit behavior gate only when the simulation actually evaluates one. Persisted tile
+history does not identify an organism-level cause: after restore, the client labels these two
+organism diagnostics unavailable until another tick completes rather than inventing evidence from
+tile stocks.
+
+The first durable resource chart receives current exact stock plus chronological sparse flow
+intervals for at most 168 simulated hours. It reconstructs earlier stock boundaries backward by
+subtracting each interval's signed net flow; every tile mutation in the window is represented by
+the balanced ledger, so this is exact without transmitting dense duplicate stock snapshots. The
+client plots stock and signed net flow for one selected named compound, retaining `bigint` until
+bounded display normalization. Empty-flow intervals remain in the series. Longer seasonal views
+require server-side compaction and are deliberately deferred.
+
+The same selected-organism surface receives a separate bounded action-gate array with at most one
+first blocker for biomass growth and one for reproduction. Growth explanations distinguish missing
+capability, conservation, maintenance, reserve protection, staging capacity, exact tile-resource
+supply, and final-extent contention. Reproduction explanations distinguish conservation, cooldown,
+health, structure, reserve, lifecycle, and commissioned-versus-free offspring micronutrient quotas.
+Thresholds and stable resource names accompany reasons where they exist. A successful or partially
+successful process has no blocker, and the client must not reconstruct a competing explanation from
+later end-of-tick state.
+
 The first organic-resource view distinguishes intact remains, `LabileDissolvedOrganic`, generic spent organic pools, and `ReducedFermentationProducts`. It should make the 32-versus-8 direct-digestion/dissolved-fermentation recovery hierarchy visible and explain whether fermentation is limited by substrate, contention, throughput, environment, reserve capacity, or pathway upkeep. For respiration, it separately presents fuel carbon assimilated into new reserve, carbon routed to CO2 or overflow waste, accessible O2, respiratory consumption, catalytic-quota status, charged/spent carrier balance, shared throughput, and the limiting member of a coupled claim. It must not present generic organic elemental abundance or spent reserve carriers as directly usable energy.
 
 The photosynthesis view explains the current solar, cloud, depth, turbidity, and saturation contributions once; shows how one shared light budget was assigned between sulfide and oxygenic reactions; and pairs every oxygen output with its fixed-carbon output and CO2 input. O2 history distinguishes biological production, respiratory consumption, environmental attrition, and exchange, while an oxygenation indicator marks the basal, first-tier, and second-tier tolerance bands without implying that a threshold is universally safe.
@@ -253,8 +291,15 @@ it is not yet the playable map/inspector UI.
 - [ ] Complete exploration-state visual language and stale-data UX; Stage-A unknown/reduced/live shapes and live-to-reduced cache eviction are implemented.
 - [x] Activity-pulse families, valence/color semantics, filtering, animation, accessibility,
   clutter handling, journey contents, visibility, and first retention tiers are defined;
-  rendering and protocol implementation remain `UI-200` work.
-- [ ] Resource-chart and lineage-graph libraries.
+  first rendering/protocol slices are implemented while aggregate clutter handling and
+  cold historical segments remain `UI-200` work.
+- [x] First controlled-species mutation builder with prerequisite-closing selection,
+  occupied-tile selection, authoritative preview, affordability/founder/cooldown summary,
+  and idempotent apply transport; strategic intent, activation warnings, comparison, and
+  saved goals remain.
+- [x] First resource chart uses dependency-free SVG over exact `bigint` reconstruction; choose a
+  chart library only if later interaction/downsampling needs justify it. The lineage graph library
+  remains undecided.
 - [ ] Loading, disconnect, resync, and command-error UX.
 - [x] Client balance/world-profile authority boundary, final-definition cache identity, world-profile setup consequences, and modified-world disclosure; exact metadata schemas remain part of the protocol pass. See [MODDABILITY.md](MODDABILITY.md).
 - [ ] Accessibility and input baseline.

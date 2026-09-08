@@ -18,7 +18,9 @@ public sealed record ProjectionDelta(
     ImmutableArray<TileId> RemovedTileIds,
     ImmutableArray<SpeciesProjection> SpeciesReplacements,
     ImmutableArray<SpeciesId> RemovedSpeciesIds,
-    ImmutableArray<OrganismJourneyEventProjection> JourneyEventAppends);
+    ImmutableArray<OrganismJourneyEventProjection> JourneyEventAppends,
+    ImmutableArray<OrganismRoutineActivitySummaryProjection> RoutineActivitySummaries,
+    ImmutableArray<OrganismJourneyEventProjection> ActivityPulseEvents);
 
 public static class ProjectionDeltaBuilder
 {
@@ -110,7 +112,9 @@ public static class ProjectionDeltaBuilder
             removedTiles,
             speciesReplacements,
             removedSpecies,
-            journeyEventAppends);
+            journeyEventAppends,
+            current.RoutineActivitySummaries,
+            current.ActivityPulseEvents);
     }
 
     private static bool TileEquivalent(TileProjection left, TileProjection right) =>
@@ -132,6 +136,9 @@ public static class ProjectionDeltaBuilder
                 a.ElevationMeters == b.ElevationMeters &&
                 a.ObservedAtTick == b.ObservedAtTick &&
                 a.ResourceStocks.SequenceEqual(b.ResourceStocks) &&
+                a.ResourceFlowPeriodHours == b.ResourceFlowPeriodHours &&
+                a.ResourceFlows.SequenceEqual(b.ResourceFlows) &&
+                a.ResourceFlowHistory.SequenceEqual(b.ResourceFlowHistory) &&
                 a.Organisms.SequenceEqual(b.Organisms) &&
                 a.Remnants.SequenceEqual(b.Remnants) &&
                 BehaviorDistributionsEquivalent(
