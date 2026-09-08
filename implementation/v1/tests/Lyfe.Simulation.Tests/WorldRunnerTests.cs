@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using Lyfe.Simulation.Behavior;
 using Lyfe.Simulation.Core;
 using Lyfe.Simulation.Ledger;
 using Lyfe.Simulation.Randomness;
@@ -51,7 +52,7 @@ public sealed class WorldRunnerTests
         Assert.Equal(1UL, result.Snapshot.CompletedTick);
         Assert.Equal(1UL, result.Snapshot.WorldRevision);
         Assert.Equal(1UL, result.Snapshot.SimulatedHours);
-        Assert.Equal(9, result.Changes.EvaluatedWorkCount);
+        Assert.Equal(25, result.Changes.EvaluatedWorkCount);
         Assert.Equal(Enum.GetValues<TickPhase>(), result.Changes.Phases.Select(phase => phase.Phase));
         Assert.Equal(
             Enum.GetValues<TickPhase>().Length,
@@ -61,17 +62,17 @@ public sealed class WorldRunnerTests
             phase => phase.Phase == TickPhase.IntrinsicDeath);
         Assert.Equal(PhaseExecutionClass.IndependentMap, intrinsic.ExecutionClass);
         Assert.Equal(3, intrinsic.EvaluatedWorkCount);
-        Assert.Equal(3, intrinsic.Changes.DirtyEntities.Length);
-        Assert.All(
-            intrinsic.Changes.DirtyEntities,
-            dirty => Assert.Equal(LogicalFieldGroup.OrganismLifecycle, dirty.FieldGroup));
+        Assert.Equal(6, intrinsic.Changes.DirtyEntities.Length);
+        Assert.Equal(
+            [LogicalFieldGroup.OrganismLifecycle, LogicalFieldGroup.OrganismCondition],
+            intrinsic.Changes.DirtyEntities.Select(dirty => dirty.FieldGroup).Distinct());
         Assert.All(
             organismIds,
             organismId => Assert.Equal(
                 1UL,
                 runner.MutableWorld.GetOrganism(organismId).BiologicalAgeHours));
         Assert.Equal(0, result.Changes.MergedChanges.StructuralChangeCount);
-        Assert.Equal(7, result.Changes.MergedChanges.DirtyEntityReferenceCount);
+        Assert.Equal(19, result.Changes.MergedChanges.DirtyEntityReferenceCount);
         var tileChanges = Assert.Single(
             result.Changes.MergedChanges.StoreChanges,
             store => store.EntityKind == StateEntityKind.Tile);
@@ -82,15 +83,29 @@ public sealed class WorldRunnerTests
             result.Changes.MergedChanges.StoreChanges,
             store => store.EntityKind == StateEntityKind.Organism);
         Assert.Equal(
-            [LogicalFieldGroup.OrganismLifecycle, LogicalFieldGroup.OrganismReserve],
+            [
+                LogicalFieldGroup.OrganismPosition,
+                LogicalFieldGroup.OrganismLifecycle,
+                LogicalFieldGroup.OrganismStructure,
+                LogicalFieldGroup.OrganismReserve,
+                LogicalFieldGroup.OrganismCondition,
+                LogicalFieldGroup.OrganismMicronutrients,
+            ],
             organismChanges.DirtyFieldGroups.Select(group => group.FieldGroup));
         Assert.All(
-            organismChanges.DirtyFieldGroups,
+            organismChanges.DirtyFieldGroups.Where(group =>
+                group.FieldGroup != LogicalFieldGroup.OrganismMicronutrients),
             group => Assert.Equal(
                 organismIds.Select(id => id.Value),
                 group.Entities.Select(entity => entity.Value)));
-        Assert.Equal(3, result.Changes.MergedChanges.ResourceTransactionReferences.Length);
+        Assert.Equal(
+            [1UL, 2UL],
+            organismChanges.DirtyFieldGroups.Single(group =>
+                group.FieldGroup == LogicalFieldGroup.OrganismMicronutrients)
+                .Entities.Select(entity => entity.Value));
+        Assert.Equal(23, result.Changes.MergedChanges.ResourceTransactionReferences.Length);
         Assert.Equal(result.Changes, runner.LastCompletedTickChanges);
+        Assert.Empty(runner.LastIntrinsicDeathAssessments);
     }
 
     [Fact]
@@ -124,7 +139,7 @@ public sealed class WorldRunnerTests
         var json = TickChangeInspector.ToCanonicalJson(changes);
 
         Assert.Equal(
-            "{\"format\":\"TickChangeInspectorV1\",\"completedTick\":\"1\",\"worldRevision\":\"1\",\"evaluatedWorkCount\":9,\"stores\":[{\"entityKind\":1,\"creates\":[],\"removes\":[],\"relocations\":[],\"dirty\":[{\"fieldGroup\":1,\"entityIds\":[\"0\"]}]},{\"entityKind\":4,\"creates\":[],\"removes\":[],\"relocations\":[],\"dirty\":[{\"fieldGroup\":4,\"entityIds\":[\"1\",\"2\",\"3\"]},{\"fieldGroup\":6,\"entityIds\":[\"1\",\"2\",\"3\"]}]}],\"resourceTransactions\":[{\"tick\":\"1\",\"phase\":6,\"scopeId\":\"0\",\"actorId\":\"1\",\"reactionId\":1,\"localOrdinal\":0},{\"tick\":\"1\",\"phase\":6,\"scopeId\":\"0\",\"actorId\":\"2\",\"reactionId\":1,\"localOrdinal\":0},{\"tick\":\"1\",\"phase\":6,\"scopeId\":\"0\",\"actorId\":\"3\",\"reactionId\":1,\"localOrdinal\":0}]}",
+            "{\"format\":\"TickChangeInspectorV1\",\"completedTick\":\"1\",\"worldRevision\":\"1\",\"evaluatedWorkCount\":25,\"stores\":[{\"entityKind\":1,\"creates\":[],\"removes\":[],\"relocations\":[],\"dirty\":[{\"fieldGroup\":1,\"entityIds\":[\"0\"]}]},{\"entityKind\":3,\"creates\":[],\"removes\":[],\"relocations\":[],\"dirty\":[{\"fieldGroup\":11,\"entityIds\":[\"1\"]}]},{\"entityKind\":4,\"creates\":[],\"removes\":[],\"relocations\":[],\"dirty\":[{\"fieldGroup\":3,\"entityIds\":[\"1\",\"2\",\"3\"]},{\"fieldGroup\":4,\"entityIds\":[\"1\",\"2\",\"3\"]},{\"fieldGroup\":5,\"entityIds\":[\"1\",\"2\",\"3\"]},{\"fieldGroup\":6,\"entityIds\":[\"1\",\"2\",\"3\"]},{\"fieldGroup\":7,\"entityIds\":[\"1\",\"2\",\"3\"]},{\"fieldGroup\":14,\"entityIds\":[\"1\",\"2\"]}]}],\"resourceTransactions\":[{\"tick\":\"1\",\"phase\":2,\"scopeId\":\"0\",\"actorId\":\"0\",\"reactionId\":1,\"localOrdinal\":0},{\"tick\":\"1\",\"phase\":2,\"scopeId\":\"0\",\"actorId\":\"0\",\"reactionId\":1,\"localOrdinal\":1},{\"tick\":\"1\",\"phase\":2,\"scopeId\":\"0\",\"actorId\":\"0\",\"reactionId\":2,\"localOrdinal\":0},{\"tick\":\"1\",\"phase\":2,\"scopeId\":\"0\",\"actorId\":\"0\",\"reactionId\":2,\"localOrdinal\":1},{\"tick\":\"1\",\"phase\":2,\"scopeId\":\"0\",\"actorId\":\"0\",\"reactionId\":9,\"localOrdinal\":0},{\"tick\":\"1\",\"phase\":2,\"scopeId\":\"0\",\"actorId\":\"0\",\"reactionId\":9,\"localOrdinal\":1},{\"tick\":\"1\",\"phase\":2,\"scopeId\":\"0\",\"actorId\":\"0\",\"reactionId\":10,\"localOrdinal\":0},{\"tick\":\"1\",\"phase\":2,\"scopeId\":\"0\",\"actorId\":\"0\",\"reactionId\":10,\"localOrdinal\":1},{\"tick\":\"1\",\"phase\":2,\"scopeId\":\"0\",\"actorId\":\"0\",\"reactionId\":11,\"localOrdinal\":0},{\"tick\":\"1\",\"phase\":2,\"scopeId\":\"0\",\"actorId\":\"0\",\"reactionId\":11,\"localOrdinal\":1},{\"tick\":\"1\",\"phase\":2,\"scopeId\":\"0\",\"actorId\":\"0\",\"reactionId\":14,\"localOrdinal\":0},{\"tick\":\"1\",\"phase\":2,\"scopeId\":\"0\",\"actorId\":\"0\",\"reactionId\":14,\"localOrdinal\":1},{\"tick\":\"1\",\"phase\":6,\"scopeId\":\"0\",\"actorId\":\"1\",\"reactionId\":1,\"localOrdinal\":0},{\"tick\":\"1\",\"phase\":6,\"scopeId\":\"0\",\"actorId\":\"2\",\"reactionId\":1,\"localOrdinal\":0},{\"tick\":\"1\",\"phase\":6,\"scopeId\":\"0\",\"actorId\":\"3\",\"reactionId\":1,\"localOrdinal\":0},{\"tick\":\"1\",\"phase\":7,\"scopeId\":\"0\",\"actorId\":\"1\",\"reactionId\":4,\"localOrdinal\":0},{\"tick\":\"1\",\"phase\":7,\"scopeId\":\"0\",\"actorId\":\"1\",\"reactionId\":5,\"localOrdinal\":0},{\"tick\":\"1\",\"phase\":7,\"scopeId\":\"0\",\"actorId\":\"1\",\"reactionId\":30,\"localOrdinal\":1},{\"tick\":\"1\",\"phase\":7,\"scopeId\":\"0\",\"actorId\":\"2\",\"reactionId\":4,\"localOrdinal\":0},{\"tick\":\"1\",\"phase\":7,\"scopeId\":\"0\",\"actorId\":\"2\",\"reactionId\":5,\"localOrdinal\":0},{\"tick\":\"1\",\"phase\":7,\"scopeId\":\"0\",\"actorId\":\"2\",\"reactionId\":31,\"localOrdinal\":1},{\"tick\":\"1\",\"phase\":7,\"scopeId\":\"0\",\"actorId\":\"3\",\"reactionId\":4,\"localOrdinal\":0},{\"tick\":\"1\",\"phase\":7,\"scopeId\":\"0\",\"actorId\":\"3\",\"reactionId\":5,\"localOrdinal\":0}]}",
             json);
     }
 
@@ -247,8 +262,14 @@ public sealed class WorldRunnerTests
                 0,
                 0,
                 LifecyclePhase.Mature,
+                0,
+                0,
+                0,
+                0,
                 1_000,
-                5_000),
+                5_000,
+                OrganismBehaviorState.Initial(0),
+                existing.CommittedMicronutrients),
             changes);
         world.RemoveOrganism(temporary, changes);
         world.SealChanges(changes);
@@ -258,7 +279,7 @@ public sealed class WorldRunnerTests
     }
 
     [Fact]
-    public void WorldStateHashV1HasFrozenCreationAndFirstTickVectors()
+    public void WorldStateHashV9HasFrozenCreationAndFirstTickVectors()
     {
         var runner = WorldRunner.CreateFoundation(
             WorldId.From(1),
@@ -269,10 +290,10 @@ public sealed class WorldRunnerTests
         var firstTickHash = runner.AdvanceOneTick().Snapshot.StateHash;
 
         Assert.Equal(
-            "8efb01397a4a24b1956c7570dbeb15e70a1860b24975d1228e0a296ec0d03a8e",
+            "f348869182e65d1248147cd5dc7cc4c362433ba4ea5c1ea13a251701951a69bd",
             creationHash);
         Assert.Equal(
-            "344e6aba5ede1918acc174f6b625db6239a9c15ffe34fffdddfcb3914c0946fc",
+            "d988afe83a5c4091ddf75a6560376c474534fb627ee3ade498b34884ad485191",
             firstTickHash);
     }
 
@@ -327,7 +348,13 @@ public sealed class WorldRunnerTests
 
         Assert.Equal(TickPhase.IntrinsicDeath, exception.Phase);
         Assert.Equal(TickFailureStage.Preflight, exception.Stage);
-        Assert.Equal(generationBefore, world.CaptureGenerationStamp());
+        var generationAfter = world.CaptureGenerationStamp();
+        Assert.True(generationAfter.TileResources > generationBefore.TileResources);
+        Assert.Equal(generationBefore.Identity, generationAfter.Identity);
+        Assert.Equal(generationBefore.Genomes, generationAfter.Genomes);
+        Assert.Equal(generationBefore.Species, generationAfter.Species);
+        Assert.Equal(generationBefore.Organisms, generationAfter.Organisms);
+        Assert.Equal(generationBefore.Remnants, generationAfter.Remnants);
         Assert.Equal(ulong.MaxValue, world.GetOrganism(organismId).BiologicalAgeHours);
     }
 

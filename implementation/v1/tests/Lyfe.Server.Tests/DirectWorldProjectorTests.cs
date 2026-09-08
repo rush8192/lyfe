@@ -1,6 +1,8 @@
 using System.Collections.Immutable;
 using Lyfe.Server.Projection;
+using Lyfe.Simulation.Behavior;
 using Lyfe.Simulation.Core;
+using Lyfe.Simulation.Gameplay;
 using Lyfe.Simulation.Publication;
 using Lyfe.Simulation.Randomness;
 using Lyfe.Simulation.Rules.Authoring;
@@ -8,6 +10,7 @@ using Lyfe.Simulation.Rules.Compilation;
 using Lyfe.Simulation.Rules.Identity;
 using Lyfe.Simulation.Rules.Loading;
 using Lyfe.Simulation.Rules.Runtime;
+using Lyfe.Simulation.State.Identity;
 using Lyfe.Simulation.World;
 using Xunit;
 
@@ -41,6 +44,11 @@ public sealed class DirectWorldProjectorTests
         Assert.Equal(source.WorldRevision, projection.WorldRevision);
         Assert.Equal(source.WorldRulesHash, projection.WorldRulesHash);
         Assert.Equal(controlled, projection.ControlledSpeciesId);
+        Assert.Equal(GameMode.FreeSandbox, projection.Gameplay.Mode);
+        Assert.Equal(GameRunStatus.Active, projection.Gameplay.RunStatus);
+        Assert.Equal(controlled, projection.Gameplay.ControlledSpeciesId);
+        Assert.Equal(1UL, projection.Gameplay.GameplayRevision);
+        Assert.True(Assert.Single(projection.Gameplay.Roots).PlayerSelected);
         Assert.Equal([0U, 1U, 2U, 3U], projection.Tiles.Select(tile => tile.TileId.Value));
 
         var live = Assert.IsType<LiveTileProjection>(projection.Tiles[0]);
@@ -48,6 +56,26 @@ public sealed class DirectWorldProjectorTests
         Assert.Equal(source.Tiles[0].ResourceStocks.Length, live.ResourceStocks.Length);
         Assert.Equal(100, live.Organisms.Length);
         Assert.All(live.Organisms, organism => Assert.Equal(controlled, organism.SpeciesId));
+        Assert.All(live.Organisms, organism =>
+        {
+            Assert.Equal(10_000, organism.ChargedReserveCapacityQ);
+            Assert.Equal(483_334U, organism.RelativeHealthQ);
+            Assert.Equal(500_000U, organism.ReserveFactorQ);
+            Assert.Equal(966_667U, organism.EnvironmentalFactorQ);
+            Assert.Equal(4_194_304U, organism.BodyRadiusQ);
+            Assert.Equal(OrganismBehaviorId.Baseline, organism.BehaviorId);
+            Assert.Equal(500_000U, organism.ResourcePressureQ);
+            Assert.Equal(6, organism.CommittedMicronutrients.Length);
+            Assert.Equal(57, organism.CommittedMicronutrients.Sum(stock => stock.QuantityQ));
+            Assert.Empty(organism.FreeMicronutrients);
+        });
+        Assert.Empty(live.Remnants);
+        var tileBehavior = Assert.Single(live.BehaviorDistributions);
+        Assert.Equal(controlled, tileBehavior.SpeciesId);
+        Assert.Equal(100UL, tileBehavior.TotalObservedOrganisms);
+        Assert.Equal(
+            new BehaviorCountProjection(OrganismBehaviorId.Baseline, 100),
+            Assert.Single(tileBehavior.Counts));
 
         var reduced = Assert.IsType<ReducedTileProjection>(projection.Tiles[1]);
         Assert.Equal(0UL, reduced.ObservedAtTick);
@@ -61,6 +89,9 @@ public sealed class DirectWorldProjectorTests
         Assert.Equal(controlled, species.SpeciesId);
         Assert.Equal(SpeciesPopulationScope.WorldExact, species.PopulationScope);
         Assert.Equal(100UL, species.Population);
+        Assert.Equal(
+            new BehaviorCountProjection(OrganismBehaviorId.Baseline, 100),
+            Assert.Single(species.BehaviorCounts));
         Assert.DoesNotContain(
             typeof(ActorWorldProjection).GetProperties(),
             property => property.Name.Contains("StateHash", StringComparison.Ordinal));
@@ -70,6 +101,34 @@ public sealed class DirectWorldProjectorTests
         Assert.DoesNotContain(
             typeof(UnknownTileProjection).GetProperties(),
             property => property.Name is "ElevationMeters" or "ResourceStocks" or "Organisms");
+    }
+
+    [Fact]
+    public void LiveProjectionIncludesAuthoritativeRemnants()
+    {
+        var runner = CreateRunner();
+        WorldPublicationSnapshot source;
+        do
+        {
+            runner.AdvanceOneTick();
+            source = runner.CapturePublicationSnapshot();
+        }
+        while (source.Remnants.IsEmpty && source.CompletedTick < 2_000);
+
+        Assert.NotEmpty(source.Remnants);
+        Assert.NotEmpty(source.Organisms);
+        var controlled = Assert.Single(source.Species).SpeciesId;
+        var projection = DirectWorldProjector.Project(
+            source,
+            new ActorKnowledgeSnapshot(controlled, []));
+
+        var live = Assert.IsType<LiveTileProjection>(projection.Tiles[0]);
+        Assert.Equal(
+            source.Remnants.Select(remnant => remnant.RemnantId),
+            live.Remnants.Select(remnant => remnant.RemnantId));
+        Assert.Equal(source.Remnants[0].StructuralMatterQ,
+            live.Remnants[0].StructuralMatterQ);
+        Assert.Equal(source.Remnants[0].BodyRadiusQ, live.Remnants[0].BodyRadiusQ);
     }
 
     [Fact]
@@ -99,7 +158,23 @@ public sealed class DirectWorldProjectorTests
                 })
                 .ToImmutableArray(),
             Species = source.Species.Reverse().ToImmutableArray(),
-            Organisms = source.Organisms.Reverse().ToImmutableArray(),
+            Organisms = source.Organisms
+                .Reverse()
+                .Select(organism => organism with
+                {
+                    CommittedMicronutrients = organism.CommittedMicronutrients
+                        .Reverse().ToImmutableArray(),
+                    FreeMicronutrients = organism.FreeMicronutrients
+                        .Reverse().ToImmutableArray(),
+                })
+                .ToImmutableArray(),
+            Remnants = source.Remnants
+                .Reverse()
+                .Select(remnant => remnant with
+                {
+                    Micronutrients = remnant.Micronutrients.Reverse().ToImmutableArray(),
+                })
+                .ToImmutableArray(),
         };
 
         var first = DirectWorldProjector.Project(source, knowledge);
@@ -150,6 +225,9 @@ public sealed class DirectWorldProjectorTests
             new ActorKnowledgeSnapshot(
                 controlled,
                 [valid with { KnownPresentResourceIds = [ResourceId.From(999)] }])));
+        Assert.Throws<ArgumentException>(() => DirectWorldProjector.Project(
+            source,
+            new ActorKnowledgeSnapshot(default, [])));
     }
 
     [Fact]
@@ -160,13 +238,17 @@ public sealed class DirectWorldProjectorTests
             typeof(WorldPublicationSnapshot),
             typeof(PublicationTile),
             typeof(PublicationSpecies),
+            typeof(PublicationGameState),
             typeof(PublicationOrganism),
+            typeof(PublicationRemnant),
             typeof(ActorWorldProjection),
             typeof(UnknownTileProjection),
             typeof(ReducedTileProjection),
             typeof(LiveTileProjection),
             typeof(OrganismProjection),
+            typeof(RemnantProjection),
             typeof(SpeciesProjection),
+            typeof(GameProjection),
         };
 
         Assert.All(
@@ -251,7 +333,11 @@ public sealed class DirectWorldProjectorTests
                 string.Join(',', live.Organisms.Select(organism =>
                     $"{organism.OrganismId.Value}={organism.SpeciesId.Value}=" +
                     $"{organism.PositionXQ}={organism.PositionYQ}=" +
-                    $"{organism.BiologicalAgeHours}={organism.ChargedReserveQ}")),
+                    $"{organism.BiologicalAgeHours}={organism.ChargedReserveQ}")) +
+                ':' +
+                string.Join(',', live.Remnants.Select(remnant =>
+                    $"{remnant.RemnantId.Value}={remnant.SourceOrganismId.Value}=" +
+                    $"{remnant.StructuralMatterQ}={remnant.ChargedReserveQ}")),
             _ => throw new InvalidOperationException("Unknown projection shape."),
         };
 

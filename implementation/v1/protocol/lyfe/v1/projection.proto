@@ -20,6 +20,75 @@ enum SpeciesPopulationScope {
   SPECIES_POPULATION_SCOPE_LIVE_TILES_OBSERVED = 2;
 }
 
+enum OrganismBehavior {
+  ORGANISM_BEHAVIOR_UNSPECIFIED = 0;
+  ORGANISM_BEHAVIOR_BASELINE = 1;
+  ORGANISM_BEHAVIOR_CONSERVING = 2;
+  ORGANISM_BEHAVIOR_FORAGING = 3;
+  ORGANISM_BEHAVIOR_DISPERSING = 4;
+  ORGANISM_BEHAVIOR_FLEEING = 5;
+}
+
+enum BehaviorTargetKind {
+  BEHAVIOR_TARGET_KIND_UNSPECIFIED = 0;
+  BEHAVIOR_TARGET_KIND_ORGANISM = 1;
+  BEHAVIOR_TARGET_KIND_REMNANT = 2;
+  BEHAVIOR_TARGET_KIND_EDGE = 3;
+  BEHAVIOR_TARGET_KIND_LOCAL_POINT = 4;
+}
+
+enum GameMode {
+  GAME_MODE_UNSPECIFIED = 0;
+  GAME_MODE_FREE_SANDBOX = 1;
+  GAME_MODE_SURVIVAL = 2;
+}
+
+enum GameRunStatus {
+  GAME_RUN_STATUS_UNSPECIFIED = 0;
+  GAME_RUN_STATUS_ACTIVE = 1;
+  GAME_RUN_STATUS_LOST = 2;
+}
+
+enum GameLossReason {
+  GAME_LOSS_REASON_UNSPECIFIED = 0;
+  GAME_LOSS_REASON_ALL_LIFE_EXTINCT = 1;
+  GAME_LOSS_REASON_CONTROLLED_SPECIES_EXTINCT = 2;
+}
+
+enum OrganismJourneyEventFamily {
+  ORGANISM_JOURNEY_EVENT_FAMILY_UNSPECIFIED = 0;
+  ORGANISM_JOURNEY_EVENT_FAMILY_BIRTH = 1;
+  ORGANISM_JOURNEY_EVENT_FAMILY_REPRODUCTION = 2;
+  ORGANISM_JOURNEY_EVENT_FAMILY_RESOURCE_ABSORPTION = 3;
+  ORGANISM_JOURNEY_EVENT_FAMILY_FEEDING = 4;
+  ORGANISM_JOURNEY_EVENT_FAMILY_MIGRATION = 5;
+  ORGANISM_JOURNEY_EVENT_FAMILY_DEATH = 6;
+}
+
+message JourneyDeathCauseProbability {
+  uint32 cause = 1;
+  uint32 probability_q = 2;
+  bool triggered = 3;
+}
+
+message OrganismJourneyEvent {
+  uint64 event_id = 1;
+  uint64 tick = 2;
+  uint32 phase = 3;
+  OrganismJourneyEventFamily family = 4;
+  uint64 subject_organism_id = 5;
+  uint64 subject_species_id = 6;
+  uint32 tile_id = 7;
+  uint32 position_x_q = 8;
+  uint32 position_y_q = 9;
+  uint64 related_organism_id = 10;
+  uint64 related_remnant_id = 11;
+  uint32 resource_id = 12;
+  sint64 amount_q = 13;
+  uint32 detail_id = 14;
+  repeated JourneyDeathCauseProbability death_cause_probabilities = 15;
+}
+
 message ExactResourceStock {
   uint32 resource_id = 1;
   sint64 quantity_q = 2;
@@ -37,6 +106,55 @@ message OrganismProjection {
   OrganismLifecyclePhase lifecycle_phase = 9;
   sint64 structural_matter_q = 10;
   sint64 charged_reserve_q = 11;
+  sint64 charged_reserve_capacity_q = 12;
+  uint32 relative_health_q = 13;
+  uint32 reserve_factor_q = 14;
+  uint32 structure_factor_q = 15;
+  uint32 age_factor_q = 16;
+  uint32 environmental_factor_q = 17;
+  uint64 reproduction_not_before_tick = 18;
+  uint64 successful_reproduction_count = 19;
+  uint64 scavenge_not_before_tick = 20;
+  sint64 ingested_structural_matter_q = 21;
+  uint32 body_radius_q = 22;
+  OrganismBehavior behavior = 23;
+  BehaviorTargetKind behavior_target_kind = 24;
+  uint64 behavior_target_id = 25;
+  uint32 behavior_target_position_x_q = 26;
+  uint32 behavior_target_position_y_q = 27;
+  uint64 behavior_selected_at_tick = 28;
+  uint64 behavior_minimum_dwell_until_tick = 29;
+  uint32 recent_energy_coverage_q = 30;
+  uint32 recent_acquisition_coverage_q = 31;
+  uint32 limiting_material_deficit_q = 32;
+  uint32 resource_pressure_q = 33;
+  repeated ExactResourceStock committed_micronutrients = 34;
+  repeated ExactResourceStock free_micronutrients = 35;
+}
+
+message BehaviorCount {
+  OrganismBehavior behavior = 1;
+  uint64 count = 2;
+}
+
+message BehaviorDistribution {
+  uint64 species_id = 1;
+  uint64 observed_at_tick = 2;
+  uint64 total_observed_organisms = 3;
+  repeated BehaviorCount counts = 4;
+}
+
+message RemnantProjection {
+  uint64 remnant_id = 1;
+  uint64 source_organism_id = 2;
+  uint64 source_species_id = 3;
+  uint32 position_x_q = 4;
+  uint32 position_y_q = 5;
+  uint64 created_tick = 6;
+  sint64 structural_matter_q = 7;
+  sint64 charged_reserve_q = 8;
+  uint32 body_radius_q = 9;
+  repeated ExactResourceStock micronutrients = 10;
 }
 
 message UnknownTile {}
@@ -52,6 +170,8 @@ message LiveTile {
   uint64 observed_at_tick = 2;
   repeated ExactResourceStock resource_stocks = 3;
   repeated OrganismProjection organisms = 4;
+  repeated RemnantProjection remnants = 5;
+  repeated BehaviorDistribution behavior_distributions = 6;
 }
 
 message TileProjection {
@@ -70,6 +190,47 @@ message SpeciesProjection {
   uint64 species_id = 1;
   SpeciesPopulationScope population_scope = 2;
   uint64 population = 3;
+  repeated BehaviorCount behavior_counts = 4;
+  SpeciesEvolution evolution = 5;
+}
+
+message SpeciesEvolution {
+  uint64 genome_id = 1;
+  uint32 founder_genome_id = 14;
+  uint32 founder_allocation_id = 15;
+  string genome_hash = 2;
+  repeated uint32 acquired_trait_ids = 3;
+  uint64 mutation_balance_q = 4;
+  uint64 evolution_revision = 5;
+  uint64 speciation_not_before_tick = 6;
+  uint32 average_health_q = 7;
+  uint64 last_mutation_income_q = 8;
+  uint32 mutation_income_modifier_q = 9;
+  uint64 parent_species_id = 10;
+  uint64 created_tick = 11;
+  bool extinct = 12;
+  uint64 extinct_tick = 13;
+}
+
+message AbiogenesisRoot {
+  uint64 species_id = 1;
+  uint32 founder_genome_id = 2;
+  uint32 starting_tile_id = 3;
+  uint32 initial_population = 4;
+  bool player_selected = 5;
+  uint32 founder_allocation_id = 6;
+}
+
+message GameProjection {
+  GameMode mode = 1;
+  GameRunStatus run_status = 2;
+  GameLossReason loss_reason = 3;
+  uint64 controlled_species_id = 4;
+  uint64 gameplay_revision = 5;
+  bool ended = 6;
+  uint64 ended_tick = 7;
+  repeated AbiogenesisRoot roots = 8;
+  repeated uint64 mutation_locked_species_ids = 9;
 }
 
 message ActorWorldProjection {
@@ -87,6 +248,8 @@ message ActorWorldProjection {
   uint64 controlled_species_id = 12;
   repeated TileProjection tiles = 13;
   repeated SpeciesProjection species = 14;
+  GameProjection gameplay = 15;
+  repeated OrganismJourneyEvent journey_events = 16;
 }
 
 message ProjectionSnapshot {
@@ -110,4 +273,6 @@ message ProjectionBatch {
   repeated uint32 removed_tile_ids = 12;
   repeated SpeciesProjection species_replacements = 13;
   repeated uint64 removed_species_ids = 14;
+  GameProjection gameplay = 15;
+  repeated OrganismJourneyEvent journey_event_appends = 16;
 }

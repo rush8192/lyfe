@@ -6,8 +6,232 @@
       "stableKey": "genome.hydrogen-founder",
       "displayName": "Hydrogen founder",
       "enabledReactionKeys": [
-        "reaction.hydrogen-acetogenesis"
-      ]
+        "reaction.hydrogen-acetogenesis",
+        "reaction.founder-biomass-assembly",
+        "reaction.founder-maintenance"
+      ],
+      "foundationTraitKeys": [
+        "trait.baseline-activity",
+        "trait.asexual-inheritance",
+        "trait.hydrogen-acetogenesis"
+      ],
+      "physiology": {
+        "openingMetabolism": {
+          "metabolismKind": "hydrogen-acetogenesis",
+          "maximumCaptureExtentsPerHour": 250,
+          "favorableCaptureEfficiencyQ": 800000,
+          "requiresLight": false,
+          "illuminatedHoursPerDay": 24,
+          "generatedLightCaptureExtentsPerUnitHour": 0,
+          "structuralGrowthExtentsPerHour": 3,
+          "maintenanceCostQPerHour": 56,
+          "growthReserveFloorQ": 4000
+        },
+        "matureStructureQ": 1000,
+        "structuralHardFloorQ": 500,
+        "chargedReserveCapacityQ": 10000,
+        "terminalReserveThresholdQ": 0,
+        "dissolvedMacronutrientCapacityLoadQ": 512,
+        "freeMicronutrientCapacityLoadQ": 64,
+        "passiveMicronutrientUptakePerMillionPerHour": 500000,
+        "committedMicronutrientQuotas": [
+          { "resourceKey": "resource.iron", "quantity": 20 },
+          { "resourceKey": "resource.potassium", "quantity": 10 },
+          { "resourceKey": "resource.sodium", "quantity": 10 },
+          { "resourceKey": "resource.magnesium", "quantity": 10 },
+          { "resourceKey": "resource.nickel", "quantity": 5 },
+          { "resourceKey": "resource.cobalt", "quantity": 2 }
+        ],
+        "ingestedMatterCapacityLoadQ": 0,
+        "allocationPolicy": "equal-shared",
+        "senescenceOnsetHours": 720,
+        "ageDeclineSpanHours": 720,
+        "minimumAgeFactorQ": 500000,
+        "senescenceRiskBaseQ": 100,
+        "senescenceRiskEscalationHours": 168,
+        "senescenceRiskCapQ": 500000,
+        "reproduction": {
+          "minimumHealthQ": 600000,
+          "requiredStructureQ": 2000,
+          "resultStructureMinimumQ": 1000,
+          "requiredReserveQ": 8500,
+          "resultReserveMinimumQ": 4000,
+          "workCostQ": 500,
+          "baseCooldownHours": 24,
+          "cooldownJitterMaximumHours": 3
+        },
+        "recycling": {
+          "reserveDecayPerMillionPerHour": 2061,
+          "structureDecayPerMillionPerHour": 962,
+          "simpleRemnantScavenging": false,
+          "scavengeReserveCapQ": 200,
+          "scavengeActionCostQ": 25,
+          "particulateScavengeActionCostQ": 50,
+          "scavengeCooldownHours": 2,
+          "scavengeRangeQ": 8388608
+        },
+        "spatial": {
+          "matureBodyRadiusQ": 4194304,
+          "geometricStructureTargetQ": 1000,
+          "minimumBodyRadiusQ": 1048576,
+          "brownianRmsQPerSqrtHour": 8388608,
+          "environmentalSpreadMultiplierQ": 1000000,
+          "terrestrialBrownianMultiplierQ": 500000,
+          "activeSpeedLimitQPerHour": 0,
+          "movementEnergyPerFounderRadiusQ": 0,
+          "canOccupyTerrestrial": false,
+          "passiveMigrationProbabilityQ": 100000,
+          "activeMigrationProbabilityQ": 800000,
+          "mediumTransitionFactorQ": 750000,
+          "destinationCompatibilityFloorQ": 20000
+        },
+        "behavior": {
+          "resourceConservation": false,
+          "minimumDwellHours": 4,
+          "conservationEnterReserveQ": 500000,
+          "conservationEnterConditionalReserveQ": 800000,
+          "conservationEnterEnergyCoverageQ": 850000,
+          "conservationCriticalReserveQ": 200000,
+          "conservationExitReserveQ": 650000,
+          "conservationExitEnergyCoverageQ": 1000000,
+          "conservationExitHighReserveQ": 850000
+        },
+        "chemicalResponse": {
+          "hydrogenSulfideSoftThresholdQ": 20000000,
+          "hydrogenSulfideHardThresholdQ": 80000000,
+          "sulfurDioxideSoftThresholdQ": 2500000,
+          "sulfurDioxideHardThresholdQ": 10000000,
+          "healthPenaltyAtHardQ": 300000,
+          "healthFactorFloorQ": 100000,
+          "deathChanceAtHardQ": 10000,
+          "deathChanceCapQ": 500000
+        },
+        "temperatureResponse": {
+          "preferredMinimumMilliC": 40000,
+          "preferredMaximumMilliC": 50000,
+          "hardMinimumMilliC": 25000,
+          "hardMaximumMilliC": 65000,
+          "healthPenaltyAtHardQ": 200000,
+          "healthFactorFloorQ": 100000,
+          "deathChanceAtHardQ": 1000,
+          "deathChanceCapQ": 250000
+        }
+      }
+    },
+    {
+      "numericId": 2,
+      "stableKey": "genome.sulfur-founder",
+      "displayName": "Sulfide phototroph founder",
+      "enabledReactionKeys": [
+        "reaction.sulfide-anoxygenic-phototrophy",
+        "reaction.founder-biomass-assembly",
+        "reaction.founder-maintenance"
+      ],
+      "foundationTraitKeys": [
+        "trait.baseline-activity",
+        "trait.asexual-inheritance",
+        "trait.sulfide-anoxygenic-phototrophy"
+      ],
+      "physiology": {
+        "openingMetabolism": {
+          "metabolismKind": "sulfide-anoxygenic-phototrophy",
+          "maximumCaptureExtentsPerHour": 1000,
+          "favorableCaptureEfficiencyQ": 950000,
+          "requiresLight": true,
+          "illuminatedHoursPerDay": 12,
+          "generatedLightCaptureExtentsPerUnitHour": 2083,
+          "structuralGrowthExtentsPerHour": 4,
+          "maintenanceCostQPerHour": 56,
+          "growthReserveFloorQ": 4000
+        },
+        "matureStructureQ": 1000,
+        "structuralHardFloorQ": 500,
+        "chargedReserveCapacityQ": 10000,
+        "terminalReserveThresholdQ": 0,
+        "dissolvedMacronutrientCapacityLoadQ": 512,
+        "freeMicronutrientCapacityLoadQ": 64,
+        "passiveMicronutrientUptakePerMillionPerHour": 500000,
+        "committedMicronutrientQuotas": [
+          { "resourceKey": "resource.iron", "quantity": 25 },
+          { "resourceKey": "resource.potassium", "quantity": 10 },
+          { "resourceKey": "resource.sodium", "quantity": 10 },
+          { "resourceKey": "resource.magnesium", "quantity": 10 }
+        ],
+        "ingestedMatterCapacityLoadQ": 0,
+        "allocationPolicy": "equal-shared",
+        "senescenceOnsetHours": 720,
+        "ageDeclineSpanHours": 720,
+        "minimumAgeFactorQ": 500000,
+        "senescenceRiskBaseQ": 100,
+        "senescenceRiskEscalationHours": 168,
+        "senescenceRiskCapQ": 500000,
+        "reproduction": {
+          "minimumHealthQ": 600000,
+          "requiredStructureQ": 2000,
+          "resultStructureMinimumQ": 1000,
+          "requiredReserveQ": 8500,
+          "resultReserveMinimumQ": 4000,
+          "workCostQ": 500,
+          "baseCooldownHours": 24,
+          "cooldownJitterMaximumHours": 3
+        },
+        "recycling": {
+          "reserveDecayPerMillionPerHour": 2061,
+          "structureDecayPerMillionPerHour": 962,
+          "simpleRemnantScavenging": false,
+          "scavengeReserveCapQ": 200,
+          "scavengeActionCostQ": 25,
+          "particulateScavengeActionCostQ": 50,
+          "scavengeCooldownHours": 2,
+          "scavengeRangeQ": 8388608
+        },
+        "spatial": {
+          "matureBodyRadiusQ": 4194304,
+          "geometricStructureTargetQ": 1000,
+          "minimumBodyRadiusQ": 1048576,
+          "brownianRmsQPerSqrtHour": 8388608,
+          "environmentalSpreadMultiplierQ": 1000000,
+          "terrestrialBrownianMultiplierQ": 500000,
+          "activeSpeedLimitQPerHour": 0,
+          "movementEnergyPerFounderRadiusQ": 0,
+          "canOccupyTerrestrial": false,
+          "passiveMigrationProbabilityQ": 100000,
+          "activeMigrationProbabilityQ": 800000,
+          "mediumTransitionFactorQ": 750000,
+          "destinationCompatibilityFloorQ": 20000
+        },
+        "behavior": {
+          "resourceConservation": false,
+          "minimumDwellHours": 4,
+          "conservationEnterReserveQ": 500000,
+          "conservationEnterConditionalReserveQ": 800000,
+          "conservationEnterEnergyCoverageQ": 850000,
+          "conservationCriticalReserveQ": 200000,
+          "conservationExitReserveQ": 650000,
+          "conservationExitEnergyCoverageQ": 1000000,
+          "conservationExitHighReserveQ": 850000
+        },
+        "chemicalResponse": {
+          "hydrogenSulfideSoftThresholdQ": 50000000,
+          "hydrogenSulfideHardThresholdQ": 200000000,
+          "sulfurDioxideSoftThresholdQ": 2500000,
+          "sulfurDioxideHardThresholdQ": 10000000,
+          "healthPenaltyAtHardQ": 300000,
+          "healthFactorFloorQ": 100000,
+          "deathChanceAtHardQ": 10000,
+          "deathChanceCapQ": 500000
+        },
+        "temperatureResponse": {
+          "preferredMinimumMilliC": 40000,
+          "preferredMaximumMilliC": 50000,
+          "hardMinimumMilliC": 25000,
+          "hardMaximumMilliC": 65000,
+          "healthPenaltyAtHardQ": 200000,
+          "healthFactorFloorQ": 100000,
+          "deathChanceAtHardQ": 1000,
+          "deathChanceCapQ": 250000
+        }
+      }
     }
   ]
 }

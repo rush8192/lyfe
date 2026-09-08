@@ -135,6 +135,7 @@ public static class RandomDomains
     public static RandomDomainId MicronutrientTargetRank { get; } = new(0x0A04);
     public static RandomDomainId ReproductionCooldownJitter { get; } = new(0x0B01);
     public static RandomDomainId ReproductionIndivisibleRemainder { get; } = new(0x0B02);
+    public static RandomDomainId OffspringPlacementDirection { get; } = new(0x0B03);
     public static RandomDomainId SpeciationFounderSelection { get; } = new(0x0C01);
     public static RandomDomainId AutonomousExplorationChoice { get; } = new(0x0D01);
     public static RandomDomainId AutonomousCommit { get; } = new(0x0D02);
@@ -152,7 +153,7 @@ public static class RandomDomainRegistry
         Define(RandomDomains.WeatherEvent, "weather-event", "tick", "tile ID", "weather event ordinal/type", RandomOperationKind.Bernoulli),
         Define(RandomDomains.IntrinsicExposureDeath, "intrinsic-exposure-death", "tick", "organism ID", "exposure ID", RandomOperationKind.Bernoulli),
         Define(RandomDomains.SenescenceDeath, "senescence-death", "tick", "organism ID", "unused (zero)", RandomOperationKind.Bernoulli),
-        Define(RandomDomains.MicronutrientUptake, "micronutrient-uptake", "tick", "organism ID", "resource-selection stage", RandomOperationKind.WeightedChoice),
+        Define(RandomDomains.MicronutrientUptake, "micronutrient-uptake", "tick", "organism ID", "opportunity ordinal", RandomOperationKind.Bernoulli),
         Define(RandomDomains.MetabolicOpportunity, "metabolic-opportunity", "tick", "organism ID", "reaction ID", RandomOperationKind.KeyedBinomial),
         Define(RandomDomains.BrownianDirection, "brownian-direction", "tick", "organism ID", "unused (zero)", RandomOperationKind.UniformBelow),
         Define(RandomDomains.BrownianMagnitude, "brownian-magnitude", "tick", "organism ID", "unused (zero)", RandomOperationKind.UniformBelow),
@@ -166,6 +167,7 @@ public static class RandomDomainRegistry
         Define(RandomDomains.MicronutrientTargetRank, "micronutrient-target-rank", "tick", "organism ID", "resource ID", RandomOperationKind.StableRank),
         Define(RandomDomains.ReproductionCooldownJitter, "reproduction-cooldown-jitter", "organism ID", "successful reproduction ordinal", "unused (zero)", RandomOperationKind.UniformBelow),
         Define(RandomDomains.ReproductionIndivisibleRemainder, "reproduction-indivisible-remainder", "organism ID", "successful reproduction ordinal", "resource ID", RandomOperationKind.StableRank),
+        Define(RandomDomains.OffspringPlacementDirection, "offspring-placement-direction", "organism ID", "successful reproduction ordinal", "unused (zero)", RandomOperationKind.UniformBelow),
         Define(RandomDomains.SpeciationFounderSelection, "speciation-founder-selection", "speciation event ID", "tile ID", "organism ID", RandomOperationKind.StableRank),
         Define(RandomDomains.AutonomousExplorationChoice, "autonomous-exploration-choice", "autonomous evaluation ordinal", "species ID", "proposal-set hash", RandomOperationKind.WeightedChoice),
         Define(RandomDomains.AutonomousCommit, "autonomous-commit", "autonomous evaluation ordinal", "species ID", "proposal hash", RandomOperationKind.Bernoulli),

@@ -1,4 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  OrganismJourneyEventFamily,
+  type ActorWorldProjection,
+  type OrganismJourneyEvent,
+} from "./generated/lyfe/v1/projection_pb";
 import {
   formatSimulationHour,
   readActiveWorldProjection,
@@ -10,6 +15,10 @@ export function App() {
   const [connection, setConnection] = useState<ServerConnection>({
     status: "loading",
   });
+  const [enabledEventFamilies, setEnabledEventFamilies] = useState<
+    ReadonlySet<OrganismJourneyEventFamily>
+  >(() => new Set(ACTIVITY_FAMILIES.map((item) => item.family)));
+  const [selectedOrganismId, setSelectedOrganismId] = useState<bigint | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -28,6 +37,19 @@ export function App() {
     return () => controller.abort();
   }, []);
 
+  const world = connection.status === "online" ? connection.cache.world : null;
+  const visibleOrganisms = useMemo(
+    () => world === null ? [] : controlledOrganisms(world),
+    [world],
+  );
+  const activeOrganismId = selectedOrganismId ?? visibleOrganisms[0]?.organismId ?? null;
+  const journey = world === null
+    ? []
+    : world.journeyEvents
+        .filter((event) => event.subjectOrganismId === activeOrganismId)
+        .slice()
+        .reverse();
+
   return (
     <main className="app-shell">
       <header className="masthead">
@@ -40,7 +62,8 @@ export function App() {
 
       <section className="world-panel">
         <WorldCanvas
-          world={connection.status === "online" ? connection.cache.world : null}
+          world={world}
+          enabledEventFamilies={enabledEventFamilies}
         />
         <div className="world-copy">
           <p className="section-label">Foundation world</p>
@@ -67,9 +90,98 @@ export function App() {
               </div>
             </dl>
           ) : null}
+          {world !== null ? (
+            <>
+              <fieldset className="activity-filters">
+                <legend>Map activity</legend>
+                {ACTIVITY_FAMILIES.map((item) => (
+                  <label key={item.family}>
+                    <input
+                      type="checkbox"
+                      checked={enabledEventFamilies.has(item.family)}
+                      onChange={() => setEnabledEventFamilies((current) => {
+                        const next = new Set(current);
+                        if (next.has(item.family)) next.delete(item.family);
+                        else next.add(item.family);
+                        return next;
+                      })}
+                    />
+                    <span className={`event-key ${item.tone}`}>{item.glyph}</span>
+                    {item.label}
+                  </label>
+                ))}
+              </fieldset>
+              <section className="journey-panel" aria-labelledby="journey-title">
+                <div className="journey-heading">
+                  <div>
+                    <p className="section-label">Organism history</p>
+                    <h3 id="journey-title">Journey</h3>
+                  </div>
+                  <select
+                    aria-label="Organism to inspect"
+                    value={activeOrganismId?.toString() ?? ""}
+                    onChange={(event) => setSelectedOrganismId(BigInt(event.target.value))}
+                  >
+                    {visibleOrganisms.map((organism) => (
+                      <option key={organism.organismId.toString()} value={organism.organismId.toString()}>
+                        #{organism.organismId.toString()}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <ol className="journey-list">
+                  {journey.slice(0, 24).map((event) => (
+                    <JourneyEntry key={event.eventId.toString()} event={event} />
+                  ))}
+                </ol>
+              </section>
+            </>
+          ) : null}
         </div>
       </section>
     </main>
+  );
+}
+
+const ACTIVITY_FAMILIES = [
+  { family: OrganismJourneyEventFamily.BIRTH, label: "Birth", glyph: "✦", tone: "positive" },
+  { family: OrganismJourneyEventFamily.REPRODUCTION, label: "Reproduction", glyph: "+", tone: "positive" },
+  { family: OrganismJourneyEventFamily.RESOURCE_ABSORPTION, label: "Absorption", glyph: "↟", tone: "positive" },
+  { family: OrganismJourneyEventFamily.FEEDING, label: "Feeding", glyph: "◆", tone: "positive" },
+  { family: OrganismJourneyEventFamily.MIGRATION, label: "Migration", glyph: "→", tone: "neutral" },
+  { family: OrganismJourneyEventFamily.DEATH, label: "Death", glyph: "×", tone: "negative" },
+] as const;
+
+function controlledOrganisms(world: ActorWorldProjection) {
+  return world.tiles
+    .flatMap((tile) => tile.detail.case === "live" ? tile.detail.value.organisms : [])
+    .filter((organism) => organism.speciesId === world.controlledSpeciesId)
+    .sort((left, right) => left.organismId < right.organismId ? -1 : 1);
+}
+
+function JourneyEntry({ event }: { readonly event: OrganismJourneyEvent }) {
+  const definition = ACTIVITY_FAMILIES.find((item) => item.family === event.family);
+  return (
+    <li>
+      <span className={`event-key ${definition?.tone ?? "neutral"}`} aria-hidden="true">
+        {definition?.glyph ?? "•"}
+      </span>
+      <div>
+        <strong>{definition?.label ?? "Activity"}</strong>
+        <small>
+          Tick {event.tick.toLocaleString("en-US")} · tile {event.tileId}
+          {event.amountQ > 0n ? ` · ${event.amountQ.toLocaleString("en-US")} q` : ""}
+        </small>
+        {event.family === OrganismJourneyEventFamily.DEATH &&
+        event.deathCauseProbabilities.length > 0 ? (
+          <small>
+            {event.deathCauseProbabilities.map((cause) =>
+              `cause ${cause.cause}: ${(cause.probabilityQ / 10_000).toFixed(1)}%${cause.triggered ? " (triggered)" : ""}`
+            ).join("; ")}
+          </small>
+        ) : null}
+      </div>
+    </li>
   );
 }
 

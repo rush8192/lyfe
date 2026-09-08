@@ -95,7 +95,7 @@ public sealed record DecodedSaveEnvelope(
 
 public static class SaveEnvelopeMetadataFactory
 {
-    public const uint PayloadSchemaVersion = 1;
+    public const uint PayloadSchemaVersion = 11;
     public const string UnmodifiedCertificationClass = "official-unmodified-v1";
     public const string EmptyConfigurationHash =
         "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";

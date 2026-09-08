@@ -79,7 +79,7 @@ public sealed class RandomIdentityTests
         Assert.Equal("philox4x64-10-random123-v1", state.AlgorithmId);
         Assert.Equal(1U, state.RngSchemaVersion);
         Assert.Equal(
-            "2ed4852af4394c74fb85b41dc6bd1b537ed045618ca2aeb095f2cbf4aaf7a59c",
+            "155524eb22f8b14f654473cba28c501a18b374398c469a704102367f4d018916",
             state.RngDomainManifestHash);
         Assert.Equal(RandomDomainRegistry.ManifestHash, state.RngDomainManifestHash);
     }

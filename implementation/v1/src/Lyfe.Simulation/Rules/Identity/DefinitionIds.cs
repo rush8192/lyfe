@@ -47,6 +47,36 @@ public readonly record struct FounderGenomeId
     public override string ToString() => Value.ToString(CultureInfo.InvariantCulture);
 }
 
+public readonly record struct FounderAllocationId
+{
+    private FounderAllocationId(uint value) => Value = value;
+
+    public uint Value { get; }
+
+    public static FounderAllocationId From(uint value)
+    {
+        ArgumentOutOfRangeException.ThrowIfZero(value);
+        return new FounderAllocationId(value);
+    }
+
+    public override string ToString() => Value.ToString(CultureInfo.InvariantCulture);
+}
+
+public readonly record struct TraitId
+{
+    private TraitId(uint value) => Value = value;
+
+    public uint Value { get; }
+
+    public static TraitId From(uint value)
+    {
+        ArgumentOutOfRangeException.ThrowIfZero(value);
+        return new TraitId(value);
+    }
+
+    public override string ToString() => Value.ToString(CultureInfo.InvariantCulture);
+}
+
 public readonly record struct ScenarioId
 {
     private ScenarioId(uint value) => Value = value;
@@ -61,4 +91,3 @@ public readonly record struct ScenarioId
 
     public override string ToString() => Value.ToString(CultureInfo.InvariantCulture);
 }
-

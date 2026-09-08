@@ -1,3 +1,5 @@
+using Lyfe.Simulation.Behavior;
+using Lyfe.Simulation.Physiology;
 using Lyfe.Simulation.Rules.Authoring;
 using Lyfe.Simulation.Rules.Compilation;
 using Lyfe.Simulation.Rules.Identity;
@@ -96,6 +98,21 @@ public sealed class MutableWorldStateTests
         var sealedChanges = state.SealChanges(changes);
         Assert.Equal(5_000L, state.GetOrganism(organismId).ChargedReserveQ);
         Assert.Empty(sealedChanges.DirtyEntities);
+    }
+
+    [Fact]
+    public void ReserveCannotExceedCompiledCapacity()
+    {
+        var state = new MutableWorldState(CompileWorld());
+        var initialized = CreatePopulation(state, 1, TileId.FromRowMajorIndex(0));
+        var organismId = Assert.Single(initialized.OrganismIds);
+        var changes = state.BeginChanges();
+
+        Assert.Throws<InvalidOperationException>(() =>
+            state.AdjustOrganismChargedReserve(organismId, 5_001, changes));
+
+        Assert.Empty(state.SealChanges(changes).DirtyEntities);
+        Assert.Equal(5_000, state.GetOrganism(organismId).ChargedReserveQ);
     }
 
     [Fact]
@@ -264,8 +281,14 @@ public sealed class MutableWorldStateTests
             0,
             0,
             LifecyclePhase.Mature,
+            0,
+            0,
+            0,
+            0,
             1_000,
-            5_000);
+            5_000,
+            OrganismBehaviorState.Initial(0),
+            new MicronutrientInventory(0, 20, 10, 10, 10, 0, 0, 0, 0, 0, 0, 0, 5, 2));
     }
 
     private static CompiledWorldRules CompileWorld(bool twoTiles = false)

@@ -17,7 +17,8 @@ public sealed record ProjectionDelta(
     ImmutableArray<TileProjection> TileReplacements,
     ImmutableArray<TileId> RemovedTileIds,
     ImmutableArray<SpeciesProjection> SpeciesReplacements,
-    ImmutableArray<SpeciesId> RemovedSpeciesIds);
+    ImmutableArray<SpeciesId> RemovedSpeciesIds,
+    ImmutableArray<OrganismJourneyEventProjection> JourneyEventAppends);
 
 public static class ProjectionDeltaBuilder
 {
@@ -48,7 +49,6 @@ public static class ProjectionDeltaBuilder
             prior.StreamRevision == ulong.MaxValue ||
             previous.WorldId != current.WorldId ||
             previous.WorldRulesHash != current.WorldRulesHash ||
-            previous.ControlledSpeciesId != current.ControlledSpeciesId ||
             previous.Width != current.Width ||
             previous.Height != current.Height ||
             previous.WrapX != current.WrapX ||
@@ -79,12 +79,25 @@ public static class ProjectionDeltaBuilder
         var speciesReplacements = currentSpecies.Values
             .Where(species =>
                 !previousSpecies.TryGetValue(species.SpeciesId, out var old) ||
-                old != species)
+                !SpeciesEquivalent(old, species))
             .OrderBy(species => species.SpeciesId.Value)
             .ToImmutableArray();
         var removedSpecies = previousSpecies.Keys
             .Where(id => !currentSpecies.ContainsKey(id))
             .OrderBy(id => id.Value)
+            .ToImmutableArray();
+        if (current.JourneyEvents.Length < previous.JourneyEvents.Length ||
+            !previous.JourneyEvents.Select(value => value.EventId)
+                .SequenceEqual(current.JourneyEvents
+                    .Take(previous.JourneyEvents.Length)
+                    .Select(value => value.EventId)))
+        {
+            throw new ArgumentException(
+                "Journey events must be an append-only stream for a projection actor.",
+                nameof(current));
+        }
+        var journeyEventAppends = current.JourneyEvents
+            .Skip(previous.JourneyEvents.Length)
             .ToImmutableArray();
 
         return new ProjectionDelta(
@@ -96,7 +109,8 @@ public static class ProjectionDeltaBuilder
             tileReplacements,
             removedTiles,
             speciesReplacements,
-            removedSpecies);
+            removedSpecies,
+            journeyEventAppends);
     }
 
     private static bool TileEquivalent(TileProjection left, TileProjection right) =>
@@ -118,9 +132,47 @@ public static class ProjectionDeltaBuilder
                 a.ElevationMeters == b.ElevationMeters &&
                 a.ObservedAtTick == b.ObservedAtTick &&
                 a.ResourceStocks.SequenceEqual(b.ResourceStocks) &&
-                a.Organisms.SequenceEqual(b.Organisms),
+                a.Organisms.SequenceEqual(b.Organisms) &&
+                a.Remnants.SequenceEqual(b.Remnants) &&
+                BehaviorDistributionsEquivalent(
+                    a.BehaviorDistributions,
+                    b.BehaviorDistributions),
             _ => false,
         };
+
+    private static bool SpeciesEquivalent(SpeciesProjection left, SpeciesProjection right) =>
+        left.SpeciesId == right.SpeciesId &&
+        left.PopulationScope == right.PopulationScope &&
+        left.Population == right.Population &&
+        left.BehaviorCounts.SequenceEqual(right.BehaviorCounts) &&
+        EvolutionEquivalent(left.Evolution, right.Evolution);
+
+    private static bool EvolutionEquivalent(
+        SpeciesEvolutionProjection? left,
+        SpeciesEvolutionProjection? right) =>
+        left is null && right is null ||
+        left is not null && right is not null &&
+        left.GenomeId == right.GenomeId &&
+        string.Equals(left.GenomeHash, right.GenomeHash, StringComparison.Ordinal) &&
+        left.AcquiredTraits.SequenceEqual(right.AcquiredTraits) &&
+        left.MutationBalanceQ == right.MutationBalanceQ &&
+        left.EvolutionRevision == right.EvolutionRevision &&
+        left.SpeciationNotBeforeTick == right.SpeciationNotBeforeTick &&
+        left.AverageHealthQ == right.AverageHealthQ &&
+        left.LastMutationIncomeQ == right.LastMutationIncomeQ &&
+        left.MutationIncomeModifierQ == right.MutationIncomeModifierQ &&
+        left.ParentSpeciesId == right.ParentSpeciesId &&
+        left.CreatedTick == right.CreatedTick &&
+        left.ExtinctTick == right.ExtinctTick;
+
+    private static bool BehaviorDistributionsEquivalent(
+        ImmutableArray<BehaviorDistributionProjection> left,
+        ImmutableArray<BehaviorDistributionProjection> right) =>
+        left.Length == right.Length && left.Zip(right).All(pair =>
+            pair.First.SpeciesId == pair.Second.SpeciesId &&
+            pair.First.ObservedAtTick == pair.Second.ObservedAtTick &&
+            pair.First.TotalObservedOrganisms == pair.Second.TotalObservedOrganisms &&
+            pair.First.Counts.SequenceEqual(pair.Second.Counts));
 
     private static Dictionary<TKey, TValue> UniqueBy<TKey, TValue>(
         IEnumerable<TValue> values,

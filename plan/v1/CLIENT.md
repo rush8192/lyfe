@@ -44,6 +44,7 @@ Client state/query layer
 PixiJS world renderer
   ├── tile map and layers
   ├── organism and remnant instances
+  ├── lifecycle activity-pulse overlay
   ├── camera/follow behavior
   └── density or aggregate rendering at distant zoom
 ```
@@ -61,6 +62,7 @@ PixiJS world renderer
 - Tree of life and evolution planner.
 - Watchlist, alert inbox, evolution-goal status, and ancestor/descendant consequence review.
 - Factual world chronicle with evidence navigation and private hypothesis notes.
+- Per-organism journey log and on-map activity-filter controls.
 - Pause, speed, date, deadline, save, and run-status controls.
 - End-of-run summary.
 - World/rule identity and modification status in setup, load, and persistent run information.
@@ -85,6 +87,105 @@ Client layers must distinguish `current`, `last known`, `coarse`, and `unknown` 
 - Distant aggregates are visually distinct from individuals.
 - Cosmetic variation uses presentation-only inputs and never changes mechanics.
 - Dead remains retain identity and remaining-consumption state.
+
+# On-map activity pulses and organism journeys
+
+## Activity-pulse purpose and event families
+
+The live within-tile view gives immediate visual acknowledgement when an actual organism
+does something biologically meaningful. A small screen-space icon appears at the recorded
+event position for these first families:
+
+| Family | First icon concept | Subject-relative valence | Default |
+| --- | --- | --- | --- |
+| Birth or reproduction | dividing cell / paired circles | positive green | on |
+| Feeding, scavenging, or successful predation | consumed morsel / open jaws | positive green-teal for the consumer; negative red-orange for harmed prey | on |
+| Nutrient or resource absorption | droplet with inward arrow | positive green-teal | on |
+| Acute stress, failed attack, or harmful exposure | warning burst | negative orange-red | off except for the followed organism |
+| Death | broken cell / skull-like mark | negative red | on |
+| Migration or notable movement transition | directional wave / arrow | neutral gold | off |
+| Lifecycle or behavior-state transition | phase ring / state glyph | neutral amber | off |
+
+The event type and participant role determine valence; “good” and “bad” are relative to
+the organism represented by that icon, not a moral judgment or a hidden player-fitness
+score. One predation fact may therefore produce a green feeding pulse for the predator and
+a red harm/death pulse for the prey when both are authorized and visible. Icon shape is the
+primary meaning and color is secondary, so red/green color-vision differences do not erase
+the distinction. The first valence scale moves from green/teal through gold/amber to
+orange/red using perceptually distinct, contrast-checked tokens rather than raw RGB
+interpolation.
+
+These pulses may only represent completed authoritative facts. The client never infers a
+birth, successful feeding, uptake, or death from a changing quantity or disappearing sprite.
+It may animate a failed or suppressed action only when the server publishes that outcome as
+an authorized event. Presentation metadata maps stable event family/role IDs to icons,
+colors, labels, and sound hooks; mods or themes may replace that metadata without changing
+event meaning.
+
+## Animation and clutter rules
+
+The initial presentation values are deliberately client-configurable and require visual
+testing:
+
+- A pulse enters at full opacity and readable scale at the event's recorded tile-local
+  coordinate, holds for `400 ms`, then drifts upward by at most `18 CSS px` while fading
+  over `2.6 s`. Its total default wall-clock lifetime is `3.0 s`.
+- Fade duration is wall-clock presentation time, independent of simulation speed, tick
+  duration, pause state, replay determinism, and server publication cadence. Pausing the
+  simulation does not resurrect an expired pulse; the journey log is the inspection path.
+- Icons remain within a bounded `16..22 CSS px` screen-space size across normal zoom levels.
+  At distant aggregate zoom they become tile-level activity counts or disappear according
+  to the selected layer; the renderer never invents organism locations.
+- `prefers-reduced-motion` removes drift and scale motion while retaining a clear hold and
+  fade. A no-animation accessibility option may show a static marker for the same lifetime.
+- Repeated same-family events for one organism within one publication interval coalesce into
+  one pulse with a bounded `×N` badge and magnitude tier. They do not create an unbounded
+  animation queue.
+- When a viewport exceeds its configured pulse budget, deterministic priority is death and
+  reproduction, then feeding/harm, then absorption, then neutral transitions. Lower-priority
+  events coalesce into an honest tile count; they are never randomly dropped based on frame
+  timing. A followed organism's eligible pulses receive their own small reserved budget.
+
+The preferences panel exposes a checkbox for every family, a scope of `controlled species`
+(default) or `all currently observed organisms`, master enable/disable, reduced-motion, and
+opacity/lifetime within safe bounds. Preferences are local profile state. They do not enter
+world saves, world hashes, keyed randomness, organism decisions, or actor knowledge. A
+future subscription may avoid transporting disabled high-volume families, but changing it
+must not change authoritative event creation and broadening cannot recover hidden events.
+
+## Organism journey inspector
+
+Every authorized organism inspector has a chronological `Journey` tab. Exact landmark
+entries include founding/birth, parent-child reproduction roles, lifecycle transitions,
+tile migration, feeding/scavenging/predation interactions, significant health or stress
+transitions, and death. Each entry carries simulation tick/date, organism age, event type,
+subject role, tile and recorded position, involved stable IDs, relevant exact quantities or
+outcome, and links to authorized causal evidence. Nutrient uptake and other routine repeated
+work are summarized rather than logging one row per quantum:
+
+- keep one bounded per-organism activity bucket for each of the latest `168` simulated
+  hours, with sparse nonzero acquisition totals by resource family;
+- compact older routine summaries into deterministic simulated-day buckets; and
+- retain landmark lifecycle and interaction events exactly for the world lifetime.
+
+World-lifetime logical retention does not require every record to remain in hot simulation
+memory. Sealed old landmark/daily segments may move to a cold, organism-indexed archive;
+the inspector loads them on demand while the active world retains only the index, verified
+high-water mark/digest, and configured recent window.
+
+The log explains how the organism reached its present age, reserves, committed/free
+nutrient state, location, behavior, reproduction count, and eventual death without claiming
+that one event exclusively caused a later condition. Parent and offspring entries link to
+one another. A dead organism remains reachable through its remnant, species/lineage history,
+or stable-ID search after the visible death; disappearance due only to projection loss does
+not create a death entry.
+
+Visibility remains authoritative. A currently visible organism exposes only journey facts
+the actor is permitted to know. When it leaves observation, the cached journey becomes
+timestamped stale history and receives no hidden updates. Entering a newly live tile does
+not replay past map pulses, although authorized retained journey facts may become available
+under the normal discovery policy. Omniscient histories remain limited to an explicitly
+authorized post-run mode if one is added later.
 
 # Resource and causal visualization
 
@@ -150,10 +251,14 @@ it is not yet the playable map/inspector UI.
 - [ ] Camera, zoom, tile, and within-tile coordinate mapping.
 - [x] Logical and generated snapshot/delta application, atomicity, replacement merge, duplicate/gap recovery, and Stage-A cache API. See [STATE_CHANGE_AND_CLIENT_SYNC.md](STATE_CHANGE_AND_CLIENT_SYNC.md).
 - [ ] Complete exploration-state visual language and stale-data UX; Stage-A unknown/reduced/live shapes and live-to-reduced cache eviction are implemented.
+- [x] Activity-pulse families, valence/color semantics, filtering, animation, accessibility,
+  clutter handling, journey contents, visibility, and first retention tiers are defined;
+  rendering and protocol implementation remain `UI-200` work.
 - [ ] Resource-chart and lineage-graph libraries.
 - [ ] Loading, disconnect, resync, and command-error UX.
 - [x] Client balance/world-profile authority boundary, final-definition cache identity, world-profile setup consequences, and modified-world disclosure; exact metadata schemas remain part of the protocol pass. See [MODDABILITY.md](MODDABILITY.md).
 - [ ] Accessibility and input baseline.
 - [ ] Wireframes for all primary surfaces.
-- [ ] Decision-frontier, proposal-comparison, attention, consequence-review, chronicle, and loss-postmortem interaction tests.
+- [ ] Decision-frontier, proposal-comparison, attention, consequence-review, activity-pulse,
+  organism-journey, chronicle, and loss-postmortem interaction tests.
 - [ ] Rendering benchmark with tens of thousands of visible entities and aggregates.

@@ -46,6 +46,7 @@ Design a versioned envelope containing message type, request/correlation ID wher
 - Full snapshots and resynchronization.
 - Tick/state deltas.
 - Simulation, death, resource, and lineage events.
+- Authorized organism-journey events and ephemeral map-activity pulses.
 - Authorized evolution-decision summaries, attention alerts, consequence-review aggregates, and factual notable events.
 - Clock/status updates.
 - Errors, backpressure warnings, and graceful shutdown.
@@ -63,6 +64,22 @@ Behavior-distribution projections carry observation tick, species ID, optional t
 Live organism projections for carrier-retaining species distinguish charged reserve from zero-energy spent-carrier quantity; summing them as stored energy is a client error. Storage-capable projections also distinguish current commissioned capacity, compiled maximum capacity, storage structure/target, and any organization activation gate. Live tile/resource flow projections distinguish atmospheric O2 environmental loss/exchange, biological production, and respiratory consumption, plus fuel-specific requested, granted, and consumed extents.
 
 Movement and migration events expose active, Brownian-like passive, and directional environmental displacement contributions plus the admitted crossing cause. The passive contribution reflects the organism's compiled environmental-spread multiplier. Directional environmental contribution is always zero under the v1 rule pack, but the protocol field is versioned now so later current- or wind-driven dispersal does not masquerade as active locomotion or require a breaking event-shape change. These fields remain subject to ordinary tile/species visibility.
+
+Organism activity uses one stable factual vocabulary across the journey inspector and map
+overlay. A retained event carries event ID, completed tick/phase, family, subject and
+participant stable IDs/roles, tile and occurrence coordinate, quantities/outcome, and typed
+evidence references. It does not carry localized prose, color values, glyph names, fade
+duration, or player-relative fitness. The presentation pack maps family plus role to those
+visuals.
+
+The server projects retained journey landmarks and routine acquisition summaries for an
+explicit organism-history interest. Separately, it may emit a bounded `ActivityPulseBatch`
+for newly completed authorized events in live subscribed tiles. Pulse batches preserve
+event IDs for deduplication and occurrence ticks for staleness checks, but may coalesce
+same-organism/same-family routine activity and may expire under the explicit presentation
+TTL. Reconnect does not replay expired animations; the journey query remains authoritative.
+Neither subscription choice nor pulse filtering changes event creation, simulation state,
+or future randomness.
 
 # Command semantics
 
@@ -152,7 +169,8 @@ transport cadence, acknowledgements, bounded retention, backpressure, and resume
 - [ ] WebSocket envelope and message catalogue.
 - [ ] Command ordering and idempotency.
 - [ ] Subscription and interest model.
-- [ ] Decision-summary, evolution-goal, attention-policy, alert, notable-event, and consequence-review schemas and retention behavior.
+- [ ] Organism-journey/activity-pulse, decision-summary, evolution-goal, attention-policy,
+  alert, notable-event, and consequence-review schemas and retention behavior.
 - [x] Direct actor-authorized unknown/reduced/live projection oracle plus generated Stage-A field numbers and binary snapshot mapping; richer entity/history shapes remain with their authoritative stores. See [STATE_CHANGE_AND_CLIENT_SYNC.md](STATE_CHANGE_AND_CLIENT_SYNC.md).
 - [x] Stage-A absolute tile/species replacement schema, stream revisions, atomic TypeScript application, visibility eviction, and full-snapshot resynchronization; transport limits remain `NET-400`. See [STATE_CHANGE_AND_CLIENT_SYNC.md](STATE_CHANGE_AND_CLIENT_SYNC.md).
 - [ ] Queue, retention, batch, chunk, cadence, and backpressure limits; bounded/coalescing behavior is fixed.

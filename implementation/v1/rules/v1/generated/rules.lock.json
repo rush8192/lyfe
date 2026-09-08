@@ -7,19 +7,72 @@
         { "numericId": 1, "stableKey": "resource.hydrogen-gas", "status": "active" },
         { "numericId": 2, "stableKey": "resource.carbon-dioxide", "status": "active" },
         { "numericId": 3, "stableKey": "resource.reserve-organic", "status": "active" },
-        { "numericId": 4, "stableKey": "resource.ocean-water", "status": "active" }
+        { "numericId": 4, "stableKey": "resource.ocean-water", "status": "active" },
+        { "numericId": 5, "stableKey": "resource.structural-biomass", "status": "active" },
+        { "numericId": 6, "stableKey": "resource.spent-structural-residue", "status": "active" },
+        { "numericId": 7, "stableKey": "resource.generic-structural-organic", "status": "active" },
+        { "numericId": 8, "stableKey": "resource.spent-reserve-carrier", "status": "active" },
+        { "numericId": 9, "stableKey": "resource.methane-gas", "status": "active" },
+        { "numericId": 10, "stableKey": "resource.hydrogen-sulfide-gas", "status": "active" },
+        { "numericId": 11, "stableKey": "resource.sulfur-dioxide-gas", "status": "active" },
+        { "numericId": 12, "stableKey": "resource.oxygen-gas", "status": "active" },
+        { "numericId": 13, "stableKey": "resource.nitrogen-gas", "status": "active" },
+        { "numericId": 14, "stableKey": "resource.ammonia-gas", "status": "active" },
+        { "numericId": 15, "stableKey": "resource.inorganic-sulfur", "status": "active" }
+        ,{ "numericId": 16, "stableKey": "resource.inorganic-phosphorus", "status": "active" }
+        ,{ "numericId": 17, "stableKey": "resource.organic-oxygen", "status": "active" }
+        ,{ "numericId": 18, "stableKey": "resource.calcium", "status": "active" }
+        ,{ "numericId": 19, "stableKey": "resource.iron", "status": "active" }
+        ,{ "numericId": 20, "stableKey": "resource.potassium", "status": "active" }
+        ,{ "numericId": 21, "stableKey": "resource.sodium", "status": "active" }
+        ,{ "numericId": 22, "stableKey": "resource.magnesium", "status": "active" }
+        ,{ "numericId": 23, "stableKey": "resource.zinc", "status": "active" }
+        ,{ "numericId": 24, "stableKey": "resource.copper", "status": "active" }
+        ,{ "numericId": 25, "stableKey": "resource.iodine", "status": "active" }
+        ,{ "numericId": 26, "stableKey": "resource.fluoride", "status": "active" }
+        ,{ "numericId": 27, "stableKey": "resource.selenium", "status": "active" }
+        ,{ "numericId": 28, "stableKey": "resource.manganese", "status": "active" }
+        ,{ "numericId": 29, "stableKey": "resource.molybdenum", "status": "active" }
+        ,{ "numericId": 30, "stableKey": "resource.nickel", "status": "active" }
+        ,{ "numericId": 31, "stableKey": "resource.cobalt", "status": "active" }
       ]
     },
     {
       "kind": "reaction",
       "entries": [
-        { "numericId": 1, "stableKey": "reaction.hydrogen-acetogenesis", "status": "active" }
+        { "numericId": 1, "stableKey": "reaction.hydrogen-acetogenesis", "status": "active" },
+        { "numericId": 2, "stableKey": "reaction.particulate-biomass-digestion", "status": "active" },
+        { "numericId": 3, "stableKey": "reaction.sulfide-anoxygenic-phototrophy", "status": "active" }
+        ,{ "numericId": 4, "stableKey": "reaction.founder-maintenance", "status": "active" }
+        ,{ "numericId": 5, "stableKey": "reaction.founder-biomass-assembly", "status": "active" }
+      ]
+    },
+    {
+      "kind": "trait",
+      "entries": [
+        { "numericId": 1, "stableKey": "trait.baseline-activity", "status": "active" },
+        { "numericId": 2, "stableKey": "trait.asexual-inheritance", "status": "active" },
+        { "numericId": 3, "stableKey": "trait.state-gated-activity", "status": "active" },
+        { "numericId": 4, "stableKey": "trait.resource-conservation", "status": "active" },
+        { "numericId": 5, "stableKey": "trait.hydrogen-acetogenesis", "status": "active" },
+        { "numericId": 6, "stableKey": "trait.sulfide-anoxygenic-phototrophy", "status": "active" },
+        { "numericId": 7, "stableKey": "trait.organic-resource-uptake", "status": "active" },
+        { "numericId": 8, "stableKey": "trait.metabolic-regulation", "status": "active" }
       ]
     },
     {
       "kind": "founderGenome",
       "entries": [
-        { "numericId": 1, "stableKey": "genome.hydrogen-founder", "status": "active" }
+        { "numericId": 1, "stableKey": "genome.hydrogen-founder", "status": "active" },
+        { "numericId": 2, "stableKey": "genome.sulfur-founder", "status": "active" }
+      ]
+    },
+    {
+      "kind": "founderAllocation",
+      "entries": [
+        { "numericId": 1, "stableKey": "founder-allocation.balanced", "status": "active" },
+        { "numericId": 2, "stableKey": "founder-allocation.high-throughput", "status": "active" },
+        { "numericId": 3, "stableKey": "founder-allocation.stress-tolerant", "status": "active" }
       ]
     },
     {

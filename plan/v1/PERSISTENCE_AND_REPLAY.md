@@ -27,6 +27,8 @@ A complete save must account for:
 - Pending accepted commands or proof that saves occur only at a boundary with none.
 - Historical aggregates and event retention needed by gameplay and the client.
 - Canonical notable-event facts, deduplication/hysteresis state, active consequence-review anchors, and any actor evolution goal or attention policy whose evaluation can cause an authoritative pause.
+- Exact organism journey landmarks, compacted routine-activity summaries, and the
+  organism-indexed archive manifest/high-water mark/digest needed to reopen older lives.
 - Completed materialized tile climate/resource-effective values, organism condition/capacity/activation values, and species/tile aggregates with their dependency generations and compiled hashes.
 
 The save contains the complete authoritative world even where a player lacks visibility. Loading or reconnecting must rebuild only that actor's authorized unknown/reduced/live projection. Replays restore knowledge state at checkpoints and reproduce visibility transitions from controlled-species occupancy; watching a replay must not retroactively fill hidden historical intervals unless a separate omniscient presentation mode is explicitly selected after the run.
@@ -34,6 +36,14 @@ The save contains the complete authoritative world even where a player lacks vis
 Gameplay-relevant derived values follow the materialize-once contract in [MATERIALIZED_DERIVED_STATE.md](MATERIALIZED_DERIVED_STATE.md). Histories, moving averages, remainders, next-action schedules, actor knowledge, and any other information-bearing recurrence input are primary and saved. Pure completed values such as used load/capacity, organism health/activation, current tile effective values, and current species aggregates remain stored runtime single sources but may be omitted from the baseline save and rebuilt through their sole owners before load validation/publication. A save may carry them as an all-or-nothing compatible acceleration cache. Ephemeral candidate lists, discarded behavior utilities, phase allocation/claim arenas, spatial indexes, and presentation-only derivations remain excluded. Last-observed behavior distributions remain persistent actor knowledge with their observation tick.
 
 Chronicle titles and prose, panel layout, visual pins, and private notes are presentation/profile data and are excluded from authoritative state hashes. Canonical notable-event facts and an automatic pause actually applied by an attention policy are historical records. Replaying the simulation regenerates the same facts; presentation may render them with different wording. Private annotations never become autonomous-evolution evidence.
+
+On-map activity filters, icon choices, stacking, and fade progress are likewise presentation
+state and are never saved with the authoritative world. Their source organism-journey facts
+are saved. A normal hosted save may pin already-durable cold journey segments by manifest,
+high-water mark, and digest instead of copying them into every checkpoint; the save cannot
+commit before every referenced segment is durable. A portable export must embed those
+segments or package them as checksum-bound sidecars. Load rejects a missing or mismatched
+segment and must not silently label a partial organism history complete.
 
 # Snapshot consistency
 
@@ -225,7 +235,9 @@ V1 may use local files, but persistence interfaces should not assume the client 
 - [x] `WorldStateHashV1` algorithm, logical scope/exclusions, canonical order, concrete v1 record/field tags, creation/first-tick golden vectors, debug/production cadence, and load-time recomputation.
 - [x] Exact base/mod-set/world-pack/profile/options/final-rule/world compatibility identity and fail-closed load boundary; see [RULE_PACK_AUTHORING_AND_COMPILATION.md](RULE_PACK_AUTHORING_AND_COMPILATION.md) and [MODDABILITY.md](MODDABILITY.md).
 - [x] V1 engine/save-schema policy: exact compatibility only, no implicit migrations; retained multi-version support remains future work.
-- [ ] Event/history retention and compression.
+- [x] First organism-journey retention split: exact lifetime landmarks, `168` hourly
+  bounded routine buckets, deterministic daily compaction, and cold indexed segments;
+  final byte/count budgets and codecs remain benchmark work.
 - [ ] Canonical-event versus presentation-preference storage boundary, including export/privacy behavior for private notes.
 - [x] Envelope corruption detection and stable typed error categories; client-facing wording remains with the save UI.
 - [x] Stage-A round-trip equality, canonical byte, altered-state rejection, and identical next-tick continuation tests; expand with each new primary-state slice.

@@ -1,6 +1,6 @@
 # Behavior and Resource-Pressure Regulation
 
-Status: first v1 general behavior, resource-pressure, persistence, reproduction-readiness, and DNA-extension contract; numerical population calibration pending
+Status: first v1 general behavior, resource-pressure, persistence, reproduction-readiness, and DNA-extension contract; `BEHAVIOR-200` implements the baseline/conservation slice, while numerical population calibration and target-driven states remain pending
 
 Sources: [organism mechanics](ORGANISMS.md), [simulation loop](SIMULATION_LOOP.md), [organism state and health](ORGANISM_STATE_AND_HEALTH.md), [spatial organisms and behavior](SPATIAL_ORGANISMS_AND_BEHAVIOR.md), [lifecycle and recycling](LIFECYCLE_AND_RECYCLING.md), [predation](PREDATION.md), [terrestrial adaptation](TERRESTRIAL_ADAPTATION.md), and [trait catalogue](TRAIT_CATALOGUE.md).
 
@@ -312,7 +312,7 @@ BehaviorDistribution:
     fraction_by_behavior_id[] # derived from the counts
 ```
 
-- Phase 10 derives an exact per-species/per-tile distribution by counting living organisms in canonical tile, species, and behavior order. Exact species-wide distributions are sums of the tile counts, not independently sampled estimates.
+- The v1 projection boundary derives an exact per-species/per-tile distribution by counting living organisms in canonical tile, species, and behavior order. Exact species-wide distributions are sums of the tile counts, not independently sampled estimates. This remains a one-way deterministic projection rather than duplicated authoritative simulation state; phase-10 caching is reserved for profiling evidence that proves it useful.
 - Counts are canonical; fractions are presentation values derived with named rounding and must sum to `1.0` after a deterministic largest-remainder correction when the population is nonzero.
 - These aggregates are one-way observations. They never enter `PressureObservation`, phase-9 candidate scoring, or any later organism decision. A future `QuorumResponse` must use its explicitly modeled organism-observable signal, not this server aggregate.
 - A live tile exposes its current per-species distributions. The controlled species may expose its exact current world-wide distribution because every tile it occupies is live to that controller.
@@ -369,6 +369,10 @@ The one-day memory, pressure formula, thresholds, dwell, utilities, and trait ef
 - [x] Current behavior distributions available per live tile and, where actor knowledge permits, as exact or explicitly observed species aggregates without feeding back into organism decisions.
 
 # Next calibration work
+
+The executable `BEHAVIOR-200` slice now provides persistent `Baseline`/`Conserving` state, typed target-compatible storage, completed-claim acquisition coverage, one-day fixed-point EMA memory, reserve/coverage hysteresis, critical entry, ordinary dwell, next-tick locomotion/reproduction suppression, save/hash continuation, and authorized organism/tile/species projection. Founders deliberately compile with `ResourceConservation = false`; the completed `EVO-200` foundation makes it attainable through `StateGatedActivity -> ResourceConservation`, with the expected compiled phenotype effect after speciation.
+
+Energy coverage remains neutral in this slice because mandatory maintenance has not yet entered the executable ledger. It must switch to actual credited-energy/mandatory-cost samples when that denominator lands; optional locomotion and reproduction remain excluded as specified above.
 
 1. Assign mutation prices, change complexities, and upkeep to `StateGatedActivity`, `ResourceConservation`, `ReproductionReadiness`, `StressAvoidance`, and `MetabolicBehaviorCoordination` using population fixtures.
 2. Test the `0.85/1.00/1.05` coverage and `0.20/0.50/0.65/0.80/0.85` reserve thresholds across founder, storage, complex-cell, predator, and terrestrial cohorts.

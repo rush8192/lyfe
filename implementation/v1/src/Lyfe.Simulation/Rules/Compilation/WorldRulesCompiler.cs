@@ -161,6 +161,8 @@ public static class WorldRulesCompiler
         ICollection<RuleDiagnostic> diagnostics)
     {
         var resourcesByKey = BuildResourceLookup(rulePack);
+        var gasEnvironment = CompileGasEnvironment(
+            rulePack, source.GasEnvironment, resourcesByKey, diagnostics);
         if (source.Generator is not null)
         {
             var generator = CompileGenerator(
@@ -168,7 +170,7 @@ public static class WorldRulesCompiler
                 source.Generator,
                 resourcesByKey,
                 diagnostics);
-            return diagnostics.Any(IsError) || generator is null
+            return diagnostics.Any(IsError) || generator is null || gasEnvironment is null
                 ? null
                 : new CompiledWorldProfile(
                     source.StableKey,
@@ -177,6 +179,7 @@ public static class WorldRulesCompiler
                     source.WrapX,
                     source.WrapY,
                     [],
+                    gasEnvironment,
                     generator);
         }
 
@@ -209,11 +212,39 @@ public static class WorldRulesCompiler
             }
 
             var tileIndex = checked((uint)(((long)tile.Y * source.Width) + tile.X));
+            var emissionSlot = -1;
+            if (tile.GasEmissionProfileKey is not null)
+            {
+                if (gasEnvironment is not null)
+                {
+                    for (var index = 0; index < gasEnvironment.EmissionProfiles.Length; index++)
+                    {
+                        if (string.Equals(
+                                gasEnvironment.EmissionProfiles[index].StableKey,
+                                tile.GasEmissionProfileKey,
+                                StringComparison.Ordinal))
+                        {
+                            emissionSlot = index;
+                            break;
+                        }
+                    }
+                }
+                if (emissionSlot < 0)
+                {
+                    AddError(
+                        "LYFE-COMPILE-WORLD-011",
+                        $"Tile ({tile.X}, {tile.Y}) references unknown gas emission profile '{tile.GasEmissionProfileKey}'.",
+                        diagnostics);
+                }
+            }
+
             tiles.Add(new CompiledTileProfile(
                 tileIndex,
                 tile.X,
                 tile.Y,
                 tile.ElevationMeters,
+                tile.BaselineVolcanismQ,
+                emissionSlot,
                 ImmutableArray.Create(quantities)));
         }
 
@@ -228,7 +259,92 @@ public static class WorldRulesCompiler
             source.Height,
             source.WrapX,
             source.WrapY,
-            tiles.ToImmutable());
+            tiles.ToImmutable(),
+            gasEnvironment!);
+    }
+
+    private static CompiledGasEnvironment? CompileGasEnvironment(
+        CompiledRulePack rulePack,
+        GasEnvironmentDefinition source,
+        Dictionary<string, ResourceHandle> resourcesByKey,
+        ICollection<RuleDiagnostic> diagnostics)
+    {
+        if (source.AquaticTerrestrialCompatibilityQ > 1_000_000 ||
+            source.MajorMountainCompatibilityQ > 1_000_000 ||
+            source.MajorMountainElevationMeters < 0)
+        {
+            AddError("LYFE-COMPILE-WORLD-012", "Gas compatibility values are outside their valid ranges.", diagnostics);
+        }
+
+        var gasKeys = new HashSet<string>(StringComparer.Ordinal);
+        var gases = ImmutableArray.CreateBuilder<CompiledGasTransport>();
+        foreach (var gas in source.Gases)
+        {
+            if (!gasKeys.Add(gas.ResourceKey) ||
+                !resourcesByKey.TryGetValue(gas.ResourceKey, out var resource))
+            {
+                AddError("LYFE-COMPILE-WORLD-013", $"Gas resource '{gas.ResourceKey}' is unknown or duplicated.", diagnostics);
+                continue;
+            }
+
+            if (gas.SinkRatePerMillionPerHour > 1_000_000 ||
+                gas.ExchangeRatePerMillionPerEdgeHour > 100_000 ||
+                gas.DiffuseSourceQuantityPerHour < 0 ||
+                !Enum.TryParse<GasAccessibilityClass>(gas.AccessibilityClass, true, out var accessibility) ||
+                rulePack.Resources[resource.DenseSlot].EnvironmentalPhase != EnvironmentalPhase.Gas)
+            {
+                AddError("LYFE-COMPILE-WORLD-014", $"Gas rule '{gas.ResourceKey}' has invalid rates or accessibility.", diagnostics);
+                continue;
+            }
+
+            gases.Add(new CompiledGasTransport(
+                resource,
+                accessibility,
+                gas.SinkRatePerMillionPerHour,
+                gas.ExchangeRatePerMillionPerEdgeHour,
+                gas.DiffuseSourceQuantityPerHour));
+        }
+
+        var compiledGases = gases.OrderBy(gas => gas.Resource.Id.Value).ToImmutableArray();
+        var gasSlots = compiledGases.Select((gas, slot) => (gas.Resource.Id, slot))
+            .ToDictionary(item => item.Id, item => item.slot);
+        var profileKeys = new HashSet<string>(StringComparer.Ordinal);
+        var profiles = ImmutableArray.CreateBuilder<CompiledGasEmissionProfile>();
+        foreach (var profile in source.EmissionProfiles)
+        {
+            if (string.IsNullOrWhiteSpace(profile.StableKey) || !profileKeys.Add(profile.StableKey))
+            {
+                AddError("LYFE-COMPILE-WORLD-015", $"Gas emission profile '{profile.StableKey}' is empty or duplicated.", diagnostics);
+                continue;
+            }
+
+            var quantities = new long[compiledGases.Length];
+            var emittedResources = new HashSet<ResourceId>();
+            foreach (var emission in profile.Emissions)
+            {
+                if (!resourcesByKey.TryGetValue(emission.ResourceKey, out var resource) ||
+                    !gasSlots.TryGetValue(resource.Id, out var gasSlot) ||
+                    emission.FullActivityQuantityPerHour < 0 ||
+                    !emittedResources.Add(resource.Id))
+                {
+                    AddError("LYFE-COMPILE-WORLD-016", $"Emission '{emission.ResourceKey}' in '{profile.StableKey}' is invalid or duplicated.", diagnostics);
+                    continue;
+                }
+
+                quantities[gasSlot] = emission.FullActivityQuantityPerHour;
+            }
+
+            profiles.Add(new CompiledGasEmissionProfile(profile.StableKey, ImmutableArray.Create(quantities)));
+        }
+
+        return diagnostics.Any(IsError)
+            ? null
+            : new CompiledGasEnvironment(
+                source.AquaticTerrestrialCompatibilityQ,
+                source.MajorMountainCompatibilityQ,
+                source.MajorMountainElevationMeters,
+                compiledGases,
+                profiles.ToImmutable());
     }
 
     private static CompiledWorldGenerator? CompileGenerator(

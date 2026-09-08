@@ -67,7 +67,9 @@ public static class RulePackSourceLoader
 
         var resources = new List<ResourceDefinition>();
         var reactions = new List<ReactionDefinition>();
+        var traits = new List<TraitDefinition>();
         var founderGenomes = new List<FounderGenomeDefinition>();
+        var founderAllocations = new List<FounderAllocationDefinition>();
         var scenarios = new List<ScenarioDefinition>();
         var identities = new List<SourcedIdentity>();
 
@@ -96,8 +98,14 @@ public static class RulePackSourceLoader
                 case ReactionDefinitionsDocument reactionDocument:
                     AddReactions(path, reactionDocument, reactions, identities, diagnostics);
                     break;
+                case TraitDefinitionsDocument traitDocument:
+                    AddTraits(path, traitDocument, traits, identities, diagnostics);
+                    break;
                 case FounderGenomeDefinitionsDocument genomeDocument:
                     AddFounderGenomes(path, genomeDocument, founderGenomes, identities, diagnostics);
+                    break;
+                case FounderAllocationDefinitionsDocument allocationDocument:
+                    AddFounderAllocations(path, allocationDocument, founderAllocations, identities, diagnostics);
                     break;
                 case ScenarioDefinitionsDocument scenarioDocument:
                     AddScenarios(path, scenarioDocument, scenarios, identities, diagnostics);
@@ -106,7 +114,7 @@ public static class RulePackSourceLoader
         }
 
         ValidateIdentities(identities, diagnostics);
-        ValidateReferences(resources, reactions, founderGenomes, scenarios, diagnostics);
+        ValidateReferences(resources, reactions, traits, founderGenomes, founderAllocations, scenarios, diagnostics);
         if (registryLock is not null)
         {
             ValidateRegistryLock(registryLock, identities, manifest.RegistryLockFile, diagnostics);
@@ -123,9 +131,49 @@ public static class RulePackSourceLoader
                 registryLock,
                 resources.ToArray(),
                 reactions.ToArray(),
+                traits.ToArray(),
                 founderGenomes.ToArray(),
+                founderAllocations.ToArray(),
                 scenarios.ToArray()),
             RuleDiagnosticOrdering.Sort(diagnostics));
+    }
+
+    private static void AddTraits(
+        string path,
+        TraitDefinitionsDocument document,
+        List<TraitDefinition> traits,
+        ICollection<SourcedIdentity> identities,
+        ICollection<RuleDiagnostic> diagnostics)
+    {
+        if (document.Traits is null)
+        {
+            AddError("LYFE-CONTENT-DOCUMENT-005", "traits must be an array.", path, diagnostics);
+            return;
+        }
+
+        foreach (var trait in document.Traits)
+        {
+            traits.Add(trait);
+            identities.Add(new SourcedIdentity("trait", trait.NumericId, trait.StableKey, path));
+            ValidateStableKey(trait.StableKey, "trait", path, diagnostics);
+            if (string.IsNullOrWhiteSpace(trait.DisplayName) ||
+                !StableKey.IsValid(trait.Family) ||
+                trait.MutationPointCost < 0 ||
+                trait.BaseEvolutionWeightQ == 0 ||
+                trait.MutationIncomeMultiplierQ == 0 ||
+                trait.PrerequisiteTraitKeys is null ||
+                trait.IncompatibleTraitKeys is null ||
+                trait.PressureTags is null ||
+                (trait.Selectable && (trait.MutationPointCost == 0 || trait.ChangeComplexity == 0)) ||
+                (!trait.Selectable && (trait.MutationPointCost != 0 || trait.ChangeComplexity != 0)))
+            {
+                AddError(
+                    "LYFE-CONTENT-TRAIT-001",
+                    $"Trait '{trait.StableKey}' has invalid local evolution fields.",
+                    path,
+                    diagnostics);
+            }
+        }
     }
 
     private static void ValidateManifest(
@@ -189,7 +237,8 @@ public static class RulePackSourceLoader
             }
 
             if (resource.BiologicalForm is not ("organic" or "inorganic" or "boundary") ||
-                resource.EnvironmentalPhase is not ("gas" or "dissolved" or "boundary"))
+                resource.EnvironmentalPhase is not
+                    ("gas" or "dissolved" or "boundary" or "particulate"))
             {
                 AddError(
                     "LYFE-CONTENT-RESOURCE-002",
@@ -275,11 +324,47 @@ public static class RulePackSourceLoader
             ValidateStableKey(genome.StableKey, "founder genome", path, diagnostics);
             if (string.IsNullOrWhiteSpace(genome.DisplayName) ||
                 genome.EnabledReactionKeys is null ||
-                genome.EnabledReactionKeys.Length == 0)
+                genome.EnabledReactionKeys.Length == 0 ||
+                genome.Physiology?.OpeningMetabolism is null)
             {
                 AddError(
                     "LYFE-CONTENT-GENOME-001",
                     $"Founder genome '{genome.StableKey}' must enable at least one reaction.",
+                    path,
+                    diagnostics);
+            }
+        }
+    }
+
+    private static void AddFounderAllocations(
+        string path,
+        FounderAllocationDefinitionsDocument document,
+        List<FounderAllocationDefinition> founderAllocations,
+        ICollection<SourcedIdentity> identities,
+        ICollection<RuleDiagnostic> diagnostics)
+    {
+        if (document.FounderAllocations is null)
+        {
+            AddError("LYFE-CONTENT-DOCUMENT-006", "founderAllocations must be an array.", path, diagnostics);
+            return;
+        }
+
+        foreach (var allocation in document.FounderAllocations)
+        {
+            founderAllocations.Add(allocation);
+            identities.Add(new SourcedIdentity(
+                "founderAllocation",
+                allocation.NumericId,
+                allocation.StableKey,
+                path));
+            ValidateStableKey(allocation.StableKey, "founder allocation", path, diagnostics);
+            if (string.IsNullOrWhiteSpace(allocation.DisplayName) ||
+                allocation.CaptureEfficiencyMultiplierQ is < 250_000 or > 2_000_000 ||
+                allocation.ChemicalToleranceMultiplierQ is < 250_000 or > 2_000_000)
+            {
+                AddError(
+                    "LYFE-CONTENT-ALLOCATION-001",
+                    $"Founder allocation '{allocation.StableKey}' has invalid local fields.",
                     path,
                     diagnostics);
             }
@@ -307,11 +392,14 @@ public static class RulePackSourceLoader
             if (string.IsNullOrWhiteSpace(scenario.DisplayName) ||
                 scenario.TickDurationHours == 0 ||
                 scenario.FounderGenomeKeys is null ||
-                scenario.FounderGenomeKeys.Length == 0)
+                scenario.FounderGenomeKeys.Length == 0 ||
+                scenario.FounderAllocationKeys is null ||
+                scenario.FounderAllocationKeys.Length == 0 ||
+                string.IsNullOrWhiteSpace(scenario.DefaultCompetitorFounderAllocationKey))
             {
                 AddError(
                     "LYFE-CONTENT-SCENARIO-001",
-                    $"Scenario '{scenario.StableKey}' requires a duration and at least one founder genome.",
+                    $"Scenario '{scenario.StableKey}' requires a duration, founders, and founder allocations.",
                     path,
                     diagnostics);
             }
@@ -363,7 +451,9 @@ public static class RulePackSourceLoader
     private static void ValidateReferences(
         IReadOnlyCollection<ResourceDefinition> resources,
         IReadOnlyCollection<ReactionDefinition> reactions,
+        IReadOnlyCollection<TraitDefinition> traits,
         IReadOnlyCollection<FounderGenomeDefinition> founderGenomes,
+        IReadOnlyCollection<FounderAllocationDefinition> founderAllocations,
         IReadOnlyCollection<ScenarioDefinition> scenarios,
         ICollection<RuleDiagnostic> diagnostics)
     {
@@ -385,6 +475,23 @@ public static class RulePackSourceLoader
         }
 
         var reactionKeys = reactions.Select(reaction => reaction.StableKey).ToHashSet(StringComparer.Ordinal);
+        var traitKeys = traits.Select(trait => trait.StableKey).ToHashSet(StringComparer.Ordinal);
+        foreach (var trait in traits)
+        {
+            foreach (var traitKey in (trait.PrerequisiteTraitKeys ?? [])
+                         .Concat(trait.IncompatibleTraitKeys ?? []))
+            {
+                if (!traitKeys.Contains(traitKey) || traitKey == trait.StableKey)
+                {
+                    AddError(
+                        "LYFE-CONTENT-REFERENCE-004",
+                        $"Trait '{trait.StableKey}' references an unknown or self trait '{traitKey}'.",
+                        ManifestFile,
+                        diagnostics);
+                }
+            }
+        }
+
         foreach (var genome in founderGenomes)
         {
             foreach (var reactionKey in genome.EnabledReactionKeys ?? [])
@@ -398,9 +505,24 @@ public static class RulePackSourceLoader
                         diagnostics);
                 }
             }
+
+            foreach (var traitKey in genome.FoundationTraitKeys ?? [])
+            {
+                if (!traitKeys.Contains(traitKey))
+                {
+                    AddError(
+                        "LYFE-CONTENT-REFERENCE-005",
+                        $"Founder genome '{genome.StableKey}' references unknown trait '{traitKey}'.",
+                        ManifestFile,
+                        diagnostics);
+                }
+            }
         }
 
         var genomeKeys = founderGenomes.Select(genome => genome.StableKey).ToHashSet(StringComparer.Ordinal);
+        var allocationKeys = founderAllocations
+            .Select(allocation => allocation.StableKey)
+            .ToHashSet(StringComparer.Ordinal);
         foreach (var scenario in scenarios)
         {
             foreach (var genomeKey in scenario.FounderGenomeKeys ?? [])
@@ -413,6 +535,27 @@ public static class RulePackSourceLoader
                         ManifestFile,
                         diagnostics);
                 }
+            }
+
+            foreach (var allocationKey in scenario.FounderAllocationKeys ?? [])
+            {
+                if (!allocationKeys.Contains(allocationKey))
+                {
+                    AddError(
+                        "LYFE-CONTENT-REFERENCE-006",
+                        $"Scenario '{scenario.StableKey}' references unknown founder allocation '{allocationKey}'.",
+                        ManifestFile,
+                        diagnostics);
+                }
+            }
+
+            if (!allocationKeys.Contains(scenario.DefaultCompetitorFounderAllocationKey))
+            {
+                AddError(
+                    "LYFE-CONTENT-REFERENCE-007",
+                    $"Scenario '{scenario.StableKey}' references unknown default competitor founder allocation '{scenario.DefaultCompetitorFounderAllocationKey}'.",
+                    ManifestFile,
+                    diagnostics);
             }
         }
     }
@@ -434,7 +577,7 @@ public static class RulePackSourceLoader
         }
 
         var knownKinds = new HashSet<string>(
-            ["resource", "reaction", "founderGenome", "scenario"],
+            ["resource", "reaction", "founderGenome", "founderAllocation", "scenario", "trait"],
             StringComparer.Ordinal);
         var seenKinds = new HashSet<string>(StringComparer.Ordinal);
         var identityLookup = new Dictionary<(string Kind, uint NumericId), SourcedIdentity>();

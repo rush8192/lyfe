@@ -8,6 +8,25 @@ Sources: [organism mechanics](ORGANISMS.md), [simulation loop](SIMULATION_LOOP.m
 
 Define what tile-local position means in v1, how organisms and remains become eligible for direct interaction, how movement crosses a tile boundary, and which spatial observations may inform next-tick behavior. The contract must remain deterministic and performant for tens of thousands of individually simulated and displayed organisms without pretending that well-mixed tile resources already form local gradients.
 
+# SPACE-200 implementation boundary
+
+The first executable slice implements the normalized coordinates already present in
+organism/remnant state, compiled cube-root body scale, the fixed antipodal Brownian
+tables, phase-4 movement, one-edge migration, reflected offspring placement, and a
+rebuildable `16 × 16` same-tile index with exact distance post-filtering. Organism and
+remnant radius are published over the client protocol but remain derived from
+conserved structure plus the compiled spatial profile, rather than becoming an
+independently writable resource.
+
+The founder profile has no active locomotion or terrestrial permission, so the
+executable opening currently exercises passive aquatic movement. The movement phase
+already clamps and charges a configured persistent active vector, but concrete
+evolved locomotion profiles arrive with their trait slice. Destination compatibility
+is conservatively `1.0` after hard medium/admission gates until recurring generated
+climate state and the complete habitat-response evaluator are hosted. Predation and
+the second behavior-observation index remain later consumers of the same exact query
+contract; scavenging is the first indexed interaction.
+
 # V1 spatial boundary
 
 Within-tile coordinates have three authoritative uses in v1:

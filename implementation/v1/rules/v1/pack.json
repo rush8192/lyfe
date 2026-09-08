@@ -1,14 +1,16 @@
 {
   "packId": "lyfe.official.v1-foundation",
-  "version": "0.1.0",
+  "version": "0.9.0",
   "engineRuleApiVersion": 1,
-  "ruleCompilerVersion": 1,
-  "mechanicsHashSchemaVersion": 1,
+  "ruleCompilerVersion": 7,
+  "mechanicsHashSchemaVersion": 7,
   "registryLockFile": "generated/rules.lock.json",
   "includedFiles": [
     "resources/resources.json",
     "reactions/reactions.json",
+    "traits/evolution-traits.json",
     "traits/founder-genomes.json",
+    "founders/founder-allocations.json",
     "scenarios/foundation.json"
   ],
   "requiredFixtureIds": []

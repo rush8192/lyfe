@@ -1,12 +1,32 @@
 # Lifecycle and Recycling
 
-Status: first complete v1 lifecycle rule pack, organic-niche calibration, paired-opening multi-key run, and terrestrial cohort fixture; server-exact recycling/digestion ecosystems and later strategies remain pending
+Status: lifecycle design complete; `LIFE-200` executable vertical slice implemented; advanced phases, complete mineralization cohorts, and later strategy content remain pending
 
 Sources: [organism mechanics](ORGANISMS.md), [simulation loop](SIMULATION_LOOP.md), [resource model](RESOURCE_MODEL.md), [organism state and health](ORGANISM_STATE_AND_HEALTH.md), [health calibration](ORGANISM_HEALTH_CALIBRATION.md), [general behavior and resource pressure](BEHAVIOR_AND_RESOURCE_PRESSURE.md), [internal storage](INTERNAL_STORAGE_AND_ALLOCATION.md), [energy storage](ENERGY_STORAGE.md), [spatial contract](SPATIAL_ORGANISMS_AND_BEHAVIOR.md), and [spatial calibration](SPATIAL_CALIBRATION.md).
 
 # Purpose
 
 Define the complete v1 path from organism growth through reproduction, aging, death, remains, digestion, and return of matter to tile reservoirs. The subsystem must make population turnover legible and interesting while preserving the resource ledger: reproduction moves existing matter, death moves every remaining organism account once, and digestion or decay transforms matter through explicit recipes rather than creating or deleting it implicitly.
+
+## LIFE-200 implementation boundary
+
+The first executable slice now compiles primitive reproduction and recycling profiles
+from rule content; persists and hashes lifecycle schedules, ingestion buffers, and
+stable-ID remnants; commits intrinsic deaths into one remnant; executes deterministic
+near-even fission with keyed cooldown jitter; applies fixed-point remnant decay; and
+supports range-local scavenging plus the exact particulate-digestion recipe.
+
+Local remnant discovery uses the `SPACE-200` rebuildable per-tile bin index with an
+exact radius-aware distance post-filter. An exhaustive scalar query remains its test
+oracle; neither path relaxes the no-cross-tile rule. The official
+founder does not begin with simple scavenging or particulate digestion. The reaction
+and runtime path exist for later evolved phenotypes and are exercised by an explicit
+lifecycle fixture.
+
+This slice returns reserve carriers and structural decay products to named organic
+tile pools. The later multi-cohort decay catalogue, micronutrient release, and slow
+organic-to-inorganic mineralization described below remain rule/content work rather
+than hidden behavior in the engine.
 
 # Scope and ownership
 

@@ -1,6 +1,6 @@
 # V1 Gameplay Flows
 
-Status: v1 setup, control, visibility, first Survival opening, and player-loop contract specified; deadline, complete command catalogue, opening-choice calibration, and sandbox acceptance scenario remain
+Status: GAME-200 setup, control, and loss state machines implemented; visibility knowledge, deadline, complete command catalogue, opening-choice calibration, and UI acceptance remain
 
 Sources: [GAMEPLAY vision](../../vision/GAMEPLAY.md), [INTERFACE vision](../../vision/INTERFACE.md), and [VISION](../../vision/VISION.md).
 
@@ -9,6 +9,24 @@ Sources: [GAMEPLAY vision](../../vision/GAMEPLAY.md), [INTERFACE vision](../../v
 Turn free sandbox and survival into explicit setup, play, loss, completion, and command flows. Competitive multiplayer remains future scope.
 
 The nested observe-diagnose-evolve-review loop, attention tools, evolution-goal semantics, consequence review, factual chronicle, and opening-choice quality gate are defined in [PLAYER_LOOP_AND_NARRATIVE.md](PLAYER_LOOP_AND_NARRATIVE.md).
+
+# Executable GAME-200 foundation
+
+The world runner now persists one authoritative gameplay record beside biological
+state. Setup creates one controlled root in Free Sandbox or two independent,
+edge-sharing roots in Survival. The Survival competitor is autonomous, while every
+player speciation follows the descendant and makes the ancestor autonomous. Free
+Sandbox can transfer control to any living species and independently lock a species
+against mutation without stopping its mutation-point accumulation.
+
+Finalization evaluates mode-specific early loss after all biological phases:
+Survival loses when the controlled species reaches zero population, even if its
+ancestor or competitor survives; Free Sandbox loses only when every species is
+extinct. A terminal run rejects further ticks and speciation. Mode, roots, control,
+locks, optimistic gameplay revision, loss reason, and ending tick are canonical
+change/hash/save/projection/protocol state. The final-date success rule remains
+`RELEASE-400`, and `OPENING-200` will replace the current shared foundation phenotype
+with the actual hydrogen/sulfide starting pair and setup packages.
 
 # Challenge arc and balance charter
 

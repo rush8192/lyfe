@@ -10,6 +10,8 @@ public enum StateEntityKind : byte
     Genome = 2,
     Species = 3,
     Organism = 4,
+    Remnant = 5,
+    Gameplay = 6,
 }
 
 public enum LogicalFieldGroup : byte
@@ -20,6 +22,14 @@ public enum LogicalFieldGroup : byte
     OrganismLifecycle = 4,
     OrganismStructure = 5,
     OrganismReserve = 6,
+    OrganismCondition = 7,
+    RemnantContents = 8,
+    OrganismIngestedMatter = 9,
+    OrganismBehavior = 10,
+    SpeciesEvolution = 11,
+    OrganismSpecies = 12,
+    Gameplay = 13,
+    OrganismMicronutrients = 14,
 }
 
 internal enum WorldStoreKind : byte
@@ -29,6 +39,8 @@ internal enum WorldStoreKind : byte
     Genomes = 3,
     Species = 4,
     Organisms = 5,
+    Remnants = 6,
+    Gameplay = 7,
 }
 
 public readonly record struct StateEntityReference(StateEntityKind Kind, ulong Value)
@@ -40,6 +52,10 @@ public readonly record struct StateEntityReference(StateEntityKind Kind, ulong V
     public static StateEntityReference From(SpeciesId id) => new(StateEntityKind.Species, id.Value);
 
     public static StateEntityReference From(OrganismId id) => new(StateEntityKind.Organism, id.Value);
+
+    public static StateEntityReference From(RemnantId id) => new(StateEntityKind.Remnant, id.Value);
+
+    public static StateEntityReference Gameplay() => new(StateEntityKind.Gameplay, 1);
 }
 
 public readonly record struct DirtyStateEntity(

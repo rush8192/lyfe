@@ -8,7 +8,7 @@ namespace Lyfe.Simulation.Publication;
 public static class WorldPersistenceContract
 {
     public const string EngineSimulationVersion = "lyfe-simulation-v1";
-    public const uint WorldStateHashSchemaVersion = 1;
+    public const uint WorldStateHashSchemaVersion = 9;
 }
 
 public sealed record WorldPersistenceMetadata(

@@ -1,12 +1,35 @@
 # DNA, Mutation, Speciation, and Lineage
 
-Status: first v1 mutation-income, pricing-scale, speciation, autonomous-evolution, material-opportunity scoring, and lineage rule pack; catalogue-wide per-node pricing and broader population validation remain
+Status: EVO-200 foundation implemented; catalogue-wide per-node effects, autonomous intent execution, and broader population validation remain
 
 Sources: [ORGANISMS vision](../../vision/ORGANISMS.md), [GAMEPLAY vision](../../vision/GAMEPLAY.md), [INTERFACE vision](../../vision/INTERFACE.md), and [behavior and resource pressure](BEHAVIOR_AND_RESOURCE_PRESSURE.md).
 
 # Purpose
 
 Define species-level DNA, trait relationships, mutation-point generation, human and autonomous speciation, and the persistent tree of life.
+
+## Executable foundation
+
+`EVO-200` implements the economy and transaction boundary with the first narrow
+behavior-regulation branch. Rule compilation produces an immutable, fingerprinted
+effective-population table and strict trait DAG. Phase 10 stores species average
+health and pressure, credits fixed-point mutation income with a carried `UInt128`
+remainder, and treats controlled and autonomous authorities identically.
+
+Speciation preview/apply validates authority, optimistic evolution revision and
+genome hash, cooldown, prerequisite/incompatibility closure, price, change
+complexity, and selected occupied tiles. Commit uses keyed stable ranks and the
+specified `50/20/8/3%` per-tile founder fractions, transfers organisms without
+changing physical balances, duplicates unused post-price mutation state, interns a
+fully recompiled phenotype, and records lineage plus an immutable founder digest.
+The full continuation state is covered by save schema 10 and `WorldStateHashV9`;
+controlled actor projections expose the corresponding evolution state.
+
+The executable autonomous component currently scores affordable,
+prerequisite-closed candidates against accumulated named pressure. `GAME-200` now
+owns mode-specific control inheritance and mutation locks. Persistent autonomous
+goals, daily proposal scheduling, and actual autonomous commits remain opening work
+alongside opportunity-bearing biological traits.
 
 # Species DNA
 
@@ -476,11 +499,11 @@ The terrestrial package adds `WetSurfaceColonization 120/2` and `IntermittentDes
 - [x] Lineage event/state representation and typed proposal-validation errors.
 - [ ] Catalogue-wide exact per-node prices/effects; later placeholders remain non-selectable.
 - [ ] Population validation of income cadence, branching rate, autonomous diversity, and species-count growth.
-- [ ] Deterministic effective-population table generator and golden hash.
-- [ ] Executable deterministic founder-selection and autonomous-scoring fixtures; the organic authoring landmarks are fixed.
+- [x] Deterministic effective-population table generator and golden hash.
+- [x] Executable deterministic founder-selection and autonomous-scoring fixtures for the foundation trait branch; the organic authoring landmarks remain future content.
 - [ ] Trait prerequisite/incompatibility property tests.
 - [ ] Family/effect ownership validation and cross-family effect attribution tests.
 - [ ] Capacity-only trait tests proving that energy and nutrient balances are unchanged at speciation.
 - [ ] Reaction classification tests preventing external capture, internal catabolism, and direct capacity effects from bypassing ledger validation.
-- [ ] Controlled/uncontrolled income equivalence tests.
+- [x] Controlled/uncontrolled income equivalence tests.
 - [ ] Save/load and worker-count equivalence for balances, remainders, pressure state, intent, cooldown, lineage events, and selection digests.

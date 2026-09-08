@@ -16,7 +16,7 @@ public static class WorldSaveService
         ArgumentNullException.ThrowIfNull(runner);
         var detached = runner.CapturePersistenceSnapshot();
         var metadata = SaveEnvelopeMetadataFactory.Create(detached.Metadata);
-        var logicalPayload = WorldPayloadCodecV1.Encode(detached.State);
+        var logicalPayload = WorldPayloadCodec.Encode(detached.State);
         var envelope = SaveEnvelopeCodec.Encode(metadata, logicalPayload);
         await AtomicSaveFile.WriteAsync(
             destinationPath,
@@ -45,7 +45,7 @@ public static class WorldSaveService
         _ = SaveEnvelopeCodec.ReadDescriptor(stream, expectedCompatibility);
         stream.Position = 0;
         var decoded = SaveEnvelopeCodec.Decode(stream, expectedCompatibility);
-        var state = WorldPayloadCodecV1.Decode(decoded.LogicalPayload);
+        var state = WorldPayloadCodec.Decode(decoded.LogicalPayload);
         return WorldRunner.Restore(
             rules,
             new WorldPersistenceSnapshot(

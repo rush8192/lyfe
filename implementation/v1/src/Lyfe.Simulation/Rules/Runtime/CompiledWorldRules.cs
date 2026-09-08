@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using Lyfe.Simulation.World.Generation;
 
 namespace Lyfe.Simulation.Rules.Runtime;
 
@@ -15,7 +16,34 @@ public sealed record CompiledTileProfile(
     int X,
     int Y,
     int ElevationMeters,
+    uint BaselineVolcanismQ,
+    int GasEmissionProfileSlot,
     ImmutableArray<long> ResourceQuantitiesByDenseSlot);
+
+public enum GasAccessibilityClass : byte
+{
+    VentAccessible = 1,
+    AtmosphericDepthLimited = 2,
+    MixedOrigin = 3,
+}
+
+public sealed record CompiledGasTransport(
+    ResourceHandle Resource,
+    GasAccessibilityClass AccessibilityClass,
+    uint SinkRatePerMillionPerHour,
+    uint ExchangeRatePerMillionPerEdgeHour,
+    long DiffuseSourceQuantityPerHour);
+
+public sealed record CompiledGasEmissionProfile(
+    string StableKey,
+    ImmutableArray<long> FullActivityQuantitiesPerHourByGasSlot);
+
+public sealed record CompiledGasEnvironment(
+    uint AquaticTerrestrialCompatibilityQ,
+    uint MajorMountainCompatibilityQ,
+    int MajorMountainElevationMeters,
+    ImmutableArray<CompiledGasTransport> Gases,
+    ImmutableArray<CompiledGasEmissionProfile> EmissionProfiles);
 
 public sealed record CompiledWorldProfile(
     string WorldProfileKey,
@@ -24,6 +52,7 @@ public sealed record CompiledWorldProfile(
     bool WrapX,
     bool WrapY,
     ImmutableArray<CompiledTileProfile> Tiles,
+    CompiledGasEnvironment GasEnvironment,
     CompiledWorldGenerator? Generator = null);
 
 public sealed record CompiledWorldGenerator(
@@ -112,13 +141,15 @@ public sealed class CompiledWorldRules
         ScenarioHandle scenario,
         WorldRulesIdentity identity,
         CompiledWorldProfile worldProfile,
-        uint tickDurationHours)
+        uint tickDurationHours,
+        GeneratedWorldMap? generatedWorld = null)
     {
         RulePack = rulePack;
         Scenario = scenario;
         Identity = identity;
         WorldProfile = worldProfile;
         TickDurationHours = tickDurationHours;
+        GeneratedWorld = generatedWorld;
     }
 
     public CompiledRulePack RulePack { get; }
@@ -130,4 +161,6 @@ public sealed class CompiledWorldRules
     public CompiledWorldProfile WorldProfile { get; }
 
     public uint TickDurationHours { get; }
+
+    public GeneratedWorldMap? GeneratedWorld { get; }
 }

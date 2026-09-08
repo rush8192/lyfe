@@ -273,7 +273,7 @@ Every non-primary structure declares an owner, dependencies, and lifetime. Gamep
 | Spatial bins | Named interaction/behavior phase | Rebuild after movement/lifecycle changes |
 | Organism health/capacity/effective values | Stored named materialization | Owning builder updates from dirty reserve, structure, age, environment, lifecycle, or compiled phenotype before consumers |
 | Tile current/effective values | Stored completed-tick materialization | Climate/environment owner updates once per affected tile/barrier |
-| Tile/species behavior distributions | Stored completed-tick aggregate | Behavior/species owner updates once after behavior/membership changes |
+| Tile/species behavior distributions | Deterministic completed-boundary projection | Server projector counts canonical organism behavior state; add a phase-10 cache only if profiling justifies duplicate materialization |
 | Species population/average health | Stored completed-tick aggregate | Species owner reduces once after lifecycle and health materialization |
 | Protocol projection | Per stream revision | Server-only from change journal and immutable publication values |
 | Save locator/index validation | Load boundary | Rebuild/verify from canonical rows |

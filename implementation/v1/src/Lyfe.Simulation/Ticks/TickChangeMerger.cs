@@ -291,11 +291,19 @@ internal static class TickChangeMerger
         var expectedKind = dirty.FieldGroup switch
         {
             LogicalFieldGroup.TileResources => StateEntityKind.Tile,
-            LogicalFieldGroup.SpeciesPopulation => StateEntityKind.Species,
+            LogicalFieldGroup.SpeciesPopulation or
+            LogicalFieldGroup.SpeciesEvolution => StateEntityKind.Species,
             LogicalFieldGroup.OrganismPosition or
             LogicalFieldGroup.OrganismLifecycle or
             LogicalFieldGroup.OrganismStructure or
-            LogicalFieldGroup.OrganismReserve => StateEntityKind.Organism,
+            LogicalFieldGroup.OrganismReserve or
+            LogicalFieldGroup.OrganismCondition or
+            LogicalFieldGroup.OrganismIngestedMatter or
+            LogicalFieldGroup.OrganismBehavior or
+            LogicalFieldGroup.OrganismMicronutrients or
+            LogicalFieldGroup.OrganismSpecies => StateEntityKind.Organism,
+            LogicalFieldGroup.RemnantContents => StateEntityKind.Remnant,
+            LogicalFieldGroup.Gameplay => StateEntityKind.Gameplay,
             _ => throw new InvalidOperationException("A dirty mark has an unknown logical field group."),
         };
         if (dirty.Entity.Kind != expectedKind)

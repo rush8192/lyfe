@@ -35,7 +35,9 @@ public readonly record struct WorldStateGenerationStamp(
     ulong TileResources,
     ulong Genomes,
     ulong Species,
-    ulong Organisms);
+    ulong Organisms,
+    ulong Remnants,
+    ulong Gameplay);
 
 public sealed record PhaseViewStamp(
     ulong TargetWorldRevision,

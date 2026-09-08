@@ -1,4 +1,6 @@
 using System.Collections.Immutable;
+using Lyfe.Simulation.Physiology;
+using Lyfe.Simulation.Rules.Runtime;
 using Lyfe.Simulation.State;
 using Lyfe.Simulation.State.Changes;
 using Lyfe.Simulation.State.Identity;
@@ -16,16 +18,16 @@ internal sealed class ScalarTickPipeline
         [
             new EmptyTickPhase(TickPhase.CommandAdmission, PhaseExecutionClass.OwnerOnly),
             new EmptyTickPhase(TickPhase.CalendarAndConditions, PhaseExecutionClass.IndependentMap),
-            new EmptyTickPhase(TickPhase.EnvironmentalLedger, PhaseExecutionClass.MapThenGroupedResolve),
+            new EnvironmentalLedgerPhase(),
             new IntrinsicAgePhase(),
-            new EmptyTickPhase(TickPhase.Movement, PhaseExecutionClass.IndependentMap),
+            new SpatialMovementPhase(),
             new ExternalCaptureIntentPhase(),
             new ExternalCaptureResolutionPhase(),
-            new EmptyTickPhase(TickPhase.InternalMetabolism, PhaseExecutionClass.MapThenGroupedResolve),
-            new EmptyTickPhase(TickPhase.LifecycleAndReproduction, PhaseExecutionClass.IndependentMap),
-            new EmptyTickPhase(TickPhase.BehaviorUpdate, PhaseExecutionClass.IndependentMap),
-            new EmptyTickPhase(TickPhase.SpeciesSystems, PhaseExecutionClass.ExactAggregateReduce),
-            new EmptyTickPhase(TickPhase.Finalization, PhaseExecutionClass.OwnerOnly),
+            new InternalMetabolismPhase(),
+            new LifecycleReproductionPhase(),
+            new BehaviorUpdatePhase(),
+            new SpeciesSystemsPhase(),
+            new GameplayOutcomePhase(),
         ];
 
         var expected = Enum.GetValues<TickPhase>();
@@ -51,6 +53,7 @@ internal sealed class ScalarTickPipeline
                 TickPhase.Finalization,
                 TickFailureStage.FinalValidation);
             world.ValidateInvariants();
+            world.ValidateGameplayOutcomeInvariants();
 
             var phaseJournals = journals.MoveToImmutable();
             var mergedChanges = TickChangeMerger.Merge(context.Tick, phaseJournals);
@@ -110,19 +113,28 @@ internal sealed class EmptyTickPhase(
 
 internal sealed record IntrinsicAgeView(
     PhaseViewStamp Stamp,
-    ImmutableArray<OrganismSnapshot> Organisms) : IPhaseReadView
+    ImmutableArray<IntrinsicOrganismCandidate> Organisms) : IPhaseReadView
 {
     public int WorkCount => Organisms.Length;
 }
 
+internal readonly record struct IntrinsicOrganismCandidate(
+    OrganismSnapshot Organism,
+    CompiledOrganismPhysiology Physiology,
+    OrganismEnvironmentInput Environment);
+
 internal readonly record struct AgeEvaluation(
     OrganismId OrganismId,
-    ulong ExpectedAgeHours);
+    ulong ExpectedAgeHours,
+    IntrinsicDeathEvidence DeathEvidence,
+    MaterializedOrganismCondition Condition);
 
 internal readonly record struct AgeMutation(
     OrganismId OrganismId,
     ulong ExpectedAgeHours,
-    ulong NextAgeHours);
+    ulong NextAgeHours,
+    MaterializedOrganismCondition Condition,
+    IntrinsicDeathEvidence DeathEvidence);
 
 internal sealed class IntrinsicAgePhase :
     ScalarTickPhase<IntrinsicAgeView, AgeEvaluation, ImmutableArray<AgeMutation>>
@@ -138,10 +150,17 @@ internal sealed class IntrinsicAgePhase :
         TickExecutionContext context)
     {
         var organismIds = world.GetOrganismIdsInCanonicalOrder();
-        var organisms = ImmutableArray.CreateBuilder<OrganismSnapshot>(organismIds.Length);
+        var organisms = ImmutableArray.CreateBuilder<IntrinsicOrganismCandidate>(organismIds.Length);
         foreach (var organismId in organismIds)
         {
-            organisms.Add(world.GetOrganism(organismId));
+            var organism = world.GetOrganism(organismId);
+            organisms.Add(new IntrinsicOrganismCandidate(
+                organism,
+                world.GetCompiledPhenotype(organism.SpeciesId).Physiology,
+                world.GetOrganismEnvironment(
+                    organism.TileId,
+                    checked((context.Tick - 1) * context.TickDurationHours +
+                        context.TickDurationHours / 2))));
         }
 
         return new IntrinsicAgeView(CreateStamp(world, context), organisms.MoveToImmutable());
@@ -153,12 +172,39 @@ internal sealed class IntrinsicAgePhase :
     {
         var outcomes = ImmutableArray.CreateBuilder<PhaseOutcome<AgeEvaluation>>(
             view.Organisms.Length);
-        foreach (var organism in view.Organisms)
+        foreach (var candidate in view.Organisms)
         {
+            var organism = candidate.Organism;
+            var nextAge = ulong.MaxValue - organism.BiologicalAgeHours < context.TickDurationHours
+                ? ulong.MaxValue
+                : organism.BiologicalAgeHours + context.TickDurationHours;
+            var evidence = IntrinsicDeathEvaluator.Evaluate(
+                organism.Id,
+                context.Tick,
+                candidate.Physiology,
+                new OrganismConditionInput(
+                    organism.StructuralMatterQ,
+                    organism.ChargedReserveQ,
+                    nextAge),
+                candidate.Environment,
+                context.Random);
+            var condition = OrganismConditionBuilder.Build(
+                candidate.Physiology,
+                new OrganismConditionInput(
+                    organism.StructuralMatterQ,
+                    organism.ChargedReserveQ,
+                    nextAge),
+                candidate.Environment,
+                context.Tick,
+                ConditionSnapshotKind.IntrinsicStart);
             outcomes.Add(new PhaseOutcome<AgeEvaluation>(
                 view.Stamp,
                 new OutcomeKey(Phase, AgeOutcomeCategory, 0, organism.Id.Value, 0, 0),
-                new AgeEvaluation(organism.Id, organism.BiologicalAgeHours)));
+                new AgeEvaluation(
+                    organism.Id,
+                    organism.BiologicalAgeHours,
+                    evidence,
+                    condition)));
         }
 
         return outcomes.MoveToImmutable();
@@ -172,13 +218,22 @@ internal sealed class IntrinsicAgePhase :
         var plan = ImmutableArray.CreateBuilder<AgeMutation>(outcomes.Length);
         foreach (var outcome in outcomes)
         {
-            var nextAge = checked(
-                outcome.Payload.ExpectedAgeHours + context.TickDurationHours);
+            var nextAge = checked(outcome.Payload.ExpectedAgeHours + context.TickDurationHours);
             plan.Add(new AgeMutation(
                 outcome.Payload.OrganismId,
                 outcome.Payload.ExpectedAgeHours,
-                nextAge));
+                nextAge,
+                outcome.Payload.Condition,
+                outcome.Payload.DeathEvidence));
         }
+
+
+        context.Scratch.PublishIntrinsicDeathAssessments(
+            context.Tick,
+            outcomes
+                .Select(outcome => outcome.Payload.DeathEvidence)
+                .Where(evidence => !evidence.NonzeroCauses.IsEmpty)
+                .ToImmutableArray());
 
         return plan.MoveToImmutable();
     }
@@ -189,14 +244,71 @@ internal sealed class IntrinsicAgePhase :
         PhaseChangeBuilder changes,
         TickExecutionContext context)
     {
+        var deathRecords = ImmutableArray.CreateBuilder<DeathRecord>();
         for (var index = 0; index < plan.Length; index++)
         {
             var mutation = plan[index];
-            world.SetOrganismBiologicalAge(
-                mutation.OrganismId,
-                mutation.ExpectedAgeHours,
-                mutation.NextAgeHours,
-                changes);
+            if (mutation.DeathEvidence.Died)
+            {
+                var organism = world.GetOrganism(mutation.OrganismId);
+                var remnantId = world.CreateRemnant(
+                    new RemnantInitialState(
+                        organism.Id,
+                        organism.SpeciesId,
+                        context.Tick,
+                        organism.TileId,
+                        organism.PositionXQ,
+                        organism.PositionYQ,
+                        checked(organism.StructuralMatterQ +
+                            organism.IngestedStructuralMatterQ),
+                    organism.ChargedReserveQ,
+                    0,
+                    0,
+                    organism.CommittedMicronutrients.Add(organism.FreeMicronutrients)),
+                    changes);
+                world.RemoveOrganism(mutation.OrganismId, changes);
+                deathRecords.Add(new DeathRecord(
+                    mutation.OrganismId,
+                    organism.SpeciesId,
+                    organism.TileId,
+                    organism.PositionXQ,
+                    organism.PositionYQ,
+                    context.Tick,
+                    TickPhase.IntrinsicDeath,
+                    mutation.DeathEvidence.NonzeroCauses,
+                    mutation.DeathEvidence.ActualCause!.Value,
+                    remnantId));
+            }
+            else
+            {
+                var organism = world.GetOrganism(mutation.OrganismId);
+                var priorStressBand = StressBand(organism.Condition.EnvironmentalFactorQ);
+                var currentStressBand = StressBand(
+                    mutation.Condition.EnvironmentalFactorQ);
+                if (currentStressBand > priorStressBand)
+                {
+                    context.Scratch.AppendStressReceipt(
+                        context.Tick,
+                        new StressActivityReceipt(
+                            organism.Id,
+                            organism.SpeciesId,
+                            organism.TileId,
+                            organism.PositionXQ,
+                            organism.PositionYQ,
+                            priorStressBand,
+                            currentStressBand,
+                            mutation.Condition.EnvironmentalFactorQ));
+                }
+                world.SetOrganismBiologicalAge(
+                    mutation.OrganismId,
+                    mutation.ExpectedAgeHours,
+                    mutation.NextAgeHours,
+                    changes);
+                world.SetMaterializedOrganismCondition(
+                    mutation.OrganismId,
+                    mutation.Condition,
+                    changes);
+            }
             if (index == 0)
             {
                 try
@@ -210,6 +322,83 @@ internal sealed class IntrinsicAgePhase :
                     throw new InjectedCommitFailureException(exception);
                 }
             }
+        }
+
+
+        context.Scratch.PublishDeathRecords(context.Tick, deathRecords.ToImmutable());
+    }
+
+    private static byte StressBand(uint environmentalFactorQ) =>
+        environmentalFactorQ switch
+        {
+            >= 850_000 => 0,
+            >= 600_000 => 1,
+            >= 300_000 => 2,
+            _ => 3,
+        };
+}
+
+internal readonly record struct EndConditionView(
+    PhaseViewStamp Stamp,
+    ImmutableArray<OrganismId> OrganismIds) : IPhaseReadView
+{
+    public int WorkCount => OrganismIds.Length;
+}
+
+internal sealed class EndConditionMaterializationPhase :
+    ScalarTickPhase<EndConditionView, OrganismId, ImmutableArray<OrganismId>>
+{
+    private const uint ConditionOutcomeCategory = 1;
+
+    public override TickPhase Phase => TickPhase.Finalization;
+
+    protected override PhaseExecutionClass ExecutionClass => PhaseExecutionClass.OwnerOnly;
+
+    protected override EndConditionView SealView(
+        MutableWorldState world,
+        TickExecutionContext context) =>
+        new(CreateStamp(world, context), world.GetOrganismIdsInCanonicalOrder());
+
+    protected override ImmutableArray<PhaseOutcome<OrganismId>> Evaluate(
+        EndConditionView view,
+        TickExecutionContext context) =>
+        view.OrganismIds
+            .Select(id => new PhaseOutcome<OrganismId>(
+                view.Stamp,
+                new OutcomeKey(Phase, ConditionOutcomeCategory, 0, id.Value, 0, 0),
+                id))
+            .ToImmutableArray();
+
+    protected override ImmutableArray<OrganismId> Preflight(
+        EndConditionView view,
+        ImmutableArray<PhaseOutcome<OrganismId>> outcomes,
+        TickExecutionContext context) =>
+        outcomes.Select(outcome => outcome.Payload).ToImmutableArray();
+
+    protected override void Commit(
+        MutableWorldState world,
+        ImmutableArray<OrganismId> plan,
+        PhaseChangeBuilder changes,
+        TickExecutionContext context)
+    {
+    }
+
+    protected override void RunMaterializationBuilders(
+        MutableWorldState world,
+        ImmutableArray<OrganismId> plan,
+        PhaseChangeBuilder changes,
+        TickExecutionContext context)
+    {
+        foreach (var organismId in plan)
+        {
+            world.MaterializeOrganismCondition(
+                organismId,
+                context.Tick,
+                ConditionSnapshotKind.End,
+                world.GetOrganismEnvironment(
+                    world.GetOrganism(organismId).TileId,
+                    checked(context.Tick * context.TickDurationHours)),
+                changes);
         }
     }
 }

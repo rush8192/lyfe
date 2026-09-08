@@ -1,10 +1,10 @@
 {
   "worldPackId": "lyfe.world.primordial-earth-foundation",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "displayName": "Primordial Earth foundation",
   "worldGenerationApiVersion": 1,
   "compatibleBasePackId": "lyfe.official.v1-foundation",
-  "requiredRegistryManifestHash": "48c4f080abd2edb9c5612856a05d882d727e9bc5d6a06661eb5fa0a9b32bdedc",
+  "requiredRegistryManifestHash": "9817cefa04b9a8ceae73e383838f8d4406dba65db9db75fc14db19bc87b786c1",
   "profileFiles": [
     "profiles/foundation-volcanic-ocean.json"
   ]

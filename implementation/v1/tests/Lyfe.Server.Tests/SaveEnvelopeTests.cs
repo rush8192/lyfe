@@ -4,6 +4,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Lyfe.Server.Persistence;
 using Lyfe.Simulation.Core;
+using Lyfe.Simulation.Publication;
 using Lyfe.Simulation.Randomness;
 using Lyfe.Simulation.World;
 using Xunit;
@@ -37,7 +38,7 @@ public sealed class SaveEnvelopeTests
         Assert.Equal(SaveCompressionKind.Brotli, descriptor.Compression);
         Assert.Equal((ulong)payload.Length, descriptor.LogicalPayloadLength);
         Assert.Equal(
-            "8489fea443818310a1af963dcea6aa6df4b581547caf2d9302133d907779ff54",
+            "5e5493ea86699df16d8b6d8e950a72563d36162c58e5f3950441f5387abfcf9d",
             descriptor.MetadataSha256);
         Assert.True(descriptorStream.Position < descriptorStream.Length);
 
@@ -173,14 +174,51 @@ public sealed class SaveEnvelopeTests
         }
 
         var detached = runner.CapturePersistenceSnapshot();
-        var payload = WorldPayloadCodecV1.Encode(detached.State);
-        var decoded = WorldPayloadCodecV1.Decode(payload);
+        var payload = WorldPayloadCodec.Encode(detached.State);
+        var decoded = WorldPayloadCodec.Decode(payload);
 
-        Assert.Equal(payload, WorldPayloadCodecV1.Encode(decoded));
+        Assert.Equal(payload, WorldPayloadCodec.Encode(decoded));
         Assert.Equal(detached.State.Organisms.Length, decoded.Organisms.Length);
         Assert.Equal(detached.State.LastCompletedTransactions.Length, decoded.LastCompletedTransactions.Length);
+        Assert.Equal(detached.State.NextJourneyEventId, decoded.NextJourneyEventId);
+        Assert.Equal(detached.State.JourneyEvents.Length, decoded.JourneyEvents.Length);
+        Assert.Equal(detached.State.JourneyEvents.Select(value => value.EventId),
+            decoded.JourneyEvents.Select(value => value.EventId));
+        Assert.Equal(detached.State.JourneyEvents.SelectMany(value => value.DeathCauses),
+            decoded.JourneyEvents.SelectMany(value => value.DeathCauses));
+        var nonDefaultBehavior = detached.State with
+        {
+            Organisms = detached.State.Organisms
+                .Select((organism, index) => index == 0
+                    ? organism with
+                    {
+                        BehaviorId = 2,
+                        BehaviorSelectedAtTick = 2,
+                        BehaviorMinimumDwellUntilTick = 6,
+                        RecentEnergyCoverageQ = 900_000,
+                        RecentAcquisitionCoverageQ = 750_000,
+                        LimitingMaterialDeficitQ = 250_000,
+                    }
+                    : organism)
+                .ToImmutableArray(),
+        };
+        var decodedBehavior = WorldPayloadCodec.Decode(
+            WorldPayloadCodec.Encode(nonDefaultBehavior));
         Assert.Equal(
-            "b9e8662ad46936568a332d1175962950b971e57b00db52bbad7eb950e7f77a64",
+            nonDefaultBehavior.Organisms[0] with
+            {
+                CommittedMicronutrientsQ = decodedBehavior.Organisms[0].CommittedMicronutrientsQ,
+                FreeMicronutrientsQ = decodedBehavior.Organisms[0].FreeMicronutrientsQ,
+            },
+            decodedBehavior.Organisms[0]);
+        Assert.Equal(
+            nonDefaultBehavior.Organisms[0].CommittedMicronutrientsQ,
+            decodedBehavior.Organisms[0].CommittedMicronutrientsQ);
+        Assert.Equal(
+            nonDefaultBehavior.Organisms[0].FreeMicronutrientsQ,
+            decodedBehavior.Organisms[0].FreeMicronutrientsQ);
+        Assert.Equal(
+            "23693063578b1d36ce9e0d91959c2fb22e24d1b4ab653b6dba4f4a81a7f5b4c5",
             Convert.ToHexStringLower(SHA256.HashData(payload)));
 
         runner.AdvanceOneTick();
@@ -212,8 +250,8 @@ public sealed class SaveEnvelopeTests
 
             Assert.Equal(original.CaptureSnapshot(), restored.CaptureSnapshot());
             Assert.Equal(
-                WorldPayloadCodecV1.Encode(original.CapturePersistenceSnapshot().State),
-                WorldPayloadCodecV1.Encode(restored.CapturePersistenceSnapshot().State));
+                WorldPayloadCodec.Encode(original.CapturePersistenceSnapshot().State),
+                WorldPayloadCodec.Encode(restored.CapturePersistenceSnapshot().State));
             Assert.Equal(original.CaptureSnapshot().StateHash, descriptor.Metadata.WorldStateHash);
 
             var expectedNext = original.AdvanceOneTick();
@@ -244,7 +282,7 @@ public sealed class SaveEnvelopeTests
                 first with { ChargedReserveQ = first.ChargedReserveQ + 1 }),
         };
         var metadata = SaveEnvelopeMetadataFactory.Create(detached.Metadata);
-        var envelope = SaveEnvelopeCodec.Encode(metadata, WorldPayloadCodecV1.Encode(altered));
+        var envelope = SaveEnvelopeCodec.Encode(metadata, WorldPayloadCodec.Encode(altered));
         var directory = CreateTemporaryDirectory();
         var destination = Path.Combine(directory, "altered.lyfe");
         try
@@ -268,7 +306,7 @@ public sealed class SaveEnvelopeTests
         var rules = FoundationWorldBootstrap.LoadRules(AppContext.BaseDirectory);
         var runner = WorldRunner.CreateFoundation(WorldId.From(37), rules, Seed);
         var state = runner.CapturePersistenceSnapshot().State;
-        var payload = WorldPayloadCodecV1.Encode(state);
+        var payload = WorldPayloadCodec.Encode(state);
 
         var invalidMagic = payload.ToArray();
         invalidMagic[0] ^= 1;
@@ -278,8 +316,37 @@ public sealed class SaveEnvelopeTests
 
         var reversed = state with { Organisms = state.Organisms.Reverse().ToImmutableArray() };
         var exception = Assert.Throws<WorldPayloadException>(() =>
-            WorldPayloadCodecV1.Encode(reversed));
+            WorldPayloadCodec.Encode(reversed));
         Assert.Equal(WorldPayloadFailureCode.InvalidOrdering, exception.Code);
+    }
+
+    [Fact]
+    public void LogicalPayloadRejectsEmptyOrMalformedRemnants()
+    {
+        var rules = FoundationWorldBootstrap.LoadRules(AppContext.BaseDirectory);
+        var state = WorldRunner.CreateFoundation(WorldId.From(39), rules, Seed)
+            .CapturePersistenceSnapshot().State;
+        var invalid = state with
+        {
+            Remnants =
+            [
+                new PersistenceRemnant(
+                    1,
+                    1,
+                    1,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1_000_000,
+                    0,
+                    ImmutableArray.CreateRange(Enumerable.Repeat(0L, 14))),
+            ],
+        };
+
+        Assert.Throws<ArgumentException>(() => WorldPayloadCodec.Encode(invalid));
     }
 
     private static SaveEnvelopeMetadata CreateMetadata()
@@ -318,9 +385,11 @@ public sealed class SaveEnvelopeTests
         byte[] contents)
     {
         var exception = Assert.Throws<WorldPayloadException>(() =>
-            WorldPayloadCodecV1.Decode(contents));
+            WorldPayloadCodec.Decode(contents));
         Assert.Equal(expected, exception.Code);
     }
+
+
 
     private sealed class ThrowBeforeReplace : IAtomicSaveFaultInjector
     {

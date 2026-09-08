@@ -1,6 +1,10 @@
 import { create } from "@bufbuild/protobuf";
 import {
   ActorWorldProjectionSchema,
+  GameLossReason,
+  GameMode,
+  GameRunStatus,
+  OrganismJourneyEventFamily,
   type ActorWorldProjection,
   type ProjectionBatch,
   type ProjectionSnapshot,
@@ -61,6 +65,23 @@ export function applyProjectionBatch(
   ) {
     return resync(cache, "projection revision or boundary gap");
   }
+  if (batch.gameplay === undefined) {
+    return resync(cache, "gameplay state is missing");
+  }
+
+  const priorJourneyEvents = cache.world.journeyEvents;
+  const appendedJourneyEvents = batch.journeyEventAppends;
+  const priorLastEventId = priorJourneyEvents.at(-1)?.eventId ?? 0n;
+  if (
+    appendedJourneyEvents.some((event, index) =>
+      event.eventId <= (index === 0
+        ? priorLastEventId
+        : appendedJourneyEvents[index - 1].eventId) ||
+      event.tick <= batch.fromExclusiveTick ||
+      event.tick > batch.throughCompletedTick)
+  ) {
+    return resync(cache, "journey event append is duplicated, unordered, or outside the batch");
+  }
 
   const tiles = indexBy(cache.world.tiles, (tile) => tile.tileId);
   const tileReplacements = unique(batch.tileReplacements, (tile) => tile.tileId);
@@ -88,7 +109,7 @@ export function applyProjectionBatch(
   for (const [id, tile] of tileReplacements) tiles.set(id, tile);
   for (const id of removedSpeciesIds) species.delete(id);
   for (const [id, item] of speciesReplacements) species.set(id, item);
-  if (!species.has(cache.world.controlledSpeciesId)) {
+  if (!species.has(batch.gameplay.controlledSpeciesId)) {
     return resync(cache, "controlled species disappeared from projection");
   }
 
@@ -98,8 +119,11 @@ export function applyProjectionBatch(
     worldRevision: batch.worldRevision,
     simulatedHours: batch.simulatedHours,
     lifecycle: batch.lifecycle,
+    controlledSpeciesId: batch.gameplay.controlledSpeciesId,
+    gameplay: batch.gameplay,
     tiles: [...tiles.values()].sort((left, right) => left.tileId - right.tileId),
     species: [...species.values()].sort(compareSpeciesIds),
+    journeyEvents: [...priorJourneyEvents, ...appendedJourneyEvents],
   });
   try {
     validateWorld(world);
@@ -119,6 +143,14 @@ export function applyProjectionBatch(
 function validateWorld(world: ActorWorldProjection) {
   const tiles = unique(world.tiles, (tile) => tile.tileId);
   const species = unique(world.species, (item) => item.speciesId);
+  const gameplay = world.gameplay;
+  const roots = gameplay === undefined
+    ? null
+    : unique(gameplay.roots, (root) => root.speciesId);
+  const locks = gameplay === undefined
+    ? null
+    : uniqueValues(gameplay.mutationLockedSpeciesIds);
+  const journeyEventIds = unique(world.journeyEvents, (event) => event.eventId);
   if (
     world.worldId === 0n ||
     world.tickDurationHours === 0 ||
@@ -126,6 +158,42 @@ function validateWorld(world: ActorWorldProjection) {
     world.height === 0 ||
     world.worldRulesHash.length === 0 ||
     world.controlledSpeciesId === 0n ||
+    gameplay === undefined ||
+    (gameplay.mode !== GameMode.FREE_SANDBOX && gameplay.mode !== GameMode.SURVIVAL) ||
+    (gameplay.runStatus !== GameRunStatus.ACTIVE &&
+      gameplay.runStatus !== GameRunStatus.LOST) ||
+    (gameplay.lossReason !== GameLossReason.UNSPECIFIED &&
+      gameplay.lossReason !== GameLossReason.ALL_LIFE_EXTINCT &&
+      gameplay.lossReason !== GameLossReason.CONTROLLED_SPECIES_EXTINCT) ||
+    gameplay.controlledSpeciesId !== world.controlledSpeciesId ||
+    gameplay.gameplayRevision === 0n ||
+    roots === null ||
+    roots.size !== (gameplay.mode === GameMode.FREE_SANDBOX ? 1 : 2) ||
+    [...roots.values()].filter((root) => root.playerSelected).length !== 1 ||
+    [...roots.values()].some((root) =>
+      root.speciesId === 0n || root.founderGenomeId === 0 || root.initialPopulation === 0) ||
+    locks === null ||
+    locks.has(0n) ||
+    journeyEventIds === null ||
+    world.journeyEvents.some((event, index) =>
+      event.eventId === 0n ||
+      (index > 0 && event.eventId <= world.journeyEvents[index - 1].eventId) ||
+      event.tick > world.completedTick ||
+      event.subjectOrganismId === 0n ||
+      event.subjectSpeciesId !== world.controlledSpeciesId ||
+      event.tileId >= world.width * world.height ||
+      event.family < OrganismJourneyEventFamily.BIRTH ||
+      event.family > OrganismJourneyEventFamily.DEATH ||
+      event.amountQ < 0n ||
+      event.deathCauseProbabilities.some((cause) => cause.probabilityQ > 1_000_000)) ||
+    (gameplay.runStatus === GameRunStatus.ACTIVE &&
+      (gameplay.lossReason !== GameLossReason.UNSPECIFIED || gameplay.ended)) ||
+    (gameplay.runStatus === GameRunStatus.LOST &&
+      (gameplay.lossReason === GameLossReason.UNSPECIFIED || !gameplay.ended)) ||
+    (gameplay.mode === GameMode.FREE_SANDBOX && gameplay.runStatus === GameRunStatus.LOST &&
+      gameplay.lossReason !== GameLossReason.ALL_LIFE_EXTINCT) ||
+    (gameplay.mode === GameMode.SURVIVAL && gameplay.runStatus === GameRunStatus.LOST &&
+      gameplay.lossReason !== GameLossReason.CONTROLLED_SPECIES_EXTINCT) ||
     tiles === null ||
     species === null ||
     !species.has(world.controlledSpeciesId)

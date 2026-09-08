@@ -7,8 +7,15 @@
       "displayName": "Foundation sandbox",
       "tickDurationHours": 1,
       "founderGenomeKeys": [
-        "genome.hydrogen-founder"
-      ]
+        "genome.hydrogen-founder",
+        "genome.sulfur-founder"
+      ],
+      "founderAllocationKeys": [
+        "founder-allocation.balanced",
+        "founder-allocation.high-throughput",
+        "founder-allocation.stress-tolerant"
+      ],
+      "defaultCompetitorFounderAllocationKey": "founder-allocation.balanced"
     }
   ]
 }

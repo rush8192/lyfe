@@ -2,6 +2,8 @@ import { create, toBinary } from "@bufbuild/protobuf";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   ActorWorldProjectionSchema,
+  GameMode,
+  GameRunStatus,
   ProjectionSnapshotSchema,
   SpeciesPopulationScope,
 } from "../generated/lyfe/v1/projection_pb";
@@ -28,6 +30,19 @@ describe("projection transport", () => {
       height: 1,
       wrapX: true,
       controlledSpeciesId: 1n,
+      gameplay: {
+        mode: GameMode.FREE_SANDBOX,
+        runStatus: GameRunStatus.ACTIVE,
+        controlledSpeciesId: 1n,
+        gameplayRevision: 1n,
+        roots: [{
+          speciesId: 1n,
+          founderGenomeId: 1,
+          startingTileId: 0,
+          initialPopulation: 1,
+          playerSelected: true,
+        }],
+      },
       tiles: [],
       species: [{
         speciesId: 1n,

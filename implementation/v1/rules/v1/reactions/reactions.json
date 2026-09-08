@@ -17,6 +17,75 @@
       "grossEnergyQ": 3,
       "storedEnergyQ": 2,
       "dissipatedEnergyQ": 1
+    },
+    {
+      "numericId": 2,
+      "stableKey": "reaction.particulate-biomass-digestion",
+      "displayName": "Particulate biomass digestion and catabolism",
+      "processKind": "particulate-digestion",
+      "inputs": [
+        { "resourceKey": "resource.structural-biomass", "quantity": 1 }
+      ],
+      "outputs": [
+        { "resourceKey": "resource.reserve-organic", "quantity": 32 },
+        { "resourceKey": "resource.spent-structural-residue", "quantity": 1 }
+      ],
+      "grossEnergyQ": 40,
+      "storedEnergyQ": 32,
+      "dissipatedEnergyQ": 8
+    },
+    {
+      "numericId": 3,
+      "stableKey": "reaction.sulfide-anoxygenic-phototrophy",
+      "displayName": "Sulfide anoxygenic phototrophy",
+      "processKind": "external-energy-capture",
+      "inputs": [
+        { "resourceKey": "resource.hydrogen-sulfide-gas", "quantity": 2 },
+        { "resourceKey": "resource.carbon-dioxide", "quantity": 1 }
+      ],
+      "outputs": [
+        { "resourceKey": "resource.reserve-organic", "quantity": 1 },
+        { "resourceKey": "resource.ocean-water", "quantity": 1 },
+        { "resourceKey": "resource.inorganic-sulfur", "quantity": 2 }
+      ],
+      "grossEnergyQ": 2,
+      "storedEnergyQ": 1,
+      "dissipatedEnergyQ": 1
+    },
+    {
+      "numericId": 5,
+      "stableKey": "reaction.founder-biomass-assembly",
+      "displayName": "Founder biomass assembly",
+      "processKind": "biomass-assembly",
+      "inputs": [
+        { "resourceKey": "resource.reserve-organic", "quantity": 100 },
+        { "resourceKey": "resource.ammonia-gas", "quantity": 20 },
+        { "resourceKey": "resource.inorganic-phosphorus", "quantity": 2 },
+        { "resourceKey": "resource.hydrogen-sulfide-gas", "quantity": 1 }
+      ],
+      "outputs": [
+        { "resourceKey": "resource.structural-biomass", "quantity": 1 },
+        { "resourceKey": "resource.ocean-water", "quantity": 46 },
+        { "resourceKey": "resource.organic-oxygen", "quantity": 14 }
+      ],
+      "grossEnergyQ": 100,
+      "storedEnergyQ": 0,
+      "dissipatedEnergyQ": 100
+    },
+    {
+      "numericId": 4,
+      "stableKey": "reaction.founder-maintenance",
+      "displayName": "Founder mandatory maintenance",
+      "processKind": "mandatory-maintenance",
+      "inputs": [
+        { "resourceKey": "resource.reserve-organic", "quantity": 1 }
+      ],
+      "outputs": [
+        { "resourceKey": "resource.spent-reserve-carrier", "quantity": 1 }
+      ],
+      "grossEnergyQ": 1,
+      "storedEnergyQ": 0,
+      "dissipatedEnergyQ": 1
     }
   ]
 }

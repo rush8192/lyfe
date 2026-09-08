@@ -42,9 +42,51 @@ public sealed record WorldProfileDefinition
 
     public required bool WrapY { get; init; }
 
+    public required GasEnvironmentDefinition GasEnvironment { get; init; }
+
     public TileProfileDefinition[]? Tiles { get; init; }
 
     public WorldGeneratorDefinition? Generator { get; init; }
+}
+
+public sealed record GasEnvironmentDefinition
+{
+    public required uint AquaticTerrestrialCompatibilityQ { get; init; }
+
+    public required uint MajorMountainCompatibilityQ { get; init; }
+
+    public required int MajorMountainElevationMeters { get; init; }
+
+    public required GasTransportDefinition[] Gases { get; init; }
+
+    public required GasEmissionProfileDefinition[] EmissionProfiles { get; init; }
+}
+
+public sealed record GasTransportDefinition
+{
+    public required string ResourceKey { get; init; }
+
+    public required string AccessibilityClass { get; init; }
+
+    public required uint SinkRatePerMillionPerHour { get; init; }
+
+    public required uint ExchangeRatePerMillionPerEdgeHour { get; init; }
+
+    public required long DiffuseSourceQuantityPerHour { get; init; }
+}
+
+public sealed record GasEmissionProfileDefinition
+{
+    public required string StableKey { get; init; }
+
+    public required GasEmissionDefinition[] Emissions { get; init; }
+}
+
+public sealed record GasEmissionDefinition
+{
+    public required string ResourceKey { get; init; }
+
+    public required long FullActivityQuantityPerHour { get; init; }
 }
 
 public sealed record WorldGeneratorDefinition
@@ -197,6 +239,10 @@ public sealed record TileProfileDefinition
     public required int Y { get; init; }
 
     public required int ElevationMeters { get; init; }
+
+    public required uint BaselineVolcanismQ { get; init; }
+
+    public string? GasEmissionProfileKey { get; init; }
 
     public required ResourceStockDefinition[] ResourceStocks { get; init; }
 }

@@ -1,10 +1,29 @@
 using System.Globalization;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Lyfe.Simulation.Core;
 using Lyfe.Simulation.Randomness;
 using Lyfe.Simulation.Rules.Compilation;
 using Lyfe.Simulation.Rules.Loading;
 using Lyfe.Simulation.World;
+
+if (args.Contains("--founder-matrix", StringComparer.Ordinal))
+{
+    var seedCount = ReadPositiveOption(args, "--seeds", 64);
+    var horizonHours = ReadPositiveOption(args, "--horizon-hours", 720);
+    var parallelism = ReadPositiveOption(
+        args,
+        "--parallelism",
+        Math.Min(Environment.ProcessorCount, 8));
+    var includeRuns = args.Contains("--include-runs", StringComparer.Ordinal);
+    Console.WriteLine(JsonSerializer.Serialize(
+        FounderAllocationMatrix.Run(seedCount, horizonHours, parallelism, includeRuns),
+        new JsonSerializerOptions
+        {
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        }));
+    return;
+}
 
 var compiled = WorldRulesPipeline.Compile(
     new CopiedContentSource("OfficialRules"),
@@ -53,6 +72,22 @@ var result = new
 };
 
 Console.WriteLine(JsonSerializer.Serialize(result));
+
+static int ReadPositiveOption(string[] arguments, string name, int fallback)
+{
+    var index = Array.IndexOf(arguments, name);
+    if (index < 0)
+    {
+        return fallback;
+    }
+    if (index + 1 >= arguments.Length ||
+        !int.TryParse(arguments[index + 1], CultureInfo.InvariantCulture, out var value) ||
+        value <= 0)
+    {
+        throw new ArgumentException($"{name} requires a positive integer.");
+    }
+    return value;
+}
 
 internal sealed class CopiedContentSource(string directoryName) : IContentSource
 {

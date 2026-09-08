@@ -47,6 +47,7 @@ public sealed class StageAWalkingSkeletonTests
 
             Assert.Equal(1UL, decodedSnapshot.StreamRevision);
             Assert.Equal(100, decodedSnapshot.Projection.Tiles[0].Live.Organisms.Count);
+            Assert.NotEmpty(decodedSnapshot.Projection.JourneyEvents);
 
             var expectedNext = original.AdvanceOneTick();
             var restoredNext = restored.AdvanceOneTick();
@@ -62,6 +63,7 @@ public sealed class StageAWalkingSkeletonTests
             Assert.Equal(1UL, decodedBatch.BaseStreamRevision);
             Assert.Equal(2UL, decodedBatch.TargetStreamRevision);
             Assert.Single(decodedBatch.TileReplacements);
+            Assert.NotEmpty(decodedBatch.JourneyEventAppends);
             Assert.Equal(100, decodedBatch.TileReplacements[0].Live.Organisms.Count);
             Assert.All(
                 decodedBatch.TileReplacements[0].Live.Organisms,

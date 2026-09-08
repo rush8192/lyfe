@@ -49,6 +49,8 @@ Watching and banking are valid decisions, but prolonged waiting must still provi
 - Navigate the world and switch environmental, resource, population, behavior, and lineage lenses.
 - Inspect authorized tiles, species, organisms, remains, resources, reactions, and historical intervals.
 - Follow an actual organism or pin a species, tile, resource, lineage branch, or evolutionary goal.
+- Watch configurable lifecycle activity pulses on the live map and open any authorized
+  organism's chronological journey from its sprite, remnant, or linked event.
 - Compare up to four compatible subjects or time intervals without converting hidden information into current data.
 - Add private labels or hypothesis notes to pins and chronicle events.
 
@@ -235,6 +237,22 @@ Chronicle projection follows knowledge rules. It cannot disclose hidden current 
 
 Player labels and hypothesis notes are clearly distinguished from factual events. They never enter autonomous-evolution scoring, organism behavior, world randomness, or the canonical narrative text.
 
+## Organism-scale stories and moment-to-moment feedback
+
+The world chronicle records species/world landmarks; it does not replace the smaller story
+of an individual life. Every authorized organism has a journey assembled from retained
+facts: founding or birth, parent/offspring links, reproduction, migration, meaningful
+feeding interactions, summarized acquisition, major health/stress or lifecycle transitions,
+and death. Following an organism therefore provides a readable narrative between mutation
+decisions without granting the player direct control over its actions.
+
+The live map projects the same completed facts as short-lived, configurable activity icons.
+Positive events use green/teal presentation, harmful events use orange/red, and neutral
+transitions use intermediate gold/amber colors, always paired with distinct symbols. Icons are
+feedback, not rewards: they grant no resource, do not influence behavior, and may be
+filtered or coalesced without changing the organism journey. Detailed animation, filtering,
+retention, accessibility, and visibility rules are normative in [CLIENT.md](CLIENT.md).
+
 # Failure, uncertainty, and recovery of understanding
 
 V1 Survival retains irreversible evolution and no backtracking. Its safeguards are informational:
@@ -294,6 +312,8 @@ The first executable extension and results are now in [OPENING_STRATEGY_VALIDATI
 - Hidden tiles and species never influence actor-visible explanations except through authorized observations.
 - Auto-pause occurs only after a completed tick, changes no completed outcome, and replay applies the same recorded policy/clock transition.
 - Chronicle event IDs, fact payloads, thresholds, and ordering replay identically; narrative wording is excluded from authoritative hashes.
+- Organism journey landmarks and deterministic routine summaries survive save/load and
+  replay identically; map-pulse preferences and fade progress do not enter authoritative state.
 - Alert hysteresis and coalescing prevent repeated tick-by-tick notifications for one sustained condition.
 
 ## Gameplay measurements
@@ -310,6 +330,8 @@ Instrument without turning metrics into simulation inputs:
 - player ability in a playtest to identify a dominant pressure and cite supporting evidence;
 - branch survival, ecological niche, habitat spread, and final lineage diversity by chosen proposals; and
 - chronicle events opened, followed into evidence, or used for navigation.
+- organisms followed, journey entries inspected, and map-pulse filters changed, including
+  whether players can correctly explain a selected organism's current state.
 
 Initial scenario gates are:
 
@@ -332,8 +354,10 @@ Do not set global targets for choice frequency, strategy win rates, or chronicle
 
 # Remaining implementation artifacts
 
-- [ ] World HUD, alert inbox, diagnostic path, proposal comparison, goal, consequence-review, chronicle, and postmortem wireframes.
-- [ ] Stable protocol schemas for decision summaries, drafts/previews, attention policy, alerts, and notable events.
+- [ ] World HUD, lifecycle-pulse overlay/filter, organism Journey tab, alert inbox,
+  diagnostic path, proposal comparison, goal, consequence-review, chronicle, and postmortem wireframes.
+- [ ] Stable protocol schemas for organism journey/activity facts, decision summaries,
+  drafts/previews, attention policy, alerts, and notable events.
 - [ ] Authored candidate-goal catalogue and deterministic non-dominance tests.
 - [ ] Opening-menu balance variants for both founder choices.
 - [ ] Chronicle significance thresholds and retention budget.

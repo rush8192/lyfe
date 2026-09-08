@@ -48,7 +48,7 @@ app.MapGet(
     (WorldRunner runner) =>
     {
         var source = runner.CapturePublicationSnapshot();
-        var controlledSpeciesId = source.Species[0].SpeciesId;
+        var controlledSpeciesId = source.Gameplay.ControlledSpeciesId;
         var projection = DirectWorldProjector.Project(
             source,
             new ActorKnowledgeSnapshot(

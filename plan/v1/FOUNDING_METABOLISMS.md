@@ -1,6 +1,6 @@
 # Founding Metabolisms and Survival Origins
 
-Status: founding identities, asymmetry, opening fixtures, escape-path rule packs, generated-light calibration, and first coupled opening validated; production generated-world and optional-package tuning remain
+Status: founding identities, asymmetry, reactions, explicit light control, generated-world light/depth integration, and H₂S/SO₂ health/death effects are executable; optional-package tuning remains
 
 Sources: [GAMEPLAY vision](../../vision/GAMEPLAY.md), [ORGANISMS vision](../../vision/ORGANISMS.md), [WORLD vision](../../vision/WORLD.md), [resource model](RESOURCE_MODEL.md), and [one-tile hydrogen fixture](ONE_TILE_STARTING_CONFIGURATION.md).
 
@@ -106,6 +106,10 @@ Both metabolism cards may expose a small number of additional allocations betwee
 - A hydrogen founder always begins with enough volcanic-sulfur tolerance to survive its preferred tile, but that tolerance imposes an ongoing cost and is weaker than the sulfur founder's native adaptation.
 - No selectable tolerance package may make an initial organism broadly suited to non-volcanic or advanced habitats.
 
+The first bounded three-package candidate, exact multipliers, persistent representation,
+competitor default, and 64-seed acceptance matrix are defined in
+[FOUNDER_SETUP_PACKAGES.md](FOUNDER_SETUP_PACKAGES.md).
+
 The setup UI must disclose expected first-reproduction time, light dependency, relevant toxic exposure, major micronutrient gates, and the first path away from volcanic dependence. It should describe the choices as `fast specialist` and `flexible foundation`, not as an unexplained difficulty selector.
 
 # Survival initialization
@@ -191,4 +195,4 @@ The calculated square-fixture sulfur values and ledger expectations are defined 
 - Representative-seed and biological validation of the first generated-world light curve and its `250..275`-tick sulfur-start band.
 - Population validation of the fixed 5-energy/hour regulation cost and 25% retained suppressible pathway upkeep.
 - Coupled-world validation that the calibrated labile-organic stock and flow thresholds make the hydrogen fermentation escape path useful only after biological turnover creates its substrate.
-- Exact bounds for optional player-facing efficiency-versus-tolerance founder packages; the reference profiles are sufficient for the canonical opening scenario.
+- Generated-world population validation of the bounded player-facing efficiency-versus-tolerance packages before their values are frozen into the official rule pack.

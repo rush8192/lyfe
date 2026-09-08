@@ -8,15 +8,77 @@
       "height": 1,
       "wrapX": true,
       "wrapY": false,
+      "gasEnvironment": {
+        "aquaticTerrestrialCompatibilityQ": 500000,
+        "majorMountainCompatibilityQ": 500000,
+        "majorMountainElevationMeters": 2500,
+        "gases": [
+          { "resourceKey": "resource.hydrogen-gas", "accessibilityClass": "VentAccessible", "sinkRatePerMillionPerHour": 2500, "exchangeRatePerMillionPerEdgeHour": 100, "diffuseSourceQuantityPerHour": 0 },
+          { "resourceKey": "resource.carbon-dioxide", "accessibilityClass": "MixedOrigin", "sinkRatePerMillionPerHour": 200, "exchangeRatePerMillionPerEdgeHour": 100000, "diffuseSourceQuantityPerHour": 20004 },
+          { "resourceKey": "resource.methane-gas", "accessibilityClass": "MixedOrigin", "sinkRatePerMillionPerHour": 2000, "exchangeRatePerMillionPerEdgeHour": 500, "diffuseSourceQuantityPerHour": 0 },
+          { "resourceKey": "resource.hydrogen-sulfide-gas", "accessibilityClass": "VentAccessible", "sinkRatePerMillionPerHour": 5000, "exchangeRatePerMillionPerEdgeHour": 250, "diffuseSourceQuantityPerHour": 0 },
+          { "resourceKey": "resource.sulfur-dioxide-gas", "accessibilityClass": "VentAccessible", "sinkRatePerMillionPerHour": 10000, "exchangeRatePerMillionPerEdgeHour": 500, "diffuseSourceQuantityPerHour": 0 },
+          { "resourceKey": "resource.oxygen-gas", "accessibilityClass": "AtmosphericDepthLimited", "sinkRatePerMillionPerHour": 200, "exchangeRatePerMillionPerEdgeHour": 100000, "diffuseSourceQuantityPerHour": 0 },
+          { "resourceKey": "resource.nitrogen-gas", "accessibilityClass": "AtmosphericDepthLimited", "sinkRatePerMillionPerHour": 0, "exchangeRatePerMillionPerEdgeHour": 100000, "diffuseSourceQuantityPerHour": 0 },
+          { "resourceKey": "resource.ammonia-gas", "accessibilityClass": "VentAccessible", "sinkRatePerMillionPerHour": 500, "exchangeRatePerMillionPerEdgeHour": 1000, "diffuseSourceQuantityPerHour": 0 }
+        ],
+        "emissionProfiles": [
+          {
+            "stableKey": "gas-emission.hydrogen-rich",
+            "emissions": [
+              { "resourceKey": "resource.hydrogen-gas", "fullActivityQuantityPerHour": 312500 },
+              { "resourceKey": "resource.carbon-dioxide", "fullActivityQuantityPerHour": 187500 },
+              { "resourceKey": "resource.hydrogen-sulfide-gas", "fullActivityQuantityPerHour": 125000 },
+              { "resourceKey": "resource.sulfur-dioxide-gas", "fullActivityQuantityPerHour": 62500 },
+              { "resourceKey": "resource.methane-gas", "fullActivityQuantityPerHour": 5000 },
+              { "resourceKey": "resource.ammonia-gas", "fullActivityQuantityPerHour": 6250 }
+            ]
+          },
+          {
+            "stableKey": "gas-emission.sulfur-rich",
+            "emissions": [
+              { "resourceKey": "resource.hydrogen-gas", "fullActivityQuantityPerHour": 62500 },
+              { "resourceKey": "resource.carbon-dioxide", "fullActivityQuantityPerHour": 187500 },
+              { "resourceKey": "resource.hydrogen-sulfide-gas", "fullActivityQuantityPerHour": 250000 },
+              { "resourceKey": "resource.sulfur-dioxide-gas", "fullActivityQuantityPerHour": 62500 },
+              { "resourceKey": "resource.methane-gas", "fullActivityQuantityPerHour": 5000 },
+              { "resourceKey": "resource.ammonia-gas", "fullActivityQuantityPerHour": 6250 }
+            ]
+          }
+        ]
+      },
       "tiles": [
         {
           "x": 0,
           "y": 0,
           "elevationMeters": -200,
+          "baselineVolcanismQ": 800000,
+          "gasEmissionProfileKey": "gas-emission.hydrogen-rich",
           "resourceStocks": [
             { "resourceKey": "resource.hydrogen-gas", "quantity": 50000000 },
             { "resourceKey": "resource.carbon-dioxide", "quantity": 100000000 },
+            { "resourceKey": "resource.hydrogen-sulfide-gas", "quantity": 20000000 },
+            { "resourceKey": "resource.sulfur-dioxide-gas", "quantity": 5000000 },
+            { "resourceKey": "resource.nitrogen-gas", "quantity": 500000000 },
+            { "resourceKey": "resource.ammonia-gas", "quantity": 10000000 },
+            { "resourceKey": "resource.inorganic-phosphorus", "quantity": 5000000 },
             { "resourceKey": "resource.reserve-organic", "quantity": 0 },
+            { "resourceKey": "resource.spent-reserve-carrier", "quantity": 0 },
+            { "resourceKey": "resource.organic-oxygen", "quantity": 0 },
+            { "resourceKey": "resource.calcium", "quantity": 50000 },
+            { "resourceKey": "resource.iron", "quantity": 2000000 },
+            { "resourceKey": "resource.potassium", "quantity": 3000000 },
+            { "resourceKey": "resource.sodium", "quantity": 10000000 },
+            { "resourceKey": "resource.magnesium", "quantity": 5000000 },
+            { "resourceKey": "resource.zinc", "quantity": 1000 },
+            { "resourceKey": "resource.copper", "quantity": 0 },
+            { "resourceKey": "resource.iodine", "quantity": 0 },
+            { "resourceKey": "resource.fluoride", "quantity": 100000 },
+            { "resourceKey": "resource.selenium", "quantity": 500 },
+            { "resourceKey": "resource.manganese", "quantity": 0 },
+            { "resourceKey": "resource.molybdenum", "quantity": 0 },
+            { "resourceKey": "resource.nickel", "quantity": 500000 },
+            { "resourceKey": "resource.cobalt", "quantity": 100000 },
             { "resourceKey": "resource.ocean-water", "quantity": 0 }
           ]
         }

@@ -1,4 +1,6 @@
 using System.Collections.Immutable;
+using Lyfe.Simulation.Behavior;
+using Lyfe.Simulation.Physiology;
 using Lyfe.Simulation.State.Changes;
 using Lyfe.Simulation.State.Identity;
 
@@ -19,8 +21,15 @@ internal readonly record struct OrganismInitialState(
     ulong BirthTick,
     ulong BiologicalAgeHours,
     LifecyclePhase LifecyclePhase,
+    ulong ReproductionNotBeforeTick,
+    ulong SuccessfulReproductionCount,
+    ulong ScavengeNotBeforeTick,
+    long IngestedStructuralMatterQ,
     long StructuralMatterQ,
-    long ChargedReserveQ);
+    long ChargedReserveQ,
+    OrganismBehaviorState Behavior,
+    MicronutrientInventory CommittedMicronutrients = default,
+    MicronutrientInventory FreeMicronutrients = default);
 
 internal readonly record struct OrganismSnapshot(
     OrganismId Id,
@@ -33,8 +42,16 @@ internal readonly record struct OrganismSnapshot(
     ulong BirthTick,
     ulong BiologicalAgeHours,
     LifecyclePhase LifecyclePhase,
+    ulong ReproductionNotBeforeTick,
+    ulong SuccessfulReproductionCount,
+    ulong ScavengeNotBeforeTick,
+    long IngestedStructuralMatterQ,
     long StructuralMatterQ,
-    long ChargedReserveQ);
+    long ChargedReserveQ,
+    MaterializedOrganismCondition Condition,
+    OrganismBehaviorState Behavior,
+    MicronutrientInventory CommittedMicronutrients = default,
+    MicronutrientInventory FreeMicronutrients = default);
 
 internal readonly record struct OrganismLocation(
     TileId TileId,
@@ -58,7 +75,10 @@ internal sealed class OrganismStore
 
     public ulong MutationEpoch { get; private set; }
 
-    public void Restore(OrganismId id, OrganismInitialState state)
+    public void Restore(
+        OrganismId id,
+        OrganismInitialState state,
+        MaterializedOrganismCondition condition)
     {
         if (MutationEpoch != 0)
         {
@@ -72,7 +92,7 @@ internal sealed class OrganismStore
             throw new ArgumentException("Persisted organism IDs must be unique.", nameof(id));
         }
 
-        var location = GetOrCreatePartition(state.TileId).Append(ToRow(id, state));
+        var location = GetOrCreatePartition(state.TileId).Append(ToRow(id, state, condition));
         locations.Add(id, location);
         Count = checked(Count + 1);
     }
@@ -80,6 +100,7 @@ internal sealed class OrganismStore
     public void Create(
         OrganismId id,
         OrganismInitialState state,
+        MaterializedOrganismCondition condition,
         PhaseChangeBuilder changes)
     {
         ArgumentNullException.ThrowIfNull(changes);
@@ -90,7 +111,7 @@ internal sealed class OrganismStore
         }
 
         var partition = GetOrCreatePartition(state.TileId);
-        var location = partition.Append(ToRow(id, state));
+        var location = partition.Append(ToRow(id, state, condition));
         locations.Add(id, location);
         Count = checked(Count + 1);
         MutationEpoch = checked(MutationEpoch + 1);
@@ -105,6 +126,27 @@ internal sealed class OrganismStore
     }
 
     public bool Contains(OrganismId id) => locations.ContainsKey(id);
+
+    public void SetSpecies(
+        OrganismId id,
+        SpeciesId speciesId,
+        PhaseChangeBuilder changes)
+    {
+        ArgumentNullException.ThrowIfNull(changes);
+        if (speciesId == default)
+        {
+            throw new ArgumentException("Species identity must be nonzero.", nameof(speciesId));
+        }
+        var location = GetLocation(id);
+        var partition = GetPartition(location.TileId);
+        if (!partition.SetSpecies(location, speciesId))
+        {
+            return;
+        }
+        MutationEpoch = checked(MutationEpoch + 1);
+        changes.RecordMutation(WorldStoreKind.Organisms);
+        changes.RecordDirty(StateEntityReference.From(id), LogicalFieldGroup.OrganismSpecies);
+    }
 
     public void SetPosition(
         OrganismId id,
@@ -146,6 +188,22 @@ internal sealed class OrganismStore
             changes);
     }
 
+    public void AdjustIngestedStructuralMatter(
+        OrganismId id,
+        long delta,
+        PhaseChangeBuilder changes)
+    {
+        AdjustNonnegativeBalance(
+            id,
+            delta,
+            LogicalFieldGroup.OrganismIngestedMatter,
+            static (partition, location, value) =>
+                partition.SetIngestedStructuralMatter(location, value),
+            static (partition, location) =>
+                partition.Read(location).IngestedStructuralMatterQ,
+            changes);
+    }
+
     public void AdjustChargedReserve(
         OrganismId id,
         long delta,
@@ -158,6 +216,26 @@ internal sealed class OrganismStore
             static (partition, location, value) => partition.SetChargedReserve(location, value),
             static (partition, location) => partition.Read(location).ChargedReserveQ,
             changes);
+    }
+
+    public void SetMicronutrients(
+        OrganismId id,
+        MicronutrientInventory committed,
+        MicronutrientInventory free,
+        PhaseChangeBuilder changes)
+    {
+        ArgumentNullException.ThrowIfNull(changes);
+        var location = GetLocation(id);
+        var partition = GetPartition(location.TileId);
+        var current = partition.Read(location);
+        if (current.CommittedMicronutrients == committed && current.FreeMicronutrients == free)
+        {
+            return;
+        }
+        partition.SetMicronutrients(location, committed, free);
+        MutationEpoch = checked(MutationEpoch + 1);
+        changes.RecordMutation(WorldStoreKind.Organisms);
+        changes.RecordDirty(StateEntityReference.From(id), LogicalFieldGroup.OrganismMicronutrients);
     }
 
     public void AdvanceBiologicalAge(
@@ -199,6 +277,68 @@ internal sealed class OrganismStore
         }
 
         partition.SetBiologicalAge(location, nextAgeHours);
+        MutationEpoch = checked(MutationEpoch + 1);
+        changes.RecordMutation(WorldStoreKind.Organisms);
+        changes.RecordDirty(StateEntityReference.From(id), LogicalFieldGroup.OrganismLifecycle);
+    }
+
+    public void SetCondition(
+        OrganismId id,
+        MaterializedOrganismCondition condition,
+        PhaseChangeBuilder changes)
+    {
+        ArgumentNullException.ThrowIfNull(changes);
+        var location = GetLocation(id);
+        var partition = GetPartition(location.TileId);
+        if (partition.Read(location).Condition == condition)
+        {
+            return;
+        }
+
+        partition.SetCondition(location, condition);
+        MutationEpoch = checked(MutationEpoch + 1);
+        changes.RecordMutation(WorldStoreKind.Organisms);
+        changes.RecordDirty(StateEntityReference.From(id), LogicalFieldGroup.OrganismCondition);
+    }
+
+    public void SetBehavior(
+        OrganismId id,
+        OrganismBehaviorState behavior,
+        PhaseChangeBuilder changes)
+    {
+        ArgumentNullException.ThrowIfNull(changes);
+        ValidateBehavior(behavior);
+        var location = GetLocation(id);
+        var partition = GetPartition(location.TileId);
+        if (!partition.SetBehavior(location, behavior))
+        {
+            return;
+        }
+
+        MutationEpoch = checked(MutationEpoch + 1);
+        changes.RecordMutation(WorldStoreKind.Organisms);
+        changes.RecordDirty(StateEntityReference.From(id), LogicalFieldGroup.OrganismBehavior);
+    }
+
+    public void SetLifecycleSchedule(
+        OrganismId id,
+        ulong reproductionNotBeforeTick,
+        ulong successfulReproductionCount,
+        ulong scavengeNotBeforeTick,
+        PhaseChangeBuilder changes)
+    {
+        ArgumentNullException.ThrowIfNull(changes);
+        var location = GetLocation(id);
+        var partition = GetPartition(location.TileId);
+        if (!partition.SetLifecycleSchedule(
+                location,
+                reproductionNotBeforeTick,
+                successfulReproductionCount,
+                scavengeNotBeforeTick))
+        {
+            return;
+        }
+
         MutationEpoch = checked(MutationEpoch + 1);
         changes.RecordMutation(WorldStoreKind.Organisms);
         changes.RecordDirty(StateEntityReference.From(id), LogicalFieldGroup.OrganismLifecycle);
@@ -373,11 +513,28 @@ internal sealed class OrganismStore
         }
 
         ValidateTile(state.TileId);
-        if (state.StructuralMatterQ < 0 || state.ChargedReserveQ < 0)
+        if (state.IngestedStructuralMatterQ < 0 ||
+            state.StructuralMatterQ < 0 ||
+            state.ChargedReserveQ < 0)
         {
             throw new ArgumentOutOfRangeException(
                 nameof(state),
                 "Organism balances cannot be negative.");
+        }
+
+        ValidateBehavior(state.Behavior);
+    }
+
+    private static void ValidateBehavior(OrganismBehaviorState behavior)
+    {
+        if (!Enum.IsDefined(behavior.BehaviorId) ||
+            !Enum.IsDefined(behavior.TargetKind) ||
+            behavior.RecentEnergyCoverageQ > BehaviorMath.MaximumCoverageQ ||
+            behavior.RecentAcquisitionCoverageQ > BehaviorMath.MaximumCoverageQ ||
+            behavior.LimitingMaterialDeficitQ > BehaviorMath.OneQ ||
+            (behavior.TargetKind == BehaviorTargetKind.None && behavior.TargetId != 0))
+        {
+            throw new ArgumentOutOfRangeException(nameof(behavior), "Behavior state is invalid.");
         }
     }
 
@@ -389,7 +546,10 @@ internal sealed class OrganismStore
         }
     }
 
-    private static OrganismRow ToRow(OrganismId id, OrganismInitialState state) =>
+    private static OrganismRow ToRow(
+        OrganismId id,
+        OrganismInitialState state,
+        MaterializedOrganismCondition condition) =>
         new(
             id,
             state.SpeciesId,
@@ -400,8 +560,16 @@ internal sealed class OrganismStore
             state.BirthTick,
             state.BiologicalAgeHours,
             state.LifecyclePhase,
+            state.ReproductionNotBeforeTick,
+            state.SuccessfulReproductionCount,
+            state.ScavengeNotBeforeTick,
+            state.IngestedStructuralMatterQ,
             state.StructuralMatterQ,
-            state.ChargedReserveQ);
+            state.ChargedReserveQ,
+            condition,
+            state.Behavior,
+            state.CommittedMicronutrients,
+            state.FreeMicronutrients);
 
     private sealed class OrganismPartition(TileId tileId)
     {
@@ -440,14 +608,45 @@ internal sealed class OrganismStore
                 velocityXQPerHour,
                 velocityYQPerHour);
 
+        public bool SetSpecies(OrganismLocation location, SpeciesId speciesId) =>
+            chunks[location.ChunkIndex].SetSpecies(location.RowIndex, speciesId);
+
         public void SetStructure(OrganismLocation location, long value) =>
             chunks[location.ChunkIndex].SetStructure(location.RowIndex, value);
+
+        public void SetIngestedStructuralMatter(OrganismLocation location, long value) =>
+            chunks[location.ChunkIndex].SetIngestedStructuralMatter(location.RowIndex, value);
 
         public void SetChargedReserve(OrganismLocation location, long value) =>
             chunks[location.ChunkIndex].SetChargedReserve(location.RowIndex, value);
 
+        public void SetMicronutrients(
+            OrganismLocation location,
+            MicronutrientInventory committed,
+            MicronutrientInventory free) =>
+            chunks[location.ChunkIndex].SetMicronutrients(location.RowIndex, committed, free);
+
         public void SetBiologicalAge(OrganismLocation location, ulong value) =>
             chunks[location.ChunkIndex].SetBiologicalAge(location.RowIndex, value);
+
+        public bool SetLifecycleSchedule(
+            OrganismLocation location,
+            ulong reproductionNotBeforeTick,
+            ulong successfulReproductionCount,
+            ulong scavengeNotBeforeTick) =>
+            chunks[location.ChunkIndex].SetLifecycleSchedule(
+                location.RowIndex,
+                reproductionNotBeforeTick,
+                successfulReproductionCount,
+                scavengeNotBeforeTick);
+
+        public void SetCondition(
+            OrganismLocation location,
+            MaterializedOrganismCondition value) =>
+            chunks[location.ChunkIndex].SetCondition(location.RowIndex, value);
+
+        public bool SetBehavior(OrganismLocation location, OrganismBehaviorState value) =>
+            chunks[location.ChunkIndex].SetBehavior(location.RowIndex, value);
 
         public SwappedOrganism? RemoveAt(OrganismLocation location)
         {
@@ -515,8 +714,20 @@ internal sealed class OrganismStore
         private readonly ulong[] birthTicks = new ulong[ChunkCapacity];
         private readonly ulong[] biologicalAgeHours = new ulong[ChunkCapacity];
         private readonly LifecyclePhase[] lifecyclePhases = new LifecyclePhase[ChunkCapacity];
+        private readonly ulong[] reproductionNotBeforeTicks = new ulong[ChunkCapacity];
+        private readonly ulong[] successfulReproductionCounts = new ulong[ChunkCapacity];
+        private readonly ulong[] scavengeNotBeforeTicks = new ulong[ChunkCapacity];
+        private readonly long[] ingestedStructuralMatterQ = new long[ChunkCapacity];
         private readonly long[] structuralMatterQ = new long[ChunkCapacity];
         private readonly long[] chargedReserveQ = new long[ChunkCapacity];
+        private readonly MicronutrientInventory[] committedMicronutrients =
+            new MicronutrientInventory[ChunkCapacity];
+        private readonly MicronutrientInventory[] freeMicronutrients =
+            new MicronutrientInventory[ChunkCapacity];
+        private readonly MaterializedOrganismCondition[] conditions =
+            new MaterializedOrganismCondition[ChunkCapacity];
+        private readonly OrganismBehaviorState[] behaviors =
+            new OrganismBehaviorState[ChunkCapacity];
 
         public int Count { get; private set; }
 
@@ -549,8 +760,16 @@ internal sealed class OrganismStore
                 birthTicks[rowIndex],
                 biologicalAgeHours[rowIndex],
                 lifecyclePhases[rowIndex],
+                reproductionNotBeforeTicks[rowIndex],
+                successfulReproductionCounts[rowIndex],
+                scavengeNotBeforeTicks[rowIndex],
+                ingestedStructuralMatterQ[rowIndex],
                 structuralMatterQ[rowIndex],
-                chargedReserveQ[rowIndex]);
+                chargedReserveQ[rowIndex],
+                conditions[rowIndex],
+                behaviors[rowIndex],
+                committedMicronutrients[rowIndex],
+                freeMicronutrients[rowIndex]);
         }
 
         public OrganismRow ReadRow(int rowIndex)
@@ -566,8 +785,16 @@ internal sealed class OrganismStore
                 birthTicks[rowIndex],
                 biologicalAgeHours[rowIndex],
                 lifecyclePhases[rowIndex],
+                reproductionNotBeforeTicks[rowIndex],
+                successfulReproductionCounts[rowIndex],
+                scavengeNotBeforeTicks[rowIndex],
+                ingestedStructuralMatterQ[rowIndex],
                 structuralMatterQ[rowIndex],
-                chargedReserveQ[rowIndex]);
+                chargedReserveQ[rowIndex],
+                conditions[rowIndex],
+                behaviors[rowIndex],
+                committedMicronutrients[rowIndex],
+                freeMicronutrients[rowIndex]);
         }
 
         public void Write(int rowIndex, OrganismRow row)
@@ -581,8 +808,16 @@ internal sealed class OrganismStore
             birthTicks[rowIndex] = row.BirthTick;
             biologicalAgeHours[rowIndex] = row.BiologicalAgeHours;
             lifecyclePhases[rowIndex] = row.LifecyclePhase;
+            reproductionNotBeforeTicks[rowIndex] = row.ReproductionNotBeforeTick;
+            successfulReproductionCounts[rowIndex] = row.SuccessfulReproductionCount;
+            scavengeNotBeforeTicks[rowIndex] = row.ScavengeNotBeforeTick;
+            ingestedStructuralMatterQ[rowIndex] = row.IngestedStructuralMatterQ;
             structuralMatterQ[rowIndex] = row.StructuralMatterQ;
             chargedReserveQ[rowIndex] = row.ChargedReserveQ;
+            conditions[rowIndex] = row.Condition;
+            behaviors[rowIndex] = row.Behavior;
+            committedMicronutrients[rowIndex] = row.CommittedMicronutrients;
+            freeMicronutrients[rowIndex] = row.FreeMicronutrients;
         }
 
         public bool SetPosition(
@@ -608,10 +843,27 @@ internal sealed class OrganismStore
             return true;
         }
 
+        public bool SetSpecies(int rowIndex, SpeciesId speciesId)
+        {
+            ValidateRow(rowIndex);
+            if (speciesIds[rowIndex] == speciesId)
+            {
+                return false;
+            }
+            speciesIds[rowIndex] = speciesId;
+            return true;
+        }
+
         public void SetStructure(int rowIndex, long value)
         {
             ValidateRow(rowIndex);
             structuralMatterQ[rowIndex] = value;
+        }
+
+        public void SetIngestedStructuralMatter(int rowIndex, long value)
+        {
+            ValidateRow(rowIndex);
+            ingestedStructuralMatterQ[rowIndex] = value;
         }
 
         public void SetChargedReserve(int rowIndex, long value)
@@ -620,10 +872,58 @@ internal sealed class OrganismStore
             chargedReserveQ[rowIndex] = value;
         }
 
+        public void SetMicronutrients(
+            int rowIndex,
+            MicronutrientInventory committed,
+            MicronutrientInventory free)
+        {
+            ValidateRow(rowIndex);
+            committedMicronutrients[rowIndex] = committed;
+            freeMicronutrients[rowIndex] = free;
+        }
+
+        public void SetCondition(int rowIndex, MaterializedOrganismCondition value)
+        {
+            ValidateRow(rowIndex);
+            conditions[rowIndex] = value;
+        }
+
+        public bool SetBehavior(int rowIndex, OrganismBehaviorState value)
+        {
+            ValidateRow(rowIndex);
+            if (behaviors[rowIndex] == value)
+            {
+                return false;
+            }
+
+            behaviors[rowIndex] = value;
+            return true;
+        }
+
         public void SetBiologicalAge(int rowIndex, ulong value)
         {
             ValidateRow(rowIndex);
             biologicalAgeHours[rowIndex] = value;
+        }
+
+        public bool SetLifecycleSchedule(
+            int rowIndex,
+            ulong reproductionNotBeforeTick,
+            ulong successfulReproductionCount,
+            ulong scavengeNotBeforeTick)
+        {
+            ValidateRow(rowIndex);
+            if (reproductionNotBeforeTicks[rowIndex] == reproductionNotBeforeTick &&
+                successfulReproductionCounts[rowIndex] == successfulReproductionCount &&
+                scavengeNotBeforeTicks[rowIndex] == scavengeNotBeforeTick)
+            {
+                return false;
+            }
+
+            reproductionNotBeforeTicks[rowIndex] = reproductionNotBeforeTick;
+            successfulReproductionCounts[rowIndex] = successfulReproductionCount;
+            scavengeNotBeforeTicks[rowIndex] = scavengeNotBeforeTick;
+            return true;
         }
 
         public void RemoveLast()
@@ -651,8 +951,35 @@ internal sealed class OrganismStore
                 hash.Add(birthTicks[index]);
                 hash.Add(biologicalAgeHours[index]);
                 hash.Add((uint)lifecyclePhases[index]);
+                hash.Add(reproductionNotBeforeTicks[index]);
+                hash.Add(successfulReproductionCounts[index]);
+                hash.Add(scavengeNotBeforeTicks[index]);
+                hash.Add(ingestedStructuralMatterQ[index]);
                 hash.Add(structuralMatterQ[index]);
                 hash.Add(chargedReserveQ[index]);
+                AddMicronutrients(ref hash, committedMicronutrients[index]);
+                AddMicronutrients(ref hash, freeMicronutrients[index]);
+                hash.Add(conditions[index].EvaluatedTick);
+                hash.Add((uint)conditions[index].SnapshotKind);
+                hash.Add(conditions[index].ReserveFactorQ);
+                hash.Add(conditions[index].StructureFactorQ);
+                hash.Add(conditions[index].NutrientFactorQ);
+                hash.Add(conditions[index].AgeFactorQ);
+                hash.Add(conditions[index].LifecycleFactorQ);
+                hash.Add(conditions[index].EnvironmentalFactorQ);
+                hash.Add(conditions[index].RelativeHealthQ);
+                hash.Add(conditions[index].TemperatureMilliC);
+                hash.Add(conditions[index].TemperatureSeverityQ);
+                hash.Add((uint)behaviors[index].BehaviorId);
+                hash.Add((uint)behaviors[index].TargetKind);
+                hash.Add(behaviors[index].TargetId);
+                hash.Add(behaviors[index].TargetPositionXQ);
+                hash.Add(behaviors[index].TargetPositionYQ);
+                hash.Add(behaviors[index].SelectedAtTick);
+                hash.Add(behaviors[index].MinimumDwellUntilTick);
+                hash.Add(behaviors[index].RecentEnergyCoverageQ);
+                hash.Add(behaviors[index].RecentAcquisitionCoverageQ);
+                hash.Add(behaviors[index].LimitingMaterialDeficitQ);
             }
         }
 
@@ -661,6 +988,16 @@ internal sealed class OrganismStore
             if (rowIndex < 0 || rowIndex >= Count)
             {
                 throw new ArgumentOutOfRangeException(nameof(rowIndex));
+            }
+        }
+
+        private static void AddMicronutrients(
+            ref ShadowHashAccumulator hash,
+            MicronutrientInventory inventory)
+        {
+            for (var slot = 0; slot < MicronutrientInventory.Count; slot++)
+            {
+                hash.Add(inventory[slot]);
             }
         }
     }
@@ -675,8 +1012,16 @@ internal sealed class OrganismStore
         ulong BirthTick,
         ulong BiologicalAgeHours,
         LifecyclePhase LifecyclePhase,
+        ulong ReproductionNotBeforeTick,
+        ulong SuccessfulReproductionCount,
+        ulong ScavengeNotBeforeTick,
+        long IngestedStructuralMatterQ,
         long StructuralMatterQ,
-        long ChargedReserveQ);
+        long ChargedReserveQ,
+        MaterializedOrganismCondition Condition,
+        OrganismBehaviorState Behavior,
+        MicronutrientInventory CommittedMicronutrients,
+        MicronutrientInventory FreeMicronutrients);
 
     private readonly record struct SwappedOrganism(
         OrganismId Id,

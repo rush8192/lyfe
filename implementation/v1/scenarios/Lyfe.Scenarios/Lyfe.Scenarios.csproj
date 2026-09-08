@@ -14,5 +14,8 @@
     <Content Include="../../world-packs/primordial-earth/**/*.json"
              Link="OfficialWorld/%(RecursiveDir)%(Filename)%(Extension)"
              CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="../../world-packs/primordial-earth-v1/**/*.json"
+             Link="OfficialGeneratedWorld/%(RecursiveDir)%(Filename)%(Extension)"
+             CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

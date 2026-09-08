@@ -1,0 +1,29 @@
+{
+  "kind": "founderAllocations",
+  "founderAllocations": [
+    {
+      "numericId": 1,
+      "stableKey": "founder-allocation.balanced",
+      "displayName": "Balanced",
+      "isBaseline": true,
+      "captureEfficiencyMultiplierQ": 1000000,
+      "chemicalToleranceMultiplierQ": 1000000
+    },
+    {
+      "numericId": 2,
+      "stableKey": "founder-allocation.high-throughput",
+      "displayName": "High throughput",
+      "isBaseline": false,
+      "captureEfficiencyMultiplierQ": 1062500,
+      "chemicalToleranceMultiplierQ": 800000
+    },
+    {
+      "numericId": 3,
+      "stableKey": "founder-allocation.stress-tolerant",
+      "displayName": "Stress tolerant",
+      "isBaseline": false,
+      "captureEfficiencyMultiplierQ": 937500,
+      "chemicalToleranceMultiplierQ": 1250000
+    }
+  ]
+}

@@ -44,6 +44,227 @@
         { "element": "hydrogen", "quantity": 2 },
         { "element": "oxygen", "quantity": 1 }
       ]
+    },
+    {
+      "numericId": 5,
+      "stableKey": "resource.structural-biomass",
+      "displayName": "Structural biomass",
+      "biologicalForm": "organic",
+      "environmentalPhase": "particulate",
+      "composition": [
+        { "element": "carbon", "quantity": 100 },
+        { "element": "hydrogen", "quantity": 170 },
+        { "element": "oxygen", "quantity": 40 },
+        { "element": "nitrogen", "quantity": 20 },
+        { "element": "phosphorus", "quantity": 2 },
+        { "element": "sulfur", "quantity": 1 }
+      ]
+    },
+    {
+      "numericId": 6,
+      "stableKey": "resource.spent-structural-residue",
+      "displayName": "Spent structural residue",
+      "biologicalForm": "organic",
+      "environmentalPhase": "particulate",
+      "composition": [
+        { "element": "carbon", "quantity": 68 },
+        { "element": "hydrogen", "quantity": 106 },
+        { "element": "oxygen", "quantity": 8 },
+        { "element": "nitrogen", "quantity": 20 },
+        { "element": "phosphorus", "quantity": 2 },
+        { "element": "sulfur", "quantity": 1 }
+      ]
+    },
+    {
+      "numericId": 7,
+      "stableKey": "resource.generic-structural-organic",
+      "displayName": "Generic structural organic remainder",
+      "biologicalForm": "organic",
+      "environmentalPhase": "particulate",
+      "composition": [
+        { "element": "carbon", "quantity": 96 },
+        { "element": "hydrogen", "quantity": 162 },
+        { "element": "oxygen", "quantity": 36 },
+        { "element": "nitrogen", "quantity": 20 },
+        { "element": "phosphorus", "quantity": 2 },
+        { "element": "sulfur", "quantity": 1 }
+      ]
+    },
+    {
+      "numericId": 8,
+      "stableKey": "resource.spent-reserve-carrier",
+      "displayName": "Spent reserve carrier",
+      "biologicalForm": "organic",
+      "environmentalPhase": "dissolved",
+      "composition": [
+        { "element": "carbon", "quantity": 1 },
+        { "element": "hydrogen", "quantity": 2 },
+        { "element": "oxygen", "quantity": 1 }
+      ]
+    },
+    {
+      "numericId": 9,
+      "stableKey": "resource.methane-gas",
+      "displayName": "Methane",
+      "biologicalForm": "inorganic",
+      "environmentalPhase": "gas",
+      "composition": [
+        { "element": "carbon", "quantity": 1 },
+        { "element": "hydrogen", "quantity": 4 }
+      ]
+    },
+    {
+      "numericId": 10,
+      "stableKey": "resource.hydrogen-sulfide-gas",
+      "displayName": "Hydrogen sulfide",
+      "biologicalForm": "inorganic",
+      "environmentalPhase": "gas",
+      "composition": [
+        { "element": "hydrogen", "quantity": 2 },
+        { "element": "sulfur", "quantity": 1 }
+      ]
+    },
+    {
+      "numericId": 11,
+      "stableKey": "resource.sulfur-dioxide-gas",
+      "displayName": "Sulfur dioxide",
+      "biologicalForm": "inorganic",
+      "environmentalPhase": "gas",
+      "composition": [
+        { "element": "sulfur", "quantity": 1 },
+        { "element": "oxygen", "quantity": 2 }
+      ]
+    },
+    {
+      "numericId": 12,
+      "stableKey": "resource.oxygen-gas",
+      "displayName": "Oxygen",
+      "biologicalForm": "inorganic",
+      "environmentalPhase": "gas",
+      "composition": [
+        { "element": "oxygen", "quantity": 2 }
+      ]
+    },
+    {
+      "numericId": 13,
+      "stableKey": "resource.nitrogen-gas",
+      "displayName": "Nitrogen",
+      "biologicalForm": "inorganic",
+      "environmentalPhase": "gas",
+      "composition": [
+        { "element": "nitrogen", "quantity": 2 }
+      ]
+    },
+    {
+      "numericId": 14,
+      "stableKey": "resource.ammonia-gas",
+      "displayName": "Ammonia",
+      "biologicalForm": "inorganic",
+      "environmentalPhase": "gas",
+      "composition": [
+        { "element": "nitrogen", "quantity": 1 },
+        { "element": "hydrogen", "quantity": 3 }
+      ]
+    },
+    {
+      "numericId": 15,
+      "stableKey": "resource.inorganic-sulfur",
+      "displayName": "Inorganic sulfur",
+      "biologicalForm": "inorganic",
+      "environmentalPhase": "particulate",
+      "composition": [
+        { "element": "sulfur", "quantity": 1 }
+      ]
+    },
+    {
+      "numericId": 16,
+      "stableKey": "resource.inorganic-phosphorus",
+      "displayName": "Inorganic phosphorus",
+      "biologicalForm": "inorganic",
+      "environmentalPhase": "dissolved",
+      "composition": [
+        { "element": "phosphorus", "quantity": 1 }
+      ]
+    },
+    {
+      "numericId": 17,
+      "stableKey": "resource.organic-oxygen",
+      "displayName": "Organic oxygen remainder",
+      "biologicalForm": "organic",
+      "environmentalPhase": "dissolved",
+      "composition": [
+        { "element": "oxygen", "quantity": 1 }
+      ]
+    },
+    {
+      "numericId": 18, "stableKey": "resource.calcium", "displayName": "Calcium",
+      "biologicalForm": "inorganic", "environmentalPhase": "dissolved",
+      "composition": [{ "element": "calcium", "quantity": 1 }]
+    },
+    {
+      "numericId": 19, "stableKey": "resource.iron", "displayName": "Iron",
+      "biologicalForm": "inorganic", "environmentalPhase": "dissolved",
+      "composition": [{ "element": "iron", "quantity": 1 }]
+    },
+    {
+      "numericId": 20, "stableKey": "resource.potassium", "displayName": "Potassium",
+      "biologicalForm": "inorganic", "environmentalPhase": "dissolved",
+      "composition": [{ "element": "potassium", "quantity": 1 }]
+    },
+    {
+      "numericId": 21, "stableKey": "resource.sodium", "displayName": "Sodium",
+      "biologicalForm": "inorganic", "environmentalPhase": "dissolved",
+      "composition": [{ "element": "sodium", "quantity": 1 }]
+    },
+    {
+      "numericId": 22, "stableKey": "resource.magnesium", "displayName": "Magnesium",
+      "biologicalForm": "inorganic", "environmentalPhase": "dissolved",
+      "composition": [{ "element": "magnesium", "quantity": 1 }]
+    },
+    {
+      "numericId": 23, "stableKey": "resource.zinc", "displayName": "Zinc",
+      "biologicalForm": "inorganic", "environmentalPhase": "dissolved",
+      "composition": [{ "element": "zinc", "quantity": 1 }]
+    },
+    {
+      "numericId": 24, "stableKey": "resource.copper", "displayName": "Copper",
+      "biologicalForm": "inorganic", "environmentalPhase": "dissolved",
+      "composition": [{ "element": "copper", "quantity": 1 }]
+    },
+    {
+      "numericId": 25, "stableKey": "resource.iodine", "displayName": "Iodine",
+      "biologicalForm": "inorganic", "environmentalPhase": "dissolved",
+      "composition": [{ "element": "iodine", "quantity": 1 }]
+    },
+    {
+      "numericId": 26, "stableKey": "resource.fluoride", "displayName": "Fluoride",
+      "biologicalForm": "inorganic", "environmentalPhase": "dissolved",
+      "composition": [{ "element": "fluorine", "quantity": 1 }]
+    },
+    {
+      "numericId": 27, "stableKey": "resource.selenium", "displayName": "Selenium",
+      "biologicalForm": "inorganic", "environmentalPhase": "dissolved",
+      "composition": [{ "element": "selenium", "quantity": 1 }]
+    },
+    {
+      "numericId": 28, "stableKey": "resource.manganese", "displayName": "Manganese",
+      "biologicalForm": "inorganic", "environmentalPhase": "dissolved",
+      "composition": [{ "element": "manganese", "quantity": 1 }]
+    },
+    {
+      "numericId": 29, "stableKey": "resource.molybdenum", "displayName": "Molybdenum",
+      "biologicalForm": "inorganic", "environmentalPhase": "dissolved",
+      "composition": [{ "element": "molybdenum", "quantity": 1 }]
+    },
+    {
+      "numericId": 30, "stableKey": "resource.nickel", "displayName": "Nickel",
+      "biologicalForm": "inorganic", "environmentalPhase": "dissolved",
+      "composition": [{ "element": "nickel", "quantity": 1 }]
+    },
+    {
+      "numericId": 31, "stableKey": "resource.cobalt", "displayName": "Cobalt",
+      "biologicalForm": "inorganic", "environmentalPhase": "dissolved",
+      "composition": [{ "element": "cobalt", "quantity": 1 }]
     }
   ]
 }

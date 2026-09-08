@@ -1,8 +1,12 @@
 using System.Collections.Immutable;
+using Lyfe.Simulation.Behavior;
 using Lyfe.Simulation.Core;
+using Lyfe.Simulation.Gameplay;
+using Lyfe.Simulation.Physiology;
 using Lyfe.Simulation.Publication;
 using Lyfe.Simulation.Rules.Identity;
 using Lyfe.Simulation.State.Identity;
+using Lyfe.Simulation.Ticks;
 
 namespace Lyfe.Server.Projection;
 
@@ -37,13 +41,93 @@ public sealed record OrganismProjection(
     SpeciesId SpeciesId,
     uint PositionXQ,
     uint PositionYQ,
+    uint BodyRadiusQ,
     long VelocityXQPerHour,
     long VelocityYQPerHour,
     ulong BirthTick,
     ulong BiologicalAgeHours,
     PublicationLifecyclePhase LifecyclePhase,
+    ulong ReproductionNotBeforeTick,
+    ulong SuccessfulReproductionCount,
+    ulong ScavengeNotBeforeTick,
+    long IngestedStructuralMatterQ,
     long StructuralMatterQ,
-    long ChargedReserveQ);
+    long ChargedReserveQ,
+    long ChargedReserveCapacityQ,
+    uint RelativeHealthQ,
+    uint ReserveFactorQ,
+    uint StructureFactorQ,
+    uint AgeFactorQ,
+    uint EnvironmentalFactorQ,
+    OrganismBehaviorId BehaviorId,
+    BehaviorTargetKind BehaviorTargetKind,
+    ulong BehaviorTargetId,
+    uint BehaviorTargetPositionXQ,
+    uint BehaviorTargetPositionYQ,
+    ulong BehaviorSelectedAtTick,
+    ulong BehaviorMinimumDwellUntilTick,
+    uint RecentEnergyCoverageQ,
+    uint RecentAcquisitionCoverageQ,
+    uint LimitingMaterialDeficitQ,
+    uint ResourcePressureQ,
+    ImmutableArray<ExactResourceStockProjection> CommittedMicronutrients,
+    ImmutableArray<ExactResourceStockProjection> FreeMicronutrients);
+
+public readonly record struct BehaviorCountProjection(
+    OrganismBehaviorId BehaviorId,
+    ulong Count);
+
+public sealed record BehaviorDistributionProjection(
+    SpeciesId SpeciesId,
+    ulong ObservedAtTick,
+    ulong TotalObservedOrganisms,
+    ImmutableArray<BehaviorCountProjection> Counts);
+
+public sealed record RemnantProjection(
+    RemnantId RemnantId,
+    OrganismId SourceOrganismId,
+    SpeciesId SourceSpeciesId,
+    uint PositionXQ,
+    uint PositionYQ,
+    uint BodyRadiusQ,
+    ulong CreatedTick,
+    long StructuralMatterQ,
+    long ChargedReserveQ,
+    ImmutableArray<ExactResourceStockProjection> Micronutrients);
+
+public readonly record struct JourneyDeathCauseProjection(
+    IntrinsicDeathCause Cause,
+    uint ProbabilityQ,
+    bool Triggered);
+
+public sealed record OrganismJourneyEventProjection(
+    ulong EventId,
+    ulong Tick,
+    TickPhase Phase,
+    OrganismJourneyEventFamily Family,
+    OrganismId SubjectOrganismId,
+    SpeciesId SubjectSpeciesId,
+    TileId TileId,
+    uint PositionXQ,
+    uint PositionYQ,
+    OrganismId? RelatedOrganismId,
+    RemnantId? RelatedRemnantId,
+    ResourceId? ResourceId,
+    long AmountQ,
+    uint DetailId,
+    ImmutableArray<JourneyDeathCauseProjection> DeathCauseProbabilities);
+
+public readonly record struct RoutineResourceAcquisitionProjection(
+    ResourceId ResourceId,
+    long AmountQ);
+
+public sealed record OrganismRoutineActivitySummaryProjection(
+    ulong BucketStartHour,
+    uint PeriodHours,
+    OrganismId SubjectOrganismId,
+    SpeciesId SubjectSpeciesId,
+    TileId TileId,
+    ImmutableArray<RoutineResourceAcquisitionProjection> ResourceAcquisitions);
 
 public abstract record TileProjection(
     TileId TileId,
@@ -72,13 +156,51 @@ public sealed record LiveTileProjection(
     int ElevationMeters,
     ulong ObservedAtTick,
     ImmutableArray<ExactResourceStockProjection> ResourceStocks,
-    ImmutableArray<OrganismProjection> Organisms) :
+    ImmutableArray<OrganismProjection> Organisms,
+    ImmutableArray<RemnantProjection> Remnants,
+    ImmutableArray<BehaviorDistributionProjection> BehaviorDistributions) :
     TileProjection(TileId, X, Y, TileVisibility.Live);
 
 public sealed record SpeciesProjection(
     SpeciesId SpeciesId,
     SpeciesPopulationScope PopulationScope,
-    ulong Population);
+    ulong Population,
+    ImmutableArray<BehaviorCountProjection> BehaviorCounts,
+    SpeciesEvolutionProjection? Evolution = null);
+
+public sealed record SpeciesEvolutionProjection(
+    GenomeId GenomeId,
+    FounderGenomeId FounderGenomeId,
+    FounderAllocationId FounderAllocationId,
+    string GenomeHash,
+    ImmutableArray<TraitId> AcquiredTraits,
+    long MutationBalanceQ,
+    ulong EvolutionRevision,
+    ulong SpeciationNotBeforeTick,
+    uint AverageHealthQ,
+    long LastMutationIncomeQ,
+    uint MutationIncomeModifierQ,
+    SpeciesId? ParentSpeciesId,
+    ulong CreatedTick,
+    ulong? ExtinctTick);
+
+public sealed record AbiogenesisRootProjection(
+    SpeciesId SpeciesId,
+    FounderGenomeId FounderGenomeId,
+    FounderAllocationId FounderAllocationId,
+    TileId StartingTileId,
+    uint InitialPopulation,
+    bool PlayerSelected);
+
+public sealed record GameProjection(
+    GameMode Mode,
+    GameRunStatus RunStatus,
+    GameLossReason LossReason,
+    SpeciesId ControlledSpeciesId,
+    ulong GameplayRevision,
+    ulong? EndedTick,
+    ImmutableArray<AbiogenesisRootProjection> Roots,
+    ImmutableArray<SpeciesId> MutationLockedSpeciesIds);
 
 public sealed record ActorWorldProjection(
     WorldId WorldId,
@@ -93,5 +215,9 @@ public sealed record ActorWorldProjection(
     bool WrapX,
     bool WrapY,
     SpeciesId ControlledSpeciesId,
+    GameProjection Gameplay,
     ImmutableArray<TileProjection> Tiles,
-    ImmutableArray<SpeciesProjection> Species);
+    ImmutableArray<SpeciesProjection> Species,
+    ImmutableArray<OrganismJourneyEventProjection> JourneyEvents,
+    ImmutableArray<OrganismRoutineActivitySummaryProjection> RoutineActivitySummaries,
+    ImmutableArray<OrganismJourneyEventProjection> ActivityPulseEvents);

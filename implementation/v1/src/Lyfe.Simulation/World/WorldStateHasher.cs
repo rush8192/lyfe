@@ -2,6 +2,7 @@ using System.Collections.Immutable;
 using System.Security.Cryptography;
 using Lyfe.Simulation.Core;
 using Lyfe.Simulation.Ledger;
+using Lyfe.Simulation.Physiology;
 using Lyfe.Simulation.Randomness;
 using Lyfe.Simulation.Publication;
 using Lyfe.Simulation.Serialization;
@@ -19,12 +20,18 @@ internal static class WorldStateHasher
     private const uint CounterRecord = 0x3002;
     private const uint TileRecord = 0x3100;
     private const uint TileResourceRecord = 0x3101;
+    private const uint GasTileRemainderRecord = 0x3102;
+    private const uint GasEdgeRemainderRecord = 0x3103;
     private const uint GenomeRecord = 0x3200;
     private const uint SpeciesRecord = 0x3300;
+    private const uint SpeciationEventRecord = 0x3301;
     private const uint OrganismRecord = 0x3400;
+    private const uint RemnantRecord = 0x3401;
     private const uint LedgerTransactionRecord = 0x3500;
     private const uint MatterEntryRecord = 0x3501;
     private const uint EnergyEntryRecord = 0x3502;
+    private const uint GameplayRecord = 0x3600;
+    private const uint AbiogenesisRootRecord = 0x3601;
 
     public static string Hash(
         WorldSnapshotContent boundary,
@@ -45,14 +52,53 @@ internal static class WorldStateHasher
         WriteByteField(writer, 9, (byte)boundary.RunnerStatus);
         WriteCounters(writer, world);
         WriteTiles(writer, world);
+        WriteGasRemainders(writer, world);
         WriteGenomes(writer, world);
         WriteSpecies(writer, world);
+        WriteGameplay(writer, world);
         WriteOrganisms(writer, world);
+        WriteRemnants(writer, world);
         WriteLedger(writer, completedTickTransactions);
 
         Span<byte> digest = stackalloc byte[SHA256.HashSizeInBytes];
         SHA256.HashData(writer.WrittenSpan, digest);
         return Convert.ToHexStringLower(digest);
+    }
+
+    private static void WriteGasRemainders(CanonicalBinaryWriter writer, MutableWorldState world)
+    {
+        var gases = world.Rules.WorldProfile.GasEnvironment.Gases;
+        var tiles = world.GetTileIdsInCanonicalOrder();
+        Field(writer, 21);
+        writer.WriteUInt32(checked((uint)(tiles.Length * gases.Length)));
+        foreach (var tile in tiles)
+        {
+            for (var gasSlot = 0; gasSlot < gases.Length; gasSlot++)
+            {
+                var remainder = world.GetGasTileRemainders(gasSlot, tile);
+                writer.WriteUInt32(GasTileRemainderRecord);
+                WriteUInt32Field(writer, 1, tile.Value);
+                WriteUInt32Field(writer, 2, gases[gasSlot].Resource.Id.Value);
+                WriteInt64Field(writer, 3, remainder.SourceQ);
+                WriteInt64Field(writer, 4, remainder.SinkQ);
+            }
+        }
+
+        var edges = world.GetGasEdges();
+        Field(writer, 22);
+        writer.WriteUInt32(checked((uint)(edges.Length * gases.Length)));
+        for (var edgeSlot = 0; edgeSlot < edges.Length; edgeSlot++)
+        {
+            var edge = edges[edgeSlot];
+            for (var gasSlot = 0; gasSlot < gases.Length; gasSlot++)
+            {
+                writer.WriteUInt32(GasEdgeRemainderRecord);
+                WriteUInt32Field(writer, 1, edge.LowerTileId.Value);
+                WriteUInt32Field(writer, 2, edge.HigherTileId.Value);
+                WriteUInt32Field(writer, 3, gases[gasSlot].Resource.Id.Value);
+                WriteInt64Field(writer, 4, world.GetGasExchangeRemainder(gasSlot, edgeSlot));
+            }
+        }
     }
 
     private static void WriteCompatibility(
@@ -94,6 +140,7 @@ internal static class WorldStateHasher
         WriteUInt64Field(writer, 1, counters.NextGenomeId);
         WriteUInt64Field(writer, 2, counters.NextSpeciesId);
         WriteUInt64Field(writer, 3, counters.NextOrganismId);
+        WriteUInt64Field(writer, 4, counters.NextRemnantId);
     }
 
     private static void WriteTiles(CanonicalBinaryWriter writer, MutableWorldState world)
@@ -133,6 +180,48 @@ internal static class WorldStateHasher
             WriteUInt64Field(writer, 1, genome.Id.Value);
             WriteUInt32Field(writer, 2, genome.FounderGenomeId.Value);
             WriteUInt32Field(writer, 3, genome.Phenotype.FounderGenomeId.Value);
+            WriteUInt32Field(writer, 6, genome.FounderAllocationId.Value);
+            Field(writer, 4);
+            writer.WriteUInt32(checked((uint)genome.AcquiredTraits.Length));
+            foreach (var trait in genome.AcquiredTraits) writer.WriteUInt32(trait.Value);
+            WriteStringField(writer, 5, genome.GenomeHash);
+        }
+    }
+
+    private static void WriteGameplay(CanonicalBinaryWriter writer, MutableWorldState world)
+    {
+        var game = world.GetGameplayState();
+        Field(writer, 35);
+        writer.WriteUInt32(GameplayRecord);
+        WriteByteField(writer, 1, (byte)game.Mode);
+        WriteByteField(writer, 2, (byte)game.RunStatus);
+        WriteByteField(writer, 3, (byte)game.LossReason);
+        WriteUInt64Field(writer, 4, game.ControlledSpeciesId.Value);
+        WriteUInt64Field(writer, 5, game.GameplayRevision);
+        Field(writer, 6);
+        writer.WriteBoolean(game.EndedTick.HasValue);
+        if (game.EndedTick.HasValue)
+        {
+            writer.WriteUInt64(game.EndedTick.Value);
+        }
+        Field(writer, 7);
+        writer.WriteUInt32(checked((uint)game.Roots.Length));
+        foreach (var root in game.Roots.OrderBy(root => root.SpeciesId.Value))
+        {
+            writer.WriteUInt32(AbiogenesisRootRecord);
+            WriteUInt64Field(writer, 1, root.SpeciesId.Value);
+            WriteUInt32Field(writer, 2, root.FounderGenomeId.Value);
+            WriteUInt32Field(writer, 6, root.FounderAllocationId.Value);
+            WriteUInt32Field(writer, 3, root.StartingTileId.Value);
+            WriteUInt32Field(writer, 4, root.InitialPopulation);
+            Field(writer, 5);
+            writer.WriteBoolean(root.PlayerSelected);
+        }
+        Field(writer, 8);
+        writer.WriteUInt32(checked((uint)game.MutationLockedSpeciesIds.Length));
+        foreach (var id in game.MutationLockedSpeciesIds.OrderBy(id => id.Value))
+        {
+            writer.WriteUInt64(id.Value);
         }
     }
 
@@ -148,7 +237,65 @@ internal static class WorldStateHasher
             WriteUInt64Field(writer, 1, species.Id.Value);
             WriteUInt64Field(writer, 2, species.GenomeId.Value);
             WriteUInt32Field(writer, 3, species.Phenotype.FounderGenomeId.Value);
+            WriteUInt32Field(writer, 23, world.GetCompiledPhenotype(species.Id).FounderAllocationId.Value);
             WriteUInt64Field(writer, 4, species.Population);
+            var account = species.Evolution;
+            WriteByteField(writer, 5, (byte)account.Authority);
+            WriteInt64Field(writer, 6, account.MutationBalanceQ);
+            WriteUInt64Field(writer, 7, (ulong)account.MutationIncomeRemainder);
+            WriteUInt64Field(writer, 8, (ulong)(account.MutationIncomeRemainder >> 64));
+            WriteUInt64Field(writer, 9, account.SpeciationNotBeforeTick);
+            WriteUInt32Field(writer, 10, account.SpeciationOrdinal);
+            WriteUInt64Field(writer, 11, account.EvolutionRevision);
+            WriteUInt32Field(writer, 12, account.AverageHealthQ);
+            WriteInt64Field(writer, 13, account.LastIncomeQ);
+            WriteUInt32Field(writer, 14, account.Pressure.EnergyShortageQ);
+            WriteUInt32Field(writer, 15, account.Pressure.StarvationQ);
+            var lineage = species.Lineage;
+            WriteUInt64Field(writer, 16, lineage.ParentSpeciesId?.Value ?? 0);
+            WriteUInt64Field(writer, 17, lineage.FoundingEventId);
+            WriteUInt64Field(writer, 18, lineage.CreatedTick);
+            Field(writer, 19);
+            writer.WriteBoolean(lineage.ExtinctTick.HasValue);
+            if (lineage.ExtinctTick.HasValue) writer.WriteUInt64(lineage.ExtinctTick.Value);
+            Field(writer, 20);
+            writer.WriteUInt32(checked((uint)lineage.FounderCounts.Length));
+            foreach (var count in lineage.FounderCounts)
+            {
+                writer.WriteUInt32(count.TileId.Value);
+                writer.WriteUInt32(count.Count);
+            }
+            Field(writer, 21);
+            writer.WriteUInt32(checked((uint)lineage.AcquiredTraitDelta.Length));
+            foreach (var trait in lineage.AcquiredTraitDelta) writer.WriteUInt32(trait.Value);
+        }
+
+        var events = world.GetSpeciationEvents();
+        Field(writer, 41);
+        writer.WriteUInt32(checked((uint)events.Length));
+        foreach (var value in events)
+        {
+            writer.WriteUInt32(SpeciationEventRecord);
+            WriteUInt64Field(writer, 1, value.EventId);
+            WriteUInt64Field(writer, 2, value.Tick);
+            WriteUInt64Field(writer, 3, value.AncestorSpeciesId.Value);
+            WriteUInt64Field(writer, 4, value.DescendantSpeciesId.Value);
+            WriteByteField(writer, 5, (byte)value.ActorKind);
+            Field(writer, 6);
+            writer.WriteUInt32(checked((uint)value.FounderCounts.Length));
+            foreach (var count in value.FounderCounts)
+            {
+                writer.WriteUInt32(count.TileId.Value);
+                writer.WriteUInt32(count.Count);
+            }
+            WriteStringField(writer, 7, value.FounderSelectionDigest);
+            Field(writer, 8);
+            writer.WriteUInt32(checked((uint)value.TraitDelta.Length));
+            foreach (var trait in value.TraitDelta) writer.WriteUInt32(trait.Value);
+            WriteInt64Field(writer, 9, value.MutationPriceQ);
+            WriteInt64Field(writer, 10, value.BalanceBeforeQ);
+            WriteInt64Field(writer, 11, value.DuplicatedBalanceAfterQ);
+            WriteUInt32Field(writer, 12, value.ChangeComplexity);
         }
     }
 
@@ -171,8 +318,71 @@ internal static class WorldStateHasher
             WriteUInt64Field(writer, 8, organism.BirthTick);
             WriteUInt64Field(writer, 9, organism.BiologicalAgeHours);
             WriteByteField(writer, 10, (byte)organism.LifecyclePhase);
-            WriteInt64Field(writer, 11, organism.StructuralMatterQ);
-            WriteInt64Field(writer, 12, organism.ChargedReserveQ);
+            WriteUInt64Field(writer, 11, organism.ReproductionNotBeforeTick);
+            WriteUInt64Field(writer, 12, organism.SuccessfulReproductionCount);
+            WriteUInt64Field(writer, 13, organism.ScavengeNotBeforeTick);
+            WriteInt64Field(writer, 14, organism.IngestedStructuralMatterQ);
+            WriteInt64Field(writer, 15, organism.StructuralMatterQ);
+            WriteInt64Field(writer, 16, organism.ChargedReserveQ);
+            WriteUInt64Field(writer, 17, organism.Condition.EvaluatedTick);
+            WriteByteField(writer, 18, (byte)organism.Condition.SnapshotKind);
+            WriteUInt32Field(writer, 19, organism.Condition.ReserveFactorQ);
+            WriteUInt32Field(writer, 20, organism.Condition.StructureFactorQ);
+            WriteUInt32Field(writer, 21, organism.Condition.NutrientFactorQ);
+            WriteUInt32Field(writer, 22, organism.Condition.AgeFactorQ);
+            WriteUInt32Field(writer, 23, organism.Condition.LifecycleFactorQ);
+            WriteUInt32Field(writer, 24, organism.Condition.EnvironmentalFactorQ);
+            WriteUInt32Field(writer, 25, organism.Condition.RelativeHealthQ);
+            WriteInt32Field(writer, 26, organism.Condition.TemperatureMilliC);
+            WriteUInt32Field(writer, 27, organism.Condition.TemperatureSeverityQ);
+            WriteByteField(writer, 28, (byte)organism.Behavior.BehaviorId);
+            WriteByteField(writer, 29, (byte)organism.Behavior.TargetKind);
+            WriteUInt64Field(writer, 30, organism.Behavior.TargetId);
+            WriteUInt32Field(writer, 31, organism.Behavior.TargetPositionXQ);
+            WriteUInt32Field(writer, 32, organism.Behavior.TargetPositionYQ);
+            WriteUInt64Field(writer, 33, organism.Behavior.SelectedAtTick);
+            WriteUInt64Field(writer, 34, organism.Behavior.MinimumDwellUntilTick);
+            WriteUInt32Field(writer, 35, organism.Behavior.RecentEnergyCoverageQ);
+            WriteUInt32Field(writer, 36, organism.Behavior.RecentAcquisitionCoverageQ);
+            WriteUInt32Field(writer, 37, organism.Behavior.LimitingMaterialDeficitQ);
+            Field(writer, 38);
+            for (var slot = 0; slot < MicronutrientInventory.Count; slot++)
+            {
+                writer.WriteInt64(organism.CommittedMicronutrients[slot]);
+            }
+            Field(writer, 39);
+            for (var slot = 0; slot < MicronutrientInventory.Count; slot++)
+            {
+                writer.WriteInt64(organism.FreeMicronutrients[slot]);
+            }
+        }
+    }
+
+    private static void WriteRemnants(CanonicalBinaryWriter writer, MutableWorldState world)
+    {
+        var ids = world.GetRemnantIdsInCanonicalOrder();
+        Field(writer, 55);
+        writer.WriteUInt32(checked((uint)ids.Length));
+        foreach (var id in ids)
+        {
+            var remnant = world.GetRemnant(id);
+            writer.WriteUInt32(RemnantRecord);
+            WriteUInt64Field(writer, 1, remnant.Id.Value);
+            WriteUInt64Field(writer, 2, remnant.SourceOrganismId.Value);
+            WriteUInt64Field(writer, 3, remnant.SourceSpeciesId.Value);
+            WriteUInt64Field(writer, 4, remnant.CreatedTick);
+            WriteUInt32Field(writer, 5, remnant.TileId.Value);
+            WriteUInt32Field(writer, 6, remnant.PositionXQ);
+            WriteUInt32Field(writer, 7, remnant.PositionYQ);
+            WriteInt64Field(writer, 8, remnant.StructuralMatterQ);
+            WriteInt64Field(writer, 9, remnant.ChargedReserveQ);
+            WriteUInt32Field(writer, 10, remnant.StructureDecayRemainderQ);
+            WriteUInt32Field(writer, 11, remnant.ReserveDecayRemainderQ);
+            Field(writer, 12);
+            for (var slot = 0; slot < MicronutrientInventory.Count; slot++)
+            {
+                writer.WriteInt64(remnant.Micronutrients[slot]);
+            }
         }
     }
 

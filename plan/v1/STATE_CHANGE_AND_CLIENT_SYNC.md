@@ -330,9 +330,16 @@ This rule makes aggregation batches coalescible and prevents retries from double
 
 ## Ordered, non-coalescible records
 
-Canonical notable events, authorized death/speciation facts, attention alerts, pause transitions, and command results retain stable IDs and canonical order. Coalescing deduplicates them by ID but never converts them into latest-state patches or discards them merely because their entities were later removed.
+Canonical notable events, organism journey landmarks, authorized death/speciation facts,
+attention alerts, pause transitions, and command results retain stable IDs and canonical
+order. Coalescing deduplicates them by ID but never converts them into latest-state patches
+or discards them merely because their entities were later removed. Fixed organism
+acquisition-summary buckets are keyed absolute upserts, so retransmission cannot double-count
+their quantities.
 
-Ephemeral visual notifications may be dropped by explicit product policy; authoritative or player-relevant retained records may not.
+Ephemeral activity-pulse projections may coalesce or expire by the explicit product policy
+in [CLIENT.md](CLIENT.md); authoritative journey records may not. State deltas never ask the
+client to infer an event from a value change or an entity removal.
 
 # Merge algebra
 

@@ -1,6 +1,6 @@
 # Atmospheric Gas Sources, Transport, and Attrition
 
-Status: first numerical calibration for the official primordial-Earth-like world profile
+Status: first numerical calibration implemented for the official primordial-Earth-like world profile (`GAS-200`)
 
 Sources: [WORLD vision](../../vision/WORLD.md), [NUTRIENTS vision](../../vision/NUTRIENTS.md), [resource model](RESOURCE_MODEL.md), [world generation and climate](WORLD_AND_CLIMATE.md), [moddability](MODDABILITY.md), [hydrogen fixture](ONE_TILE_STARTING_CONFIGURATION.md), and [sulfur fixture](SULFUR_TILE_STARTING_CONFIGURATION.md).
 
@@ -156,6 +156,8 @@ All exchange proposals use the same read view and apply after a barrier. The con
 | N₂ | No default v1 attrition | None |
 
 Expanding a named compound into generic elemental pools uses its declared composition vector and cannot duplicate the original named balance. A rule pack may use a true external sink only when matter is explicitly leaving the modeled world.
+
+The first executable `GAS-200` slice records every configured attrition flow into an explicit external atmospheric/geological boundary account. This preserves exact elemental accounting without prematurely inventing tile-pool chemistry. The later resource-catalogue slice may redirect H₂S, SO₂, NH₃, CO₂, and O₂ attrition to named inorganic tile products; doing so is a rules/content change, not a transport-algorithm change.
 
 # Volcanic source scaling
 

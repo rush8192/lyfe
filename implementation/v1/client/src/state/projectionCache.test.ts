@@ -2,7 +2,11 @@ import { create, toBinary } from "@bufbuild/protobuf";
 import { describe, expect, it } from "vitest";
 import {
   ActorWorldProjectionSchema,
+  GameMode,
+  GameRunStatus,
   OrganismLifecyclePhase,
+  OrganismJourneyEventFamily,
+  OrganismJourneyEventSchema,
   ProjectionBatchSchema,
   ProjectionSnapshotSchema,
   SpeciesPopulationScope,
@@ -31,6 +35,7 @@ describe("projection cache", () => {
       worldRevision: 1n,
       simulatedHours: 1n,
       lifecycle: WorldLifecycle.PAUSED_READY,
+      gameplay: targetWorld.gameplay,
       tileReplacements: targetWorld.tiles,
     });
 
@@ -134,6 +139,7 @@ describe("projection cache", () => {
       worldRevision: 1n,
       simulatedHours: 1n,
       lifecycle: WorldLifecycle.PAUSED_READY,
+      gameplay: cache.world.gameplay,
       tileReplacements: [reduced],
     });
 
@@ -144,6 +150,100 @@ describe("projection cache", () => {
     expect(detail.case).toBe("reduced");
     if (detail.case !== "reduced") throw new Error("Expected reduced tile.");
     expect("organisms" in detail.value).toBe(false);
+  });
+
+  it("applies an authoritative sandbox control transfer with the same batch", () => {
+    const cache = createProjectionCache(create(ProjectionSnapshotSchema, {
+      projectionStreamId: 7n,
+      streamRevision: 1n,
+      projection: worldAt(0n, liveTile(0n)),
+    }));
+    if (cache.world.gameplay === undefined) throw new Error("Expected gameplay state.");
+    const gameplay = {
+      ...cache.world.gameplay,
+      controlledSpeciesId: 2n,
+      gameplayRevision: 2n,
+    };
+    const secondSpecies = {
+      speciesId: 2n,
+      populationScope: SpeciesPopulationScope.WORLD_EXACT,
+      population: 1n,
+    };
+    const batch = create(ProjectionBatchSchema, {
+      projectionStreamId: 7n,
+      worldId: 1n,
+      worldRulesHash: cache.world.worldRulesHash,
+      baseStreamRevision: 1n,
+      targetStreamRevision: 2n,
+      fromExclusiveTick: 0n,
+      throughCompletedTick: 0n,
+      worldRevision: 1n,
+      simulatedHours: 0n,
+      lifecycle: WorldLifecycle.PAUSED_READY,
+      gameplay,
+      speciesReplacements: [secondSpecies],
+    });
+
+    const result = applyProjectionBatch(cache, batch);
+
+    expect(result.status).toBe("applied");
+    expect(result.cache.world.controlledSpeciesId).toBe(2n);
+    expect(result.cache.world.gameplay?.controlledSpeciesId).toBe(2n);
+    expect(result.cache.world.species.map((species) => species.speciesId)).toEqual([1n, 2n]);
+  });
+
+  it("appends journey events exactly once and rejects reused identities", () => {
+    const initialWorld = worldAt(0n, liveTile(0n));
+    const cache = createProjectionCache(create(ProjectionSnapshotSchema, {
+      projectionStreamId: 7n,
+      streamRevision: 1n,
+      projection: initialWorld,
+    }));
+    const event = create(OrganismJourneyEventSchema, {
+      eventId: 1n,
+      tick: 1n,
+      phase: 7,
+      family: OrganismJourneyEventFamily.RESOURCE_ABSORPTION,
+      subjectOrganismId: 1n,
+      subjectSpeciesId: 1n,
+      tileId: 0,
+      positionXQ: 100,
+      positionYQ: 200,
+      resourceId: 1,
+      amountQ: 40n,
+    });
+    const batch = create(ProjectionBatchSchema, {
+      projectionStreamId: 7n,
+      worldId: 1n,
+      worldRulesHash: initialWorld.worldRulesHash,
+      baseStreamRevision: 1n,
+      targetStreamRevision: 2n,
+      fromExclusiveTick: 0n,
+      throughCompletedTick: 1n,
+      worldRevision: 1n,
+      simulatedHours: 1n,
+      lifecycle: WorldLifecycle.PAUSED_READY,
+      gameplay: initialWorld.gameplay,
+      tileReplacements: [liveTile(1n)],
+      journeyEventAppends: [event],
+    });
+
+    const applied = applyProjectionBatch(cache, batch);
+    expect(applied.status).toBe("applied");
+    expect(applied.cache.world.journeyEvents).toHaveLength(1);
+    expect(applied.cache.world.journeyEvents[0].eventId).toBe(1n);
+
+    const reused = create(ProjectionBatchSchema, {
+      ...batch,
+      baseStreamRevision: 2n,
+      targetStreamRevision: 3n,
+      fromExclusiveTick: 1n,
+      throughCompletedTick: 2n,
+      worldRevision: 2n,
+      simulatedHours: 2n,
+      journeyEventAppends: [{ ...event, tick: 2n }],
+    });
+    expect(applyProjectionBatch(applied.cache, reused).status).toBe("resync-required");
   });
 });
 
@@ -160,6 +260,19 @@ function worldAt(completedTick: bigint, tile: ReturnType<typeof liveTile>) {
     height: 1,
     wrapX: true,
     controlledSpeciesId: 1n,
+    gameplay: {
+      mode: GameMode.FREE_SANDBOX,
+      runStatus: GameRunStatus.ACTIVE,
+      controlledSpeciesId: 1n,
+      gameplayRevision: 1n,
+      roots: [{
+        speciesId: 1n,
+        founderGenomeId: 1,
+        startingTileId: 0,
+        initialPopulation: 1,
+        playerSelected: true,
+      }],
+    },
     tiles: [tile],
     species: [
       {

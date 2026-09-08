@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using System.Security.Cryptography;
+using Lyfe.Simulation.Evolution;
 using Lyfe.Simulation.Rules.Authoring;
 using Lyfe.Simulation.Rules.Runtime;
 using Lyfe.Simulation.Serialization;
@@ -22,8 +23,11 @@ internal static class CanonicalRuleHashWriter
         AuthoringRulePack source,
         ImmutableArray<CompiledResource> resources,
         ImmutableArray<CompiledReaction> reactions,
+        ImmutableArray<CompiledTrait> traits,
+        ImmutableArray<CompiledFounderAllocation> founderAllocations,
         ImmutableArray<CompiledPhenotype> founderPhenotypes,
-        ImmutableArray<CompiledScenario> scenarios)
+        ImmutableArray<CompiledScenario> scenarios,
+        ImmutableArray<long> effectivePopulationQ)
     {
         var writer = new CanonicalBinaryWriter();
         writer.WriteUInt32(MechanicsRecord);
@@ -31,7 +35,7 @@ internal static class CanonicalRuleHashWriter
         WriteStringField(writer, 2, source.Manifest.PackId);
         WriteUInt32Field(writer, 3, source.Manifest.EngineRuleApiVersion);
         WriteUInt32Field(writer, 4, source.Manifest.RuleCompilerVersion);
-        WriteCompiledSemanticFields(writer, resources, reactions, founderPhenotypes, scenarios);
+        WriteCompiledSemanticFields(writer, resources, reactions, traits, founderAllocations, founderPhenotypes, scenarios, effectivePopulationQ);
 
         WriteIdentityKeys(writer, 20, source.Resources.Select(resource =>
             (resource.NumericId, resource.StableKey)));
@@ -41,6 +45,10 @@ internal static class CanonicalRuleHashWriter
             (genome.NumericId, genome.StableKey)));
         WriteIdentityKeys(writer, 23, source.Scenarios.Select(scenario =>
             (scenario.NumericId, scenario.StableKey)));
+        WriteIdentityKeys(writer, 24, source.Traits.Select(trait =>
+            (trait.NumericId, trait.StableKey)));
+        WriteIdentityKeys(writer, 25, source.FounderAllocations.Select(allocation =>
+            (allocation.NumericId, allocation.StableKey)));
         return Hash(writer);
     }
 
@@ -70,6 +78,16 @@ internal static class CanonicalRuleHashWriter
             13,
             source.Scenarios.Select(scenario =>
                 (scenario.NumericId, scenario.StableKey, scenario.DisplayName)));
+        WritePresentationDefinitions(
+            writer,
+            14,
+            source.Traits.Select(trait =>
+                (trait.NumericId, trait.StableKey, trait.DisplayName)));
+        WritePresentationDefinitions(
+            writer,
+            15,
+            source.FounderAllocations.Select(allocation =>
+                (allocation.NumericId, allocation.StableKey, allocation.DisplayName)));
         return Hash(writer);
     }
 
@@ -103,20 +121,24 @@ internal static class CanonicalRuleHashWriter
         uint compilerVersion,
         ImmutableArray<CompiledResource> resources,
         ImmutableArray<CompiledReaction> reactions,
+        ImmutableArray<CompiledTrait> traits,
+        ImmutableArray<CompiledFounderAllocation> founderAllocations,
         ImmutableArray<CompiledPhenotype> founderPhenotypes,
-        ImmutableArray<CompiledScenario> scenarios)
+        ImmutableArray<CompiledScenario> scenarios,
+        ImmutableArray<long> effectivePopulationQ)
     {
         var writer = new CanonicalBinaryWriter();
         writer.WriteUInt32(CompiledRecord);
         WriteUInt32Field(writer, 1, compilerVersion);
-        WriteCompiledSemanticFields(writer, resources, reactions, founderPhenotypes, scenarios);
+        WriteCompiledSemanticFields(writer, resources, reactions, traits, founderAllocations, founderPhenotypes, scenarios, effectivePopulationQ);
         Field(writer, 20);
         writer.WriteUInt32(checked((uint)founderPhenotypes.Length));
         foreach (var phenotype in founderPhenotypes)
         {
             writer.WriteUInt32(0x1301);
             WriteUInt32Field(writer, 1, phenotype.FounderGenomeId.Value);
-            WriteStringField(writer, 2, phenotype.CanonicalCompiledHash);
+            WriteUInt32Field(writer, 2, phenotype.FounderAllocationId.Value);
+            WriteStringField(writer, 3, phenotype.CanonicalCompiledHash);
         }
 
         return Hash(writer);
@@ -130,6 +152,8 @@ internal static class CanonicalRuleHashWriter
         writer.WriteUInt32(PhenotypeRecord);
         WriteStringField(writer, 1, mechanicsHash);
         WriteUInt32Field(writer, 2, phenotype.FounderGenomeId.Value);
+        WriteUInt32Field(writer, 8, phenotype.FounderAllocationId.Value);
+        WriteUInt32Values(writer, 5, phenotype.AcquiredTraits.Select(trait => trait.Value));
         Field(writer, 3);
         writer.WriteUInt32(checked((uint)phenotype.Processes.Length));
         foreach (var process in phenotype.Processes)
@@ -137,6 +161,10 @@ internal static class CanonicalRuleHashWriter
             writer.WriteUInt32(0x1401);
             WriteUInt32Field(writer, 1, process.Reaction.Id.Value);
         }
+
+        WritePhysiology(writer, 4, phenotype.Physiology);
+        WriteUInt32Field(writer, 6, phenotype.MutationIncomeModifierQ);
+        WriteUInt32Field(writer, 7, phenotype.MaximumChangeComplexity);
 
         return Hash(writer);
     }
@@ -168,6 +196,7 @@ internal static class CanonicalRuleHashWriter
             WriteUInt32Field(writer, 4, profile.Height);
             WriteBooleanField(writer, 5, profile.WrapX);
             WriteBooleanField(writer, 6, profile.WrapY);
+            WriteGasEnvironment(writer, 8, profile.GasEnvironment);
             Field(writer, 7);
             writer.WriteUInt32(checked((uint)(profile.Tiles?.Length ?? 0)));
             foreach (var tile in (profile.Tiles ?? []).OrderBy(tile => tile.Y).ThenBy(tile => tile.X))
@@ -176,6 +205,13 @@ internal static class CanonicalRuleHashWriter
                 WriteInt32Field(writer, 1, tile.X);
                 WriteInt32Field(writer, 2, tile.Y);
                 WriteInt32Field(writer, 3, tile.ElevationMeters);
+                WriteUInt32Field(writer, 5, tile.BaselineVolcanismQ);
+                Field(writer, 6);
+                writer.WriteBoolean(tile.GasEmissionProfileKey is not null);
+                if (tile.GasEmissionProfileKey is not null)
+                {
+                    writer.WriteUtf8Nfc(tile.GasEmissionProfileKey);
+                }
                 Field(writer, 4);
                 writer.WriteUInt32(checked((uint)tile.ResourceStocks.Length));
                 foreach (var stock in tile.ResourceStocks
@@ -216,6 +252,8 @@ internal static class CanonicalRuleHashWriter
             WriteInt32Field(writer, 2, tile.X);
             WriteInt32Field(writer, 3, tile.Y);
             WriteInt32Field(writer, 4, tile.ElevationMeters);
+            WriteUInt32Field(writer, 6, tile.BaselineVolcanismQ);
+            WriteInt32Field(writer, 7, tile.GasEmissionProfileSlot);
             Field(writer, 5);
             writer.WriteUInt32(checked((uint)resources.Length));
             for (var index = 0; index < resources.Length; index++)
@@ -226,12 +264,88 @@ internal static class CanonicalRuleHashWriter
             }
         }
 
+        WriteCompiledGasEnvironment(writer, 8, profile.GasEnvironment);
+
         if (profile.Generator is not null)
         {
             WriteCompiledWorldGenerator(writer, profile.Generator, resources);
         }
 
         return Hash(writer);
+    }
+
+    private static void WriteGasEnvironment(
+        CanonicalBinaryWriter writer,
+        ushort field,
+        GasEnvironmentDefinition environment)
+    {
+        Field(writer, field);
+        writer.WriteUInt32(0x2004);
+        WriteUInt32Field(writer, 1, environment.AquaticTerrestrialCompatibilityQ);
+        WriteUInt32Field(writer, 2, environment.MajorMountainCompatibilityQ);
+        WriteInt32Field(writer, 3, environment.MajorMountainElevationMeters);
+        Field(writer, 4);
+        writer.WriteUInt32(checked((uint)environment.Gases.Length));
+        foreach (var gas in environment.Gases.OrderBy(gas => gas.ResourceKey, StringComparer.Ordinal))
+        {
+            writer.WriteUInt32(0x2005);
+            WriteStringField(writer, 1, gas.ResourceKey);
+            WriteStringField(writer, 2, gas.AccessibilityClass);
+            WriteUInt32Field(writer, 3, gas.SinkRatePerMillionPerHour);
+            WriteUInt32Field(writer, 4, gas.ExchangeRatePerMillionPerEdgeHour);
+            WriteInt64Field(writer, 5, gas.DiffuseSourceQuantityPerHour);
+        }
+        Field(writer, 5);
+        writer.WriteUInt32(checked((uint)environment.EmissionProfiles.Length));
+        foreach (var profile in environment.EmissionProfiles.OrderBy(profile => profile.StableKey, StringComparer.Ordinal))
+        {
+            writer.WriteUInt32(0x2006);
+            WriteStringField(writer, 1, profile.StableKey);
+            Field(writer, 2);
+            writer.WriteUInt32(checked((uint)profile.Emissions.Length));
+            foreach (var emission in profile.Emissions.OrderBy(emission => emission.ResourceKey, StringComparer.Ordinal))
+            {
+                writer.WriteUInt32(0x2007);
+                WriteStringField(writer, 1, emission.ResourceKey);
+                WriteInt64Field(writer, 2, emission.FullActivityQuantityPerHour);
+            }
+        }
+    }
+
+    private static void WriteCompiledGasEnvironment(
+        CanonicalBinaryWriter writer,
+        ushort field,
+        CompiledGasEnvironment environment)
+    {
+        Field(writer, field);
+        writer.WriteUInt32(0x2103);
+        WriteUInt32Field(writer, 1, environment.AquaticTerrestrialCompatibilityQ);
+        WriteUInt32Field(writer, 2, environment.MajorMountainCompatibilityQ);
+        WriteInt32Field(writer, 3, environment.MajorMountainElevationMeters);
+        Field(writer, 4);
+        writer.WriteUInt32(checked((uint)environment.Gases.Length));
+        foreach (var gas in environment.Gases.OrderBy(gas => gas.Resource.Id.Value))
+        {
+            writer.WriteUInt32(0x2104);
+            WriteUInt32Field(writer, 1, gas.Resource.Id.Value);
+            WriteByteField(writer, 2, (byte)gas.AccessibilityClass);
+            WriteUInt32Field(writer, 3, gas.SinkRatePerMillionPerHour);
+            WriteUInt32Field(writer, 4, gas.ExchangeRatePerMillionPerEdgeHour);
+            WriteInt64Field(writer, 5, gas.DiffuseSourceQuantityPerHour);
+        }
+        Field(writer, 5);
+        writer.WriteUInt32(checked((uint)environment.EmissionProfiles.Length));
+        foreach (var profile in environment.EmissionProfiles.OrderBy(profile => profile.StableKey, StringComparer.Ordinal))
+        {
+            writer.WriteUInt32(0x2105);
+            WriteStringField(writer, 1, profile.StableKey);
+            Field(writer, 2);
+            writer.WriteUInt32(checked((uint)profile.FullActivityQuantitiesPerHourByGasSlot.Length));
+            foreach (var quantity in profile.FullActivityQuantitiesPerHourByGasSlot)
+            {
+                writer.WriteInt64(quantity);
+            }
+        }
     }
 
     private static void WriteWorldGenerator(
@@ -648,8 +762,11 @@ internal static class CanonicalRuleHashWriter
         CanonicalBinaryWriter writer,
         ImmutableArray<CompiledResource> resources,
         ImmutableArray<CompiledReaction> reactions,
+        ImmutableArray<CompiledTrait> traits,
+        ImmutableArray<CompiledFounderAllocation> founderAllocations,
         ImmutableArray<CompiledPhenotype> founderPhenotypes,
-        ImmutableArray<CompiledScenario> scenarios)
+        ImmutableArray<CompiledScenario> scenarios,
+        ImmutableArray<long> effectivePopulationQ)
     {
         Field(writer, 10);
         writer.WriteUInt32(checked((uint)resources.Length));
@@ -689,12 +806,18 @@ internal static class CanonicalRuleHashWriter
         {
             writer.WriteUInt32(0x1004);
             WriteUInt32Field(writer, 1, phenotype.FounderGenomeId.Value);
+            WriteUInt32Field(writer, 7, phenotype.FounderAllocationId.Value);
             Field(writer, 2);
             writer.WriteUInt32(checked((uint)phenotype.Processes.Length));
             foreach (var process in phenotype.Processes)
             {
                 WriteUInt32Field(writer, 1, process.Reaction.Id.Value);
             }
+
+            WritePhysiology(writer, 3, phenotype.Physiology);
+            WriteUInt32Values(writer, 4, phenotype.AcquiredTraits.Select(trait => trait.Value));
+            WriteUInt32Field(writer, 5, phenotype.MutationIncomeModifierQ);
+            WriteUInt32Field(writer, 6, phenotype.MaximumChangeComplexity);
         }
 
         Field(writer, 13);
@@ -710,7 +833,172 @@ internal static class CanonicalRuleHashWriter
             {
                 WriteUInt32Field(writer, 1, founder.Id.Value);
             }
+            Field(writer, 4);
+            writer.WriteUInt32(checked((uint)scenario.PermittedFounderAllocations.Length));
+            foreach (var allocation in scenario.PermittedFounderAllocations)
+            {
+                WriteUInt32Field(writer, 1, allocation.Id.Value);
+            }
+            WriteUInt32Field(writer, 5, scenario.DefaultCompetitorFounderAllocation.Id.Value);
         }
+
+        Field(writer, 14);
+        writer.WriteUInt32(checked((uint)traits.Length));
+        foreach (var trait in traits)
+        {
+            writer.WriteUInt32(0x100F);
+            WriteUInt32Field(writer, 1, trait.Id.Value);
+            WriteStringField(writer, 2, trait.StableKey);
+            WriteStringField(writer, 3, trait.Family);
+            WriteBooleanField(writer, 4, trait.Selectable);
+            WriteInt64Field(writer, 5, trait.MutationPointCostQ);
+            WriteUInt32Field(writer, 6, trait.ChangeComplexity);
+            WriteUInt32Values(writer, 7, trait.Prerequisites.Select(id => id.Value));
+            WriteUInt32Values(writer, 8, trait.Incompatibilities.Select(id => id.Value));
+            WriteUInt32Field(writer, 9, trait.BaseEvolutionWeightQ);
+            WriteUInt32Values(writer, 10, trait.PressureTags.Select(tag => (uint)tag));
+            WriteBooleanField(writer, 11, trait.EnablesResourceConservation);
+            WriteUInt32Field(writer, 12, trait.MutationIncomeMultiplierQ);
+            Field(writer, 13);
+            writer.WriteBoolean(trait.MaximumChangeComplexity.HasValue);
+            if (trait.MaximumChangeComplexity.HasValue)
+            {
+                writer.WriteUInt32(trait.MaximumChangeComplexity.Value);
+            }
+        }
+
+        Field(writer, 15);
+        writer.WriteUInt32(checked((uint)founderAllocations.Length));
+        foreach (var allocation in founderAllocations)
+        {
+            writer.WriteUInt32(0x1011);
+            WriteUInt32Field(writer, 1, allocation.Id.Value);
+            WriteStringField(writer, 2, allocation.StableKey);
+            WriteBooleanField(writer, 3, allocation.IsBaseline);
+            WriteUInt32Field(writer, 4, allocation.CaptureEfficiencyMultiplierQ);
+            WriteUInt32Field(writer, 5, allocation.ChemicalToleranceMultiplierQ);
+        }
+
+        Field(writer, 16);
+        writer.WriteUInt32(0x1010);
+        WriteUInt32Field(writer, 1, MutationIncomeMath.EffectivePopulationTableAlgorithmVersion);
+        WriteUInt32Field(writer, 2, checked((uint)effectivePopulationQ.Length));
+        WriteStringField(writer, 3, MutationIncomeMath.EffectivePopulationTableSha256);
+    }
+
+    private static void WritePhysiology(
+        CanonicalBinaryWriter writer,
+        ushort fieldTag,
+        CompiledOrganismPhysiology value)
+    {
+        Field(writer, fieldTag);
+        writer.WriteUInt32(0x1009);
+        WriteInt64Field(writer, 1, value.MatureStructureQ);
+        WriteInt64Field(writer, 2, value.StructuralHardFloorQ);
+        WriteInt64Field(writer, 3, value.ChargedReserveCapacityQ);
+        WriteInt64Field(writer, 4, value.TerminalReserveThresholdQ);
+        WriteInt64Field(writer, 5, value.DissolvedMacronutrientCapacityLoadQ);
+        WriteInt64Field(writer, 6, value.FreeMicronutrientCapacityLoadQ);
+        WriteUInt32Field(writer, 21, value.PassiveMicronutrientUptakePerMillionPerHour);
+        Field(writer, 22);
+        writer.WriteUInt32(checked((uint)value.CommittedMicronutrientQuotas.Length));
+        foreach (var quota in value.CommittedMicronutrientQuotas)
+        {
+            writer.WriteUInt32(quota.Resource.Id.Value);
+            writer.WriteInt64(quota.Quantity);
+        }
+        WriteInt64Field(writer, 7, value.IngestedMatterCapacityLoadQ);
+        WriteByteField(writer, 8, (byte)value.AllocationPolicy);
+        WriteUInt64Field(writer, 9, value.SenescenceOnsetHours);
+        WriteUInt64Field(writer, 10, value.AgeDeclineSpanHours);
+        WriteUInt32Field(writer, 11, value.MinimumAgeFactorQ);
+        WriteUInt32Field(writer, 12, value.SenescenceRiskBaseQ);
+        WriteUInt64Field(writer, 13, value.SenescenceRiskEscalationHours);
+        WriteUInt32Field(writer, 14, value.SenescenceRiskCapQ);
+        var reproduction = value.Reproduction;
+        Field(writer, 15);
+        writer.WriteUInt32(0x100B);
+        WriteUInt32Field(writer, 1, reproduction.MinimumHealthQ);
+        WriteInt64Field(writer, 2, reproduction.RequiredStructureQ);
+        WriteInt64Field(writer, 3, reproduction.ResultStructureMinimumQ);
+        WriteInt64Field(writer, 4, reproduction.RequiredReserveQ);
+        WriteInt64Field(writer, 5, reproduction.ResultReserveMinimumQ);
+        WriteInt64Field(writer, 6, reproduction.WorkCostQ);
+        WriteUInt64Field(writer, 7, reproduction.BaseCooldownHours);
+        WriteUInt32Field(writer, 8, reproduction.CooldownJitterMaximumHours);
+        var recycling = value.Recycling;
+        Field(writer, 16);
+        writer.WriteUInt32(0x100C);
+        WriteUInt32Field(writer, 1, recycling.ReserveDecayPerMillionPerHour);
+        WriteUInt32Field(writer, 2, recycling.StructureDecayPerMillionPerHour);
+        WriteBooleanField(writer, 3, recycling.SimpleRemnantScavenging);
+        WriteInt64Field(writer, 4, recycling.ScavengeReserveCapQ);
+        WriteInt64Field(writer, 5, recycling.ScavengeActionCostQ);
+        WriteInt64Field(writer, 6, recycling.ParticulateScavengeActionCostQ);
+        WriteUInt64Field(writer, 7, recycling.ScavengeCooldownHours);
+        WriteUInt32Field(writer, 8, recycling.ScavengeRangeQ);
+        var spatial = value.Spatial;
+        Field(writer, 17);
+        writer.WriteUInt32(0x100D);
+        WriteUInt32Field(writer, 1, spatial.MatureBodyRadiusQ);
+        WriteInt64Field(writer, 2, spatial.GeometricStructureTargetQ);
+        WriteUInt32Field(writer, 3, spatial.MinimumBodyRadiusQ);
+        WriteUInt32Field(writer, 4, spatial.BrownianRmsQPerSqrtHour);
+        WriteUInt32Field(writer, 5, spatial.EnvironmentalSpreadMultiplierQ);
+        WriteUInt32Field(writer, 6, spatial.TerrestrialBrownianMultiplierQ);
+        WriteUInt32Field(writer, 7, spatial.ActiveSpeedLimitQPerHour);
+        WriteUInt32Field(writer, 8, spatial.MovementEnergyPerFounderRadiusQ);
+        WriteBooleanField(writer, 9, spatial.CanOccupyTerrestrial);
+        WriteUInt32Field(writer, 10, spatial.PassiveMigrationProbabilityQ);
+        WriteUInt32Field(writer, 11, spatial.ActiveMigrationProbabilityQ);
+        WriteUInt32Field(writer, 12, spatial.MediumTransitionFactorQ);
+        WriteUInt32Field(writer, 13, spatial.DestinationCompatibilityFloorQ);
+        var temperature = value.TemperatureResponse;
+        Field(writer, 18);
+        writer.WriteUInt32(0x100A);
+        WriteInt32Field(writer, 1, temperature.PreferredMinimumMilliC);
+        WriteInt32Field(writer, 2, temperature.PreferredMaximumMilliC);
+        WriteInt32Field(writer, 3, temperature.HardMinimumMilliC);
+        WriteInt32Field(writer, 4, temperature.HardMaximumMilliC);
+        WriteUInt32Field(writer, 5, temperature.HealthPenaltyAtHardQ);
+        WriteUInt32Field(writer, 6, temperature.HealthFactorFloorQ);
+        WriteUInt32Field(writer, 7, temperature.DeathChanceAtHardQ);
+        WriteUInt32Field(writer, 8, temperature.DeathChanceCapQ);
+        var behavior = value.Behavior;
+        Field(writer, 19);
+        writer.WriteUInt32(0x100E);
+        WriteBooleanField(writer, 1, behavior.ResourceConservation);
+        WriteUInt64Field(writer, 2, behavior.MinimumDwellHours);
+        WriteUInt32Field(writer, 3, behavior.ConservationEnterReserveQ);
+        WriteUInt32Field(writer, 4, behavior.ConservationEnterConditionalReserveQ);
+        WriteUInt32Field(writer, 5, behavior.ConservationEnterEnergyCoverageQ);
+        WriteUInt32Field(writer, 6, behavior.ConservationCriticalReserveQ);
+        WriteUInt32Field(writer, 7, behavior.ConservationExitReserveQ);
+        WriteUInt32Field(writer, 8, behavior.ConservationExitEnergyCoverageQ);
+        WriteUInt32Field(writer, 9, behavior.ConservationExitHighReserveQ);
+        var opening = value.OpeningMetabolism;
+        Field(writer, 20);
+        writer.WriteUInt32(0x100F);
+        WriteByteField(writer, 1, (byte)opening.Kind);
+        WriteUInt32Field(writer, 2, opening.MaximumCaptureExtentsPerHour);
+        WriteUInt32Field(writer, 3, opening.FavorableCaptureEfficiencyQ);
+        WriteBooleanField(writer, 4, opening.RequiresLight);
+        WriteUInt32Field(writer, 5, opening.IlluminatedHoursPerDay);
+        WriteUInt32Field(writer, 6, opening.StructuralGrowthExtentsPerHour);
+        WriteInt64Field(writer, 7, opening.MaintenanceCostQPerHour);
+        WriteInt64Field(writer, 8, opening.GrowthReserveFloorQ);
+        WriteUInt32Field(writer, 9, opening.GeneratedLightCaptureExtentsPerUnitHour);
+        var chemical = value.ChemicalResponse;
+        Field(writer, 21);
+        writer.WriteUInt32(0x1011);
+        WriteInt64Field(writer, 1, chemical.HydrogenSulfideSoftThresholdQ);
+        WriteInt64Field(writer, 2, chemical.HydrogenSulfideHardThresholdQ);
+        WriteInt64Field(writer, 3, chemical.SulfurDioxideSoftThresholdQ);
+        WriteInt64Field(writer, 4, chemical.SulfurDioxideHardThresholdQ);
+        WriteUInt32Field(writer, 5, chemical.HealthPenaltyAtHardQ);
+        WriteUInt32Field(writer, 6, chemical.HealthFactorFloorQ);
+        WriteUInt32Field(writer, 7, chemical.DeathChanceAtHardQ);
+        WriteUInt32Field(writer, 8, chemical.DeathChanceCapQ);
     }
 
     private static void WriteTerms(
@@ -741,6 +1029,20 @@ internal static class CanonicalRuleHashWriter
             writer.WriteUInt32(0x1007);
             WriteUInt32Field(writer, 1, identity.NumericId);
             WriteStringField(writer, 2, identity.StableKey);
+        }
+    }
+
+    private static void WriteUInt32Values(
+        CanonicalBinaryWriter writer,
+        ushort fieldTag,
+        IEnumerable<uint> values)
+    {
+        var materialized = values.ToArray();
+        Field(writer, fieldTag);
+        writer.WriteUInt32(checked((uint)materialized.Length));
+        foreach (var value in materialized)
+        {
+            writer.WriteUInt32(value);
         }
     }
 
@@ -786,6 +1088,12 @@ internal static class CanonicalRuleHashWriter
     {
         Field(writer, tag);
         writer.WriteUInt32(value);
+    }
+
+    private static void WriteUInt64Field(CanonicalBinaryWriter writer, ushort tag, ulong value)
+    {
+        Field(writer, tag);
+        writer.WriteUInt64(value);
     }
 
     private static void WriteInt32Field(CanonicalBinaryWriter writer, ushort tag, int value)

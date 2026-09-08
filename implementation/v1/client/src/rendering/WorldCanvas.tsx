@@ -1,13 +1,19 @@
-import { Application, Graphics } from "pixi.js";
+import { Application, Container, Graphics, Text } from "pixi.js";
 import { useEffect, useRef } from "react";
-import type { ActorWorldProjection } from "../generated/lyfe/v1/projection_pb";
+import {
+  OrganismJourneyEventFamily,
+  type ActorWorldProjection,
+  type OrganismJourneyEvent,
+} from "../generated/lyfe/v1/projection_pb";
 
 const UINT32_SCALE = 0xffff_ffff;
 
 export function WorldCanvas({
   world,
+  enabledEventFamilies,
 }: {
   readonly world: ActorWorldProjection | null;
+  readonly enabledEventFamilies: ReadonlySet<OrganismJourneyEventFamily>;
 }) {
   const hostRef = useRef<HTMLDivElement>(null);
 
@@ -45,6 +51,15 @@ export function WorldCanvas({
       }
 
       application.stage.addChild(scene);
+      if (world !== null) {
+        addActivityPulses(
+          application,
+          world,
+          enabledEventFamilies,
+          Math.max(320, target.clientWidth),
+          430,
+        );
+      }
       target.appendChild(application.canvas);
     }
 
@@ -56,7 +71,7 @@ export function WorldCanvas({
         application.destroy(true, { children: true });
       }
     };
-  }, [world]);
+  }, [world, enabledEventFamilies]);
 
   const visibleCount = world?.tiles.reduce(
     (total, tile) =>
@@ -75,6 +90,87 @@ export function WorldCanvas({
       }
     />
   );
+}
+
+function addActivityPulses(
+  application: Application,
+  world: ActorWorldProjection,
+  enabled: ReadonlySet<OrganismJourneyEventFamily>,
+  width: number,
+  height: number,
+) {
+  if (world.journeyEvents.length === 0) return;
+
+  const latestTick = world.journeyEvents.at(-1)?.tick ?? 0n;
+  const events = world.journeyEvents
+    .filter((event) => event.tick === latestTick && enabled.has(event.family))
+    .slice(-160);
+  const startedAt = performance.now();
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const pulses = events.map((event) => createPulse(event, world, width, height));
+  for (const pulse of pulses) application.stage.addChild(pulse.node);
+
+  application.ticker.add(() => {
+    const elapsed = performance.now() - startedAt;
+    const fadeProgress = Math.max(0, Math.min(1, (elapsed - 400) / 2_600));
+    for (const pulse of pulses) {
+      pulse.node.alpha = 1 - fadeProgress;
+      pulse.node.y = pulse.baseY - (reducedMotion ? 0 : 16 * fadeProgress);
+    }
+  });
+}
+
+function createPulse(
+  event: OrganismJourneyEvent,
+  world: ActorWorldProjection,
+  width: number,
+  height: number,
+) {
+  const padding = 24;
+  const tileWidth = (width - padding * 2) / world.width;
+  const tileHeight = (height - padding * 2) / world.height;
+  const tile = world.tiles.find((candidate) => candidate.tileId === event.tileId);
+  const left = padding + (tile?.x ?? 0) * tileWidth;
+  const top = padding + (tile?.y ?? 0) * tileHeight;
+  const x = left + (event.positionXQ / UINT32_SCALE) * tileWidth;
+  const y = top + (event.positionYQ / UINT32_SCALE) * tileHeight;
+  const visual = eventVisual(event.family);
+  const node = new Container({ x, y });
+  const backing = new Graphics()
+    .circle(0, 0, 10)
+    .fill({ color: 0x071113, alpha: 0.76 })
+    .stroke({ color: visual.color, width: 1.5, alpha: 0.92 });
+  const glyph = new Text({
+    text: visual.glyph,
+    style: {
+      fill: visual.color,
+      fontFamily: "system-ui, sans-serif",
+      fontSize: 14,
+      fontWeight: "700",
+    },
+  });
+  glyph.anchor.set(0.5);
+  node.addChild(backing, glyph);
+  return { node, baseY: y };
+}
+
+function eventVisual(family: OrganismJourneyEventFamily) {
+  switch (family) {
+    case OrganismJourneyEventFamily.BIRTH:
+      return { glyph: "✦", color: 0x78e6ac };
+    case OrganismJourneyEventFamily.REPRODUCTION:
+      return { glyph: "+", color: 0x58d99b };
+    case OrganismJourneyEventFamily.RESOURCE_ABSORPTION:
+      return { glyph: "↟", color: 0x61c9b5 };
+    case OrganismJourneyEventFamily.FEEDING:
+      return { glyph: "◆", color: 0xa8d887 };
+    case OrganismJourneyEventFamily.MIGRATION:
+      return { glyph: "→", color: 0xd8b870 };
+    case OrganismJourneyEventFamily.DEATH:
+      return { glyph: "×", color: 0xed756d };
+    default:
+      return { glyph: "•", color: 0xc4b987 };
+  }
 }
 
 function drawWorld(

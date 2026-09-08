@@ -40,21 +40,21 @@ public sealed class ResourceLedgerTests
         Assert.Equal(3, phase.ResourceTransactions.Length);
         Assert.All(phase.ResourceTransactions, transaction =>
         {
-            Assert.Equal(1, transaction.Extent);
+            Assert.Equal(200, transaction.Extent);
             Assert.Equal(LedgerCause.ExternalEnergyCapture, transaction.Cause);
             Assert.Equal(4, transaction.MatterEntries.Length);
             Assert.Equal(3, transaction.EnergyEntries.Length);
         });
         Assert.Equal(
-            hydrogenBefore - 12,
+            hydrogenBefore - 2_400,
             runner.MutableWorld.GetTileResource(tileId, hydrogen));
         Assert.Equal(
-            carbonBefore - 6,
+            carbonBefore - 1_200,
             runner.MutableWorld.GetTileResource(tileId, carbonDioxide));
         Assert.All(
             organismIds,
             organismId => Assert.Equal(
-                5_002,
+                5_044,
                 runner.MutableWorld.GetOrganism(organismId).ChargedReserveQ));
 
         var report = ResourceLedgerOracle.Reconcile(
@@ -65,7 +65,7 @@ public sealed class ResourceLedgerTests
         Assert.All(report.Elements, element => Assert.Equal((Int128)0, element.NetQ));
         Assert.Equal((Int128)0, report.NetEnergyQ);
         Assert.Equal(
-            6,
+            1_200,
             phase.ResourceTransactions
                 .SelectMany(transaction => transaction.MatterEntries)
                 .Where(entry =>
@@ -73,7 +73,7 @@ public sealed class ResourceLedgerTests
                     entry.Account.Compartment == MatterCompartment.OceanWaterBoundary)
                 .Sum(entry => entry.DeltaQ));
         Assert.Equal(
-            3,
+            600,
             phase.ResourceTransactions
                 .SelectMany(transaction => transaction.EnergyEntries)
                 .Where(entry => entry.Account.Kind == EnergyAccountKind.DissipatedHeat)
@@ -107,7 +107,7 @@ public sealed class ResourceLedgerTests
                 tileId,
                 first.MutableWorld.GetResourceHandle(ResourceId.From(2))));
         Assert.Equal(
-            [5_000L, 5_002L, 5_002L],
+            [4_644L, 4_646L, 4_646L],
             first.MutableWorld
                 .GetOrganismIdsInCanonicalOrder()
                 .Select(id => first.MutableWorld.GetOrganism(id).ChargedReserveQ)
@@ -133,7 +133,7 @@ public sealed class ResourceLedgerTests
                 runner.MutableWorld.GetResourceHandle(ResourceId.From(1))));
         Assert.All(
             organismIds,
-            id => Assert.Equal(5_000, runner.MutableWorld.GetOrganism(id).ChargedReserveQ));
+            id => Assert.Equal(4_644, runner.MutableWorld.GetOrganism(id).ChargedReserveQ));
     }
 
     [Fact]
@@ -151,7 +151,7 @@ public sealed class ResourceLedgerTests
         var result = runner.AdvanceOneTick();
 
         Assert.Empty(GetExternalLedger(result));
-        Assert.Equal(10_000, runner.MutableWorld.GetOrganism(organismId).ChargedReserveQ);
+        Assert.Equal(9_644, runner.MutableWorld.GetOrganism(organismId).ChargedReserveQ);
         Assert.Equal(
             hydrogenBefore,
             runner.MutableWorld.GetTileResource(
@@ -230,9 +230,28 @@ public sealed class ResourceLedgerTests
 
         var sourceWorld = WorldPackSourceLoader.Load(new CopiedPackageSource("OfficialWorld"));
         Assert.True(sourceWorld.IsSuccess, FormatDiagnostics(sourceWorld.Diagnostics));
+        var authoring = Assert.IsType<AuthoringWorldPack>(sourceWorld.Pack);
+        var profile = Assert.Single(authoring.Profiles);
+        var tile = Assert.Single(profile.Tiles!);
+        authoring = authoring with
+        {
+            Profiles = [profile with
+            {
+                GasEnvironment = profile.GasEnvironment with
+                {
+                    Gases = profile.GasEnvironment.Gases.Select(gas => gas with
+                    {
+                        SinkRatePerMillionPerHour = 0,
+                        ExchangeRatePerMillionPerEdgeHour = 0,
+                        DiffuseSourceQuantityPerHour = 0,
+                    }).ToArray(),
+                },
+                Tiles = [tile with { BaselineVolcanismQ = 0, GasEmissionProfileKey = null }],
+            }],
+        };
         var compiledWorld = WorldRulesCompiler.Compile(
             Assert.IsType<CompiledRulePack>(compiledRules.RulePack),
-            Assert.IsType<AuthoringWorldPack>(sourceWorld.Pack),
+            authoring,
             "scenario.foundation-sandbox",
             "world.primordial-foundation");
         Assert.True(compiledWorld.IsSuccess, FormatDiagnostics(compiledWorld.Diagnostics));

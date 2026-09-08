@@ -14,16 +14,16 @@ public sealed class RuleCompilationTests
         var compiled = CompileOfficialRules();
 
         Assert.Equal(
-            "d95a8a7fdf28f9fe1aef9e0049a31f7d72783bcb3f92b90f1236fbc1f7b24a54",
+            "42030eb34544faada34c7a4603f896a3c37b0b289ceb77017342fb58f5abace7",
             compiled.Identity.MechanicsHash);
         Assert.Equal(
-            "7c62355f50316537d1af366a49265befa65e78c16474251b8a4e6badfae32880",
+            "bc940982373f88b8f315f4564c5b132ab2b207a7796fd9c9ed43367ffda9a345",
             compiled.Identity.PresentationHash);
         Assert.Equal(
-            "48c4f080abd2edb9c5612856a05d882d727e9bc5d6a06661eb5fa0a9b32bdedc",
+            "9817cefa04b9a8ceae73e383838f8d4406dba65db9db75fc14db19bc87b786c1",
             compiled.Identity.RegistryManifestHash);
         Assert.Equal(
-            "fe247f49751950f020cae560e5c3a6c1de07b138a11144850ef92908c14c3c94",
+            "fd5f33f42585eb540cd5d630019ef661a9d819d652d71cdd128d477d1a9b6f4e",
             compiled.Identity.CompiledArtifactHash);
     }
 
@@ -32,24 +32,64 @@ public sealed class RuleCompilationTests
     {
         var compiled = CompileOfficialRules();
 
-        Assert.Equal([1U, 2U, 3U, 4U], compiled.Resources.Select(resource => resource.Id.Value));
-        var reaction = Assert.Single(compiled.Reactions);
-        Assert.Equal(ProcessKind.ExternalEnergyCapture, reaction.ProcessKind);
-        Assert.Equal([1U, 2U], reaction.Inputs.Select(term => term.Resource.Id.Value));
-        Assert.Equal([0, 1], reaction.Inputs.Select(term => term.Resource.DenseSlot));
-        Assert.Equal([4L, 2L], reaction.Inputs.Select(term => term.Quantity));
-        Assert.Equal([3U, 4U], reaction.Outputs.Select(term => term.Resource.Id.Value));
-        Assert.Equal([2, 3], reaction.Outputs.Select(term => term.Resource.DenseSlot));
+        Assert.Equal(Enumerable.Range(1, 31).Select(value => (uint)value),
+            compiled.Resources.Select(resource => resource.Id.Value));
+        var capture = compiled.Reactions[0];
+        Assert.Equal(ProcessKind.ExternalEnergyCapture, capture.ProcessKind);
+        Assert.Equal([1U, 2U], capture.Inputs.Select(term => term.Resource.Id.Value));
+        Assert.Equal([0, 1], capture.Inputs.Select(term => term.Resource.DenseSlot));
+        Assert.Equal([4L, 2L], capture.Inputs.Select(term => term.Quantity));
+        Assert.Equal([3U, 4U], capture.Outputs.Select(term => term.Resource.Id.Value));
+        Assert.Equal([2, 3], capture.Outputs.Select(term => term.Resource.DenseSlot));
 
-        var phenotype = Assert.Single(compiled.FounderPhenotypes);
-        var process = Assert.Single(phenotype.Processes);
+        var digestion = compiled.Reactions[1];
+        Assert.Equal(ProcessKind.ParticulateDigestion, digestion.ProcessKind);
+        Assert.Equal([5U], digestion.Inputs.Select(term => term.Resource.Id.Value));
+        Assert.Equal([1L], digestion.Inputs.Select(term => term.Quantity));
+        Assert.Equal([3U, 6U], digestion.Outputs.Select(term => term.Resource.Id.Value));
+        Assert.Equal([32L, 1L], digestion.Outputs.Select(term => term.Quantity));
+        Assert.Equal((40L, 32L, 8L),
+            (digestion.GrossEnergyQ, digestion.StoredEnergyQ, digestion.DissipatedEnergyQ));
+
+        var phenotype = compiled.FounderPhenotypes.Single(candidate =>
+            candidate.FounderGenomeId.Value == 1);
+        var process = phenotype.Processes.Single(value => value.Reaction.Id.Value == 1);
         Assert.Equal(1U, process.Reaction.Id.Value);
         Assert.Equal(0, process.Reaction.DenseSlot);
         Assert.Matches("^[0-9a-f]{64}$", phenotype.CanonicalCompiledHash);
+        Assert.Equal(1_000, phenotype.Physiology.MatureStructureQ);
+        Assert.Equal(10_000, phenotype.Physiology.ChargedReserveCapacityQ);
+        Assert.Equal(ProcessAllocationPolicy.EqualShared, phenotype.Physiology.AllocationPolicy);
+        Assert.Equal(25, phenotype.Physiology.Recycling.ScavengeActionCostQ);
+        Assert.Equal(50, phenotype.Physiology.Recycling.ParticulateScavengeActionCostQ);
+        Assert.False(phenotype.Physiology.Behavior.ResourceConservation);
+        Assert.Equal(4UL, phenotype.Physiology.Behavior.MinimumDwellHours);
+        Assert.Equal(500_000U,
+            phenotype.Physiology.Behavior.ConservationEnterReserveQ);
+        Assert.Equal(FoundingMetabolismKind.HydrogenAcetogenesis,
+            phenotype.Physiology.OpeningMetabolism.Kind);
+        Assert.Equal(250U,
+            phenotype.Physiology.OpeningMetabolism.MaximumCaptureExtentsPerHour);
+
+        var sulfur = compiled.FounderPhenotypes.Single(candidate =>
+            candidate.FounderGenomeId.Value == 2);
+        Assert.Contains(sulfur.Processes, process => process.Reaction.Id.Value == 3);
+        Assert.Equal(FoundingMetabolismKind.SulfideAnoxygenicPhototrophy,
+            sulfur.Physiology.OpeningMetabolism.Kind);
+        Assert.True(sulfur.Physiology.OpeningMetabolism.RequiresLight);
 
         var scenario = Assert.Single(compiled.Scenarios);
         Assert.Equal(1U, scenario.TickDurationHours);
-        Assert.Equal(1U, Assert.Single(scenario.PermittedFounders).Id.Value);
+        Assert.Equal([1U, 2U], scenario.PermittedFounders.Select(founder => founder.Id.Value));
+        Assert.Equal([1U, 2U, 3U], scenario.PermittedFounderAllocations
+            .Select(allocation => allocation.Id.Value));
+        Assert.Equal(1U, scenario.DefaultCompetitorFounderAllocation.Id.Value);
+        Assert.Equal(
+            [(1U, 1_000_000U, 1_000_000U), (2U, 1_062_500U, 800_000U), (3U, 937_500U, 1_250_000U)],
+            compiled.FounderAllocations.Select(allocation => (
+                allocation.Id.Value,
+                allocation.CaptureEfficiencyMultiplierQ,
+                allocation.ChemicalToleranceMultiplierQ)));
     }
 
     [Fact]
@@ -133,6 +173,119 @@ public sealed class RuleCompilationTests
     }
 
     [Fact]
+    public void InvalidFounderPhysiologyCannotCompile()
+    {
+        var source = LoadOfficialRules();
+        var invalid = source with
+        {
+            FounderGenomes = source.FounderGenomes
+                .Select(founder => founder with
+                {
+                    Physiology = founder.Physiology with
+                    {
+                        StructuralHardFloorQ = founder.Physiology.MatureStructureQ,
+                    },
+                })
+                .ToArray(),
+        };
+
+        var result = RulePackCompiler.Compile(invalid);
+
+        Assert.False(result.IsSuccess);
+        Assert.Contains(
+            result.Diagnostics,
+            diagnostic => diagnostic.Code == "LYFE-COMPILE-GENOME-005");
+    }
+
+    [Fact]
+    public void PhysiologyEditChangesMechanicsAndCompiledIdentity()
+    {
+        var source = LoadOfficialRules();
+        var edited = source with
+        {
+            FounderGenomes = source.FounderGenomes
+                .Select(founder => founder with
+                {
+                    Physiology = founder.Physiology with
+                    {
+                        ChargedReserveCapacityQ = 10_001,
+                    },
+                })
+                .ToArray(),
+        };
+
+        var original = AssertCompiled(RulePackCompiler.Compile(source));
+        var changed = AssertCompiled(RulePackCompiler.Compile(edited));
+
+        Assert.NotEqual(original.Identity.MechanicsHash, changed.Identity.MechanicsHash);
+        Assert.NotEqual(
+            original.Identity.CompiledArtifactHash,
+            changed.Identity.CompiledArtifactHash);
+        Assert.NotEqual(
+            original.FounderPhenotypes[0].CanonicalCompiledHash,
+            changed.FounderPhenotypes[0].CanonicalCompiledHash);
+    }
+
+    [Fact]
+    public void LifecycleProfileEditChangesMechanicsAndCompiledIdentity()
+    {
+        var source = LoadOfficialRules();
+        var edited = source with
+        {
+            FounderGenomes = source.FounderGenomes
+                .Select(founder => founder with
+                {
+                    Physiology = founder.Physiology with
+                    {
+                        Reproduction = founder.Physiology.Reproduction with
+                        {
+                            BaseCooldownHours =
+                                founder.Physiology.Reproduction.BaseCooldownHours + 1,
+                        },
+                    },
+                })
+                .ToArray(),
+        };
+
+        var original = AssertCompiled(RulePackCompiler.Compile(source));
+        var changed = AssertCompiled(RulePackCompiler.Compile(edited));
+
+        Assert.NotEqual(original.Identity.MechanicsHash, changed.Identity.MechanicsHash);
+        Assert.NotEqual(original.Identity.CompiledArtifactHash,
+            changed.Identity.CompiledArtifactHash);
+        Assert.NotEqual(original.FounderPhenotypes[0].CanonicalCompiledHash,
+            changed.FounderPhenotypes[0].CanonicalCompiledHash);
+    }
+
+    [Fact]
+    public void BehaviorProfileEditChangesMechanicsAndCompiledIdentity()
+    {
+        var source = LoadOfficialRules();
+        var edited = source with
+        {
+            FounderGenomes = source.FounderGenomes
+                .Select(founder => founder with
+                {
+                    Physiology = founder.Physiology with
+                    {
+                        Behavior = founder.Physiology.Behavior with
+                        {
+                            ResourceConservation = true,
+                        },
+                    },
+                })
+                .ToArray(),
+        };
+
+        var original = AssertCompiled(RulePackCompiler.Compile(source));
+        var changed = AssertCompiled(RulePackCompiler.Compile(edited));
+
+        Assert.NotEqual(original.Identity.MechanicsHash, changed.Identity.MechanicsHash);
+        Assert.NotEqual(original.Identity.CompiledArtifactHash,
+            changed.Identity.CompiledArtifactHash);
+    }
+
+    [Fact]
     public void UnbalancedReactionCannotCompile()
     {
         var source = LoadOfficialRules();
@@ -193,19 +346,38 @@ public sealed class RuleCompilationTests
         Assert.True(result.IsSuccess, FormatDiagnostics(result.Diagnostics));
         Assert.NotNull(result.WorldRules);
         Assert.Equal(
-            "0c0c7e977567c3cc2d0885dd21e3b5a71278e4546a7e0239dbacddd510c16cc7",
+            "9c9941f6311a159d3d7206b1c47d4dd38c6ac3222e967f647f13b488a23463d5",
             result.WorldRules.Identity.WorldPackageHash);
         Assert.Equal(
-            "da617c97fde943bc26f2bab72d5306e10ab195f6d84be7ed309dcb712ecaf261",
+            "1b82aef52f4ca811c2ad0e237a58c546cc1c569c9fb0fa5567d37a77a2e7f77f",
             result.WorldRules.Identity.CompiledWorldProfileHash);
         Assert.Equal(
-            "846dc18f45622007c77180c4d3b7328a8c62bcbf29c96ac4ce795e41abee77f6",
+            "763d49ed1cb3516d644f7398cd38aea864dfb12e325f3ef3819d1488636a9c78",
             result.WorldRules.Identity.WorldRulesHash);
         Assert.Equal(1U, result.WorldRules.TickDurationHours);
 
         var tile = Assert.Single(result.WorldRules.WorldProfile.Tiles);
         Assert.Equal(0U, tile.TileIndex);
-        Assert.Equal([50_000_000L, 100_000_000L, 0L, 0L], tile.ResourceQuantitiesByDenseSlot);
+        Assert.Equal(800_000U, tile.BaselineVolcanismQ);
+        Assert.Equal(0, tile.GasEmissionProfileSlot);
+        var gases = result.WorldRules.WorldProfile.GasEnvironment;
+        Assert.Equal(8, gases.Gases.Length);
+        Assert.Equal(2, gases.EmissionProfiles.Length);
+        var hydrogen = gases.Gases.Single(gas => gas.Resource.Id.Value == 1);
+        Assert.Equal(GasAccessibilityClass.VentAccessible, hydrogen.AccessibilityClass);
+        Assert.Equal(2_500U, hydrogen.SinkRatePerMillionPerHour);
+        Assert.Equal(100U, hydrogen.ExchangeRatePerMillionPerEdgeHour);
+        Assert.Equal(312_500,
+            gases.EmissionProfiles[0].FullActivityQuantitiesPerHourByGasSlot[0]);
+        Assert.Equal(
+            [
+                50_000_000L, 100_000_000L, 0L, 0L, 0L, 0L, 0L, 0L, 0L,
+                20_000_000L, 5_000_000L, 0L, 500_000_000L, 10_000_000L, 0L,
+                5_000_000L, 0L, 50_000L, 2_000_000L, 3_000_000L, 10_000_000L,
+                5_000_000L, 1_000L, 0L, 0L, 100_000L, 500L, 0L, 0L, 500_000L,
+                100_000L,
+            ],
+            tile.ResourceQuantitiesByDenseSlot);
     }
 
     [Fact]

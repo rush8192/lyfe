@@ -1,6 +1,6 @@
 # Authoritative Data Model
 
-Status: first identity, ownership, numeric, transactional-page, and dense-layout pass decided; physical sizes, knowledge schemas, and event retention pending
+Status: first identity, ownership, numeric, transactional-page, dense-layout, and organism-event retention pass decided; physical sizes, knowledge schemas, and final event budgets pending
 
 Sources: [SIMULATION vision](../../vision/SIMULATION.md), [WORLD vision](../../vision/WORLD.md), [ORGANISMS vision](../../vision/ORGANISMS.md), [NUTRIENTS vision](../../vision/NUTRIENTS.md), [rule-pack authoring and compilation](RULE_PACK_AUTHORING_AND_COMPILATION.md), [moddability](MODDABILITY.md), [keyed randomness](KEYED_RANDOMNESS.md), and [deterministic parallel execution](DETERMINISTIC_PARALLEL_EXECUTION.md).
 
@@ -120,10 +120,37 @@ Classify events by purpose:
 - Resource-ledger transactions.
 - Historical/analytical events such as death-risk profiles, realized death triggers, and speciation.
 - Canonical notable-event facts derived at completed boundaries for the factual chronicle.
+- Organism journey landmarks and bounded routine-activity summaries used by inspectors.
 - Actor attention alerts and automatic-pause transitions; non-pausing presentation notifications may remain ephemeral.
 - Metrics that should be aggregated rather than retained individually.
 
 Canonical notable events store facts and evidence references, not localized narrative prose. Player pins, layouts, labels, and hypothesis notes are presentation/profile records and must not enter world simulation state, autonomous evidence, or deterministic world hashes. An evolution goal or attention policy becomes authoritative actor state only when server evaluation while disconnected or an automatic clock pause depends on it; see [PLAYER_LOOP_AND_NARRATIVE.md](PLAYER_LOOP_AND_NARRATIVE.md).
+
+An `OrganismJourneyEvent` is an authoritative historical fact created only by canonical
+commit/finalization, never by a projector. It has a stable world-local event ID, completed
+tick and phase, event family, subject organism/species, participant roles, tile and
+tile-local occurrence coordinate, exact outcome/resource quantities where relevant, and
+references to retained death, ledger, movement, reproduction, or interaction evidence.
+Workers may propose facts, but the canonical reducer owns ordering and IDs. Birth,
+reproduction, migration, meaningful interaction, lifecycle transition, and death facts are
+retained exactly. High-frequency absorption/metabolism is accumulated into fixed hourly
+per-organism/resource-family buckets for `168` hours and deterministically compacted into
+daily buckets thereafter. The hourly representation is one bounded activity bucket with
+sparse nonzero resource-family totals, not one retained event per absorbed quantum.
+Compaction is keyed by simulated time, never wall-clock time or observation.
+
+Journey landmarks and summaries are saved and covered by a versioned history digest so
+save corruption and divergent replay are detectable without rescanning presentation text.
+They never feed organism behavior, mutation scoring, RNG addresses, or simulation outcomes.
+On-map activity pulses are actor-authorized ephemeral projections of these facts, not a
+second authoritative event store; their filters, animation progress, and visual stacking
+are client profile state.
+
+Old exact landmarks and compacted daily summaries may be sealed into cold append-only
+segments indexed by `OrganismId`; logical world-lifetime retention does not place all
+history in hot world memory. A save/checkpoint pins the archive high-water mark, segment
+identity, and rolling digest required to reopen the same history. Missing or mismatched
+segments fail explicitly rather than silently presenting a partial journey as complete.
 
 An internal change journal is not another authoritative event category. It identifies which final values a downstream projection may need to reread and references retained event facts where necessary; it does not duplicate the resource ledger, command log, or event store.
 
@@ -142,7 +169,9 @@ ID allocation, locator resolution, swap removal, migration, transactional world 
 - [x] Founder available-store balance ownership, capacity-group load derivation, and DNA-compiled baseline limits; see [INTERNAL_STORAGE_AND_ALLOCATION.md](INTERNAL_STORAGE_AND_ALLOCATION.md).
 - [x] Energy-carrier pool ownership, compiled maximum versus structure-commissioned capacity, and storage-structure assignment; see [ENERGY_STORAGE.md](ENERGY_STORAGE.md).
 - [x] Root-seed, RNG algorithm/schema compatibility state, semantic draw addressing, and commit-owned occurrence ordinals; permanent numeric domain assignments remain implementation scaffold work. See [KEYED_RANDOMNESS.md](KEYED_RANDOMNESS.md).
-- [ ] Event retention categories.
+- [x] First organism-journey event split, stable ownership, exact-versus-summarized retention,
+  and ephemeral activity-pulse boundary; final byte/count budgets remain a representative
+  benchmark decision. See [CLIENT.md](CLIENT.md).
 - [ ] Actor knowledge, observation snapshot, and visibility-state schemas.
 - [ ] Abiogenesis-origin representation and root-species invariants.
 - [x] First logical and physical within-tile spatial-index strategy: derived pooled `16 × 16` bins for organisms and remains, rebuilt after movement, with exact-distance filtering and stable ordering; see [SPATIAL_ORGANISMS_AND_BEHAVIOR.md](SPATIAL_ORGANISMS_AND_BEHAVIOR.md) and [ENTITY_IDENTITY_AND_STORAGE.md](ENTITY_IDENTITY_AND_STORAGE.md).
