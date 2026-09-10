@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file lyfe/v1/evolution.proto.
  */
 export const file_lyfe_v1_evolution: GenFile = /*@__PURE__*/
-  fileDesc("ChdseWZlL3YxL2V2b2x1dGlvbi5wcm90bxIHbHlmZS52MSKCAgoURXZvbHV0aW9uVHJhaXRPcHRpb24SEAoIdHJhaXRfaWQYASABKA0SEgoKc3RhYmxlX2tleRgCIAEoCRIUCgxkaXNwbGF5X25hbWUYAyABKAkSDgoGZmFtaWx5GAQgASgJEhIKCnNlbGVjdGFibGUYBSABKAgSEAoIYWNxdWlyZWQYBiABKAgSHQoVbXV0YXRpb25fcG9pbnRfY29zdF9xGAcgASgSEhkKEWNoYW5nZV9jb21wbGV4aXR5GAggASgNEh4KFnByZXJlcXVpc2l0ZV90cmFpdF9pZHMYCSADKA0SHgoWaW5jb21wYXRpYmxlX3RyYWl0X2lkcxgKIAMoDSI8ChVFdm9sdXRpb25PY2N1cGllZFRpbGUSDwoHdGlsZV9pZBgBIAEoDRISCgpwb3B1bGF0aW9uGAIgASgEIpAEChhFdm9sdXRpb25EZWNpc2lvblN1cmZhY2USEAoId29ybGRfaWQYASABKAQSFgoOY29tcGxldGVkX3RpY2sYAiABKAQSFgoOd29ybGRfcmV2aXNpb24YAyABKAQSGwoTdGlja19kdXJhdGlvbl9ob3VycxgEIAEoDRIdChVjb250cm9sbGVkX3NwZWNpZXNfaWQYBSABKAQSHQoVY29udHJvbGxlZF9wb3B1bGF0aW9uGAYgASgEEhoKEmV2b2x1dGlvbl9yZXZpc2lvbhgHIAEoBBITCgtnZW5vbWVfaGFzaBgIIAEoCRIaChJtdXRhdGlvbl9iYWxhbmNlX3EYCSABKBISHgoWbGFzdF9tdXRhdGlvbl9pbmNvbWVfcRgKIAEoEhIYChBhdmVyYWdlX2hlYWx0aF9xGAsgASgNEiIKGm11dGF0aW9uX2luY29tZV9tb2RpZmllcl9xGAwgASgNEiIKGnNwZWNpYXRpb25fbm90X2JlZm9yZV90aWNrGA0gASgEEiEKGW1heGltdW1fY2hhbmdlX2NvbXBsZXhpdHkYDiABKA0SLQoGdHJhaXRzGA8gAygLMh0ubHlmZS52MS5Fdm9sdXRpb25UcmFpdE9wdGlvbhI2Cg5vY2N1cGllZF90aWxlcxgQIAMoCzIeLmx5ZmUudjEuRXZvbHV0aW9uT2NjdXBpZWRUaWxlIucBChlTcGVjaWF0aW9uUHJvcG9zYWxSZXF1ZXN0EhAKCHdvcmxkX2lkGAEgASgEEhsKE2FuY2VzdG9yX3NwZWNpZXNfaWQYAiABKAQSIwobZXhwZWN0ZWRfZXZvbHV0aW9uX3JldmlzaW9uGAMgASgEEhwKFGV4cGVjdGVkX2dlbm9tZV9oYXNoGAQgASgJEhUKDW5ld190cmFpdF9pZHMYBSADKA0SGQoRc2VsZWN0ZWRfdGlsZV9pZHMYBiADKA0SJgoeZm9sbG93X2Rlc2NlbmRhbnRfaWZfcGVybWl0dGVkGAcgASgIIjgKFlNwZWNpYXRpb25Gb3VuZGVyQ291bnQSDwoHdGlsZV9pZBgBIAEoDRINCgVjb3VudBgCIAEoDSKxAwoSU3BlY2lhdGlvblByb3Bvc2FsEhAKCGFjY2VwdGVkGAEgASgIEisKB2ZhaWx1cmUYAiABKA4yGi5seWZlLnYxLlNwZWNpYXRpb25GYWlsdXJlEhgKEG11dGF0aW9uX3ByaWNlX3EYAyABKBISGQoRY2hhbmdlX2NvbXBsZXhpdHkYBCABKA0SNwoOZm91bmRlcl9jb3VudHMYBSADKAsyHy5seWZlLnYxLlNwZWNpYXRpb25Gb3VuZGVyQ291bnQSHAoUcHJvcG9zZWRfZ2Vub21lX2hhc2gYBiABKAkSGAoQYmFsYW5jZV9iZWZvcmVfcRgHIAEoEhIiChpkdXBsaWNhdGVkX2JhbGFuY2VfYWZ0ZXJfcRgIIAEoEhIiChphbmNlc3Rvcl9wb3B1bGF0aW9uX2JlZm9yZRgJIAEoBBIhChlhbmNlc3Rvcl9wb3B1bGF0aW9uX2FmdGVyGAogASgEEh0KFWRlc2NlbmRhbnRfcG9wdWxhdGlvbhgLIAEoBBIsCiRyZXN1bHRpbmdfc3BlY2lhdGlvbl9ub3RfYmVmb3JlX3RpY2sYDCABKAQiaQoWQXBwbHlTcGVjaWF0aW9uUmVxdWVzdBIZChFjbGllbnRfY29tbWFuZF9pZBgBIAEoCRI0Cghwcm9wb3NhbBgCIAEoCzIiLmx5ZmUudjEuU3BlY2lhdGlvblByb3Bvc2FsUmVxdWVzdCKMAgoXQXBwbHlTcGVjaWF0aW9uUmVzcG9uc2USGQoRY2xpZW50X2NvbW1hbmRfaWQYASABKAkSFQoNY29tbWFuZF9vcmRlchgCIAEoBBItCghwcm9wb3NhbBgDIAEoCzIbLmx5ZmUudjEuU3BlY2lhdGlvblByb3Bvc2FsEg8KB2FwcGxpZWQYBCABKAgSEAoIZXZlbnRfaWQYBSABKAQSHQoVZGVzY2VuZGFudF9zcGVjaWVzX2lkGAYgASgEEhwKFGRlc2NlbmRhbnRfZ2Vub21lX2lkGAcgASgEEhgKEGFwcGxpY2F0aW9uX3RpY2sYCCABKAQSFgoOd29ybGRfcmV2aXNpb24YCSABKAQqyQUKEVNwZWNpYXRpb25GYWlsdXJlEhsKF1NQRUNJQVRJT05fRkFJTFVSRV9OT05FEAASJwojU1BFQ0lBVElPTl9GQUlMVVJFX1dST05HX0NPTlRST0xMRVIQARIlCiFTUEVDSUFUSU9OX0ZBSUxVUkVfU1BFQ0lFU19MT0NLRUQQAhImCiJTUEVDSUFUSU9OX0ZBSUxVUkVfU1BFQ0lFU19FWFRJTkNUEAMSLworU1BFQ0lBVElPTl9GQUlMVVJFX1NUQUxFX0VWT0xVVElPTl9SRVZJU0lPThAEEiUKIVNQRUNJQVRJT05fRkFJTFVSRV9HRU5PTUVfQ0hBTkdFRBAFEioKJlNQRUNJQVRJT05fRkFJTFVSRV9TUEVDSUFUSU9OX0NPT0xET1dOEAYSJAogU1BFQ0lBVElPTl9GQUlMVVJFX1VOS05PV05fVFJBSVQQBxItCilTUEVDSUFUSU9OX0ZBSUxVUkVfVFJBSVRfQUxSRUFEWV9BQ1FVSVJFRBAIEisKJ1NQRUNJQVRJT05fRkFJTFVSRV9NSVNTSU5HX1BSRVJFUVVJU0lURRAJEikKJVNQRUNJQVRJT05fRkFJTFVSRV9JTkNPTVBBVElCTEVfVFJBSVQQChIxCi1TUEVDSUFUSU9OX0ZBSUxVUkVfQ0hBTkdFX0NPTVBMRVhJVFlfRVhDRUVERUQQCxIzCi9TUEVDSUFUSU9OX0ZBSUxVUkVfSU5TVUZGSUNJRU5UX01VVEFUSU9OX1BPSU5UUxAMEikKJVNQRUNJQVRJT05fRkFJTFVSRV9JTlZBTElEX1RJTEVfQ09VTlQQDRIoCiRTUEVDSUFUSU9OX0ZBSUxVUkVfVElMRV9OT1RfT0NDVVBJRUQQDhIxCi1TUEVDSUFUSU9OX0ZBSUxVUkVfQU5DRVNUT1JfV09VTERfQkVfREVQTEVURUQQD0ITqgIQTHlmZS5Qcm90b2NvbC5WMWIGcHJvdG8z");
+  fileDesc("ChdseWZlL3YxL2V2b2x1dGlvbi5wcm90bxIHbHlmZS52MSLXAwoURXZvbHV0aW9uVHJhaXRPcHRpb24SEAoIdHJhaXRfaWQYASABKA0SEgoKc3RhYmxlX2tleRgCIAEoCRIUCgxkaXNwbGF5X25hbWUYAyABKAkSDgoGZmFtaWx5GAQgASgJEhIKCnNlbGVjdGFibGUYBSABKAgSEAoIYWNxdWlyZWQYBiABKAgSHQoVbXV0YXRpb25fcG9pbnRfY29zdF9xGAcgASgSEhkKEWNoYW5nZV9jb21wbGV4aXR5GAggASgNEh4KFnByZXJlcXVpc2l0ZV90cmFpdF9pZHMYCSADKA0SHgoWaW5jb21wYXRpYmxlX3RyYWl0X2lkcxgKIAMoDRIlCh1lbmFibGVzX3Jlc291cmNlX2NvbnNlcnZhdGlvbhgLIAEoCBI8ChFzdHJhdGVnaWNfaW50ZW50cxgMIAMoDjIhLmx5ZmUudjEuRXZvbHV0aW9uU3RyYXRlZ2ljSW50ZW50EiMKG2NvbnNlcXVlbmNlX2ZvbGxvd191cF9ob3VycxgNIAEoBBJJChljb25zZXF1ZW5jZV9ldmlkZW5jZV9raW5kGA4gASgOMiYubHlmZS52MS5Fdm9sdXRpb25Gb2xsb3dVcEV2aWRlbmNlS2luZCK6AwoVRXZvbHV0aW9uT2NjdXBpZWRUaWxlEg8KB3RpbGVfaWQYASABKA0SEgoKcG9wdWxhdGlvbhgCIAEoBBIYChBhdmVyYWdlX2hlYWx0aF9xGAMgASgNEhkKEWF2ZXJhZ2VfcmVzZXJ2ZV9xGAQgASgNEiYKHmF2ZXJhZ2VfZW52aXJvbm1lbnRhbF9mYWN0b3JfcRgFIAEoDRIjChthdmVyYWdlX3Jlc291cmNlX3ByZXNzdXJlX3EYBiABKA0SGAoQZWxldmF0aW9uX21ldGVycxgHIAEoERIbChNoYXNfY3VycmVudF9jbGltYXRlGAggASgIEiMKG2N1cnJlbnRfdGVtcGVyYXR1cmVfbWlsbGlfYxgJIAEoERIiChpjdXJyZW50X3N1cmZhY2VfbW9pc3R1cmVfcRgKIAEoDRIiChpjdXJyZW50X2FjY2Vzc2libGVfbGlnaHRfcRgLIAEoDRIcChRiYXNlbGluZV92b2xjYW5pc21fcRgMIAEoDRI4Cg9yZXNvdXJjZV9zdG9ja3MYDSADKAsyHy5seWZlLnYxLkV2b2x1dGlvblJlc291cmNlU3RvY2siQQoWRXZvbHV0aW9uUmVzb3VyY2VTdG9jaxITCgtyZXNvdXJjZV9pZBgBIAEoDRISCgpxdWFudGl0eV9xGAIgASgSIkgKG0V2b2x1dGlvblJlc291cmNlRGVmaW5pdGlvbhITCgtyZXNvdXJjZV9pZBgBIAEoDRIUCgxkaXNwbGF5X25hbWUYAiABKAkiSAobRXZvbHV0aW9uUmVhY3Rpb25EZWZpbml0aW9uEhMKC3JlYWN0aW9uX2lkGAEgASgNEhQKDGRpc3BsYXlfbmFtZRgCIAEoCSKYBQoYRXZvbHV0aW9uRGVjaXNpb25TdXJmYWNlEhAKCHdvcmxkX2lkGAEgASgEEhYKDmNvbXBsZXRlZF90aWNrGAIgASgEEhYKDndvcmxkX3JldmlzaW9uGAMgASgEEhsKE3RpY2tfZHVyYXRpb25faG91cnMYBCABKA0SHQoVY29udHJvbGxlZF9zcGVjaWVzX2lkGAUgASgEEh0KFWNvbnRyb2xsZWRfcG9wdWxhdGlvbhgGIAEoBBIaChJldm9sdXRpb25fcmV2aXNpb24YByABKAQSEwoLZ2Vub21lX2hhc2gYCCABKAkSGgoSbXV0YXRpb25fYmFsYW5jZV9xGAkgASgSEh4KFmxhc3RfbXV0YXRpb25faW5jb21lX3EYCiABKBISGAoQYXZlcmFnZV9oZWFsdGhfcRgLIAEoDRIiChptdXRhdGlvbl9pbmNvbWVfbW9kaWZpZXJfcRgMIAEoDRIiChpzcGVjaWF0aW9uX25vdF9iZWZvcmVfdGljaxgNIAEoBBIhChltYXhpbXVtX2NoYW5nZV9jb21wbGV4aXR5GA4gASgNEi0KBnRyYWl0cxgPIAMoCzIdLmx5ZmUudjEuRXZvbHV0aW9uVHJhaXRPcHRpb24SNgoOb2NjdXBpZWRfdGlsZXMYECADKAsyHi5seWZlLnYxLkV2b2x1dGlvbk9jY3VwaWVkVGlsZRJCChRyZXNvdXJjZV9kZWZpbml0aW9ucxgRIAMoCzIkLmx5ZmUudjEuRXZvbHV0aW9uUmVzb3VyY2VEZWZpbml0aW9uEkIKFHJlYWN0aW9uX2RlZmluaXRpb25zGBIgAygLMiQubHlmZS52MS5Fdm9sdXRpb25SZWFjdGlvbkRlZmluaXRpb24i5wEKGVNwZWNpYXRpb25Qcm9wb3NhbFJlcXVlc3QSEAoId29ybGRfaWQYASABKAQSGwoTYW5jZXN0b3Jfc3BlY2llc19pZBgCIAEoBBIjChtleHBlY3RlZF9ldm9sdXRpb25fcmV2aXNpb24YAyABKAQSHAoUZXhwZWN0ZWRfZ2Vub21lX2hhc2gYBCABKAkSFQoNbmV3X3RyYWl0X2lkcxgFIAMoDRIZChFzZWxlY3RlZF90aWxlX2lkcxgGIAMoDRImCh5mb2xsb3dfZGVzY2VuZGFudF9pZl9wZXJtaXR0ZWQYByABKAgiOAoWU3BlY2lhdGlvbkZvdW5kZXJDb3VudBIPCgd0aWxlX2lkGAEgASgNEg0KBWNvdW50GAIgASgNIrIDChlFdm9sdXRpb25QaGVub3R5cGVTdW1tYXJ5EiIKGm11dGF0aW9uX2luY29tZV9tb2RpZmllcl9xGAEgASgNEiEKGW1heGltdW1fY2hhbmdlX2NvbXBsZXhpdHkYAiABKA0SHQoVcmVzb3VyY2VfY29uc2VydmF0aW9uGAMgASgIEigKIG1heGltdW1fY2FwdHVyZV9leHRlbnRzX3Blcl9ob3VyGAQgASgNEiYKHmZhdm9yYWJsZV9jYXB0dXJlX2VmZmljaWVuY3lfcRgFIAEoDRIjChttYWludGVuYW5jZV9jb3N0X3FfcGVyX2hvdXIYBiABKBISIgoaY2hhcmdlZF9yZXNlcnZlX2NhcGFjaXR5X3EYByABKBISJQodbWluaW11bV9yZXByb2R1Y3Rpb25faGVhbHRoX3EYCCABKA0SGwoTYWN0aXZlX3JlYWN0aW9uX2lkcxgJIAMoDRI4Cg9yZWN1cnJpbmdfY29zdHMYCiADKAsyHy5seWZlLnYxLkV2b2x1dGlvblJlY3VycmluZ0Nvc3QSFgoOcmVxdWlyZXNfbGlnaHQYCyABKAgidQoWRXZvbHV0aW9uUmVjdXJyaW5nQ29zdBI3CgdjaGFubmVsGAEgASgOMiYubHlmZS52MS5Fdm9sdXRpb25SZWN1cnJpbmdDb3N0Q2hhbm5lbBIiChphbW91bnRfcV9wZXJfb3JnYW5pc21faG91chgCIAEoEiKlAQoaRXZvbHV0aW9uQWN0aXZhdGlvbldhcm5pbmcSNQoEa2luZBgBIAEoDjInLmx5ZmUudjEuRXZvbHV0aW9uQWN0aXZhdGlvbldhcm5pbmdLaW5kEj0KCHNldmVyaXR5GAIgASgOMisubHlmZS52MS5Fdm9sdXRpb25BY3RpdmF0aW9uV2FybmluZ1NldmVyaXR5EhEKCXRyYWl0X2lkcxgDIAMoDSLfAQohRXZvbHV0aW9uUmVhY3Rpb25JbnB1dE9wcG9ydHVuaXR5EhMKC3Jlc291cmNlX2lkGAEgASgNEhQKDHRpbGVfc3RvY2tfcRgCIAEoEhIaChJhY2Nlc3NpYmxlX3N0b2NrX3EYAyABKBISHQoVcmVxdWlyZWRfcGVyX2V4dGVudF9xGAQgASgSEhUKDWluZXhoYXVzdGlibGUYBSABKAgSPQoNZmxvd19mb3JlY2FzdBgGIAEoCzImLmx5ZmUudjEuRXZvbHV0aW9uUmVzb3VyY2VGbG93Rm9yZWNhc3QikAMKHUV2b2x1dGlvblJlc291cmNlRmxvd0ZvcmVjYXN0EjwKBnN0YXR1cxgBIAEoDjIsLmx5ZmUudjEuRXZvbHV0aW9uUmVzb3VyY2VGbG93Rm9yZWNhc3RTdGF0dXMSHAoUaGlzdG9yeV9wZXJpb2RfaG91cnMYAiABKA0SJQodcmVjZW50X2Vudmlyb25tZW50YWxfaW5mbG93X3EYAyABKBISJgoecmVjZW50X2Vudmlyb25tZW50YWxfb3V0Zmxvd19xGAQgASgSEiAKGHJlY2VudF9vcmdhbmlzbV91cHRha2VfcRgFIAEoEhIgChhwcm9wb3NlZF9jb2hvcnRfZGVtYW5kX3EYBiABKBISJwofbGF0ZXN0X29ic2VydmF0aW9uX3BlcmlvZF9ob3VycxgHIAEoDRIqCiJsYXRlc3RfY29udHJvbGxlZF9zcGVjaWVzX3VwdGFrZV9xGAggASgSEisKI2xhdGVzdF9vYnNlcnZlZF9jb21wZXRpdG9yX3VwdGFrZV9xGAkgASgSIusBChxFdm9sdXRpb25SZWFjdGlvbk9wcG9ydHVuaXR5EhMKC3JlYWN0aW9uX2lkGAEgASgNEjsKBnN0YXR1cxgCIAEoDjIrLmx5ZmUudjEuRXZvbHV0aW9uUmVhY3Rpb25PcHBvcnR1bml0eVN0YXR1cxIfChdzdG9ja19zdXBwb3J0ZWRfZXh0ZW50cxgDIAEoEhIcChRsaW1pdGluZ19yZXNvdXJjZV9pZBgEIAEoDRI6CgZpbnB1dHMYBSADKAsyKi5seWZlLnYxLkV2b2x1dGlvblJlYWN0aW9uSW5wdXRPcHBvcnR1bml0eSKcAwofRXZvbHV0aW9uVGlsZUFjdGl2YXRpb25FdmlkZW5jZRIPCgd0aWxlX2lkGAEgASgNEhUKDWZvdW5kZXJfY291bnQYAiABKA0SGAoQYXZlcmFnZV9oZWFsdGhfcRgDIAEoDRIZChFhdmVyYWdlX3Jlc2VydmVfcRgEIAEoDRImCh5hdmVyYWdlX2Vudmlyb25tZW50YWxfZmFjdG9yX3EYBSABKA0SIwobYXZlcmFnZV9yZXNvdXJjZV9wcmVzc3VyZV9xGAYgASgNEhsKE2hhc19jdXJyZW50X2NsaW1hdGUYByABKAgSIwobY3VycmVudF90ZW1wZXJhdHVyZV9taWxsaV9jGAggASgREiIKGmN1cnJlbnRfc3VyZmFjZV9tb2lzdHVyZV9xGAkgASgNEiIKGmN1cnJlbnRfYWNjZXNzaWJsZV9saWdodF9xGAogASgNEkUKFnJlYWN0aW9uX29wcG9ydHVuaXRpZXMYCyADKAsyJS5seWZlLnYxLkV2b2x1dGlvblJlYWN0aW9uT3Bwb3J0dW5pdHkipQcKElNwZWNpYXRpb25Qcm9wb3NhbBIQCghhY2NlcHRlZBgBIAEoCBIrCgdmYWlsdXJlGAIgASgOMhoubHlmZS52MS5TcGVjaWF0aW9uRmFpbHVyZRIYChBtdXRhdGlvbl9wcmljZV9xGAMgASgSEhkKEWNoYW5nZV9jb21wbGV4aXR5GAQgASgNEjcKDmZvdW5kZXJfY291bnRzGAUgAygLMh8ubHlmZS52MS5TcGVjaWF0aW9uRm91bmRlckNvdW50EhwKFHByb3Bvc2VkX2dlbm9tZV9oYXNoGAYgASgJEhgKEGJhbGFuY2VfYmVmb3JlX3EYByABKBISIgoaZHVwbGljYXRlZF9iYWxhbmNlX2FmdGVyX3EYCCABKBISIgoaYW5jZXN0b3JfcG9wdWxhdGlvbl9iZWZvcmUYCSABKAQSIQoZYW5jZXN0b3JfcG9wdWxhdGlvbl9hZnRlchgKIAEoBBIdChVkZXNjZW5kYW50X3BvcHVsYXRpb24YCyABKAQSLAokcmVzdWx0aW5nX3NwZWNpYXRpb25fbm90X2JlZm9yZV90aWNrGAwgASgEEj0KEWN1cnJlbnRfcGhlbm90eXBlGA0gASgLMiIubHlmZS52MS5Fdm9sdXRpb25QaGVub3R5cGVTdW1tYXJ5Ej4KEnByb3Bvc2VkX3BoZW5vdHlwZRgOIAEoCzIiLmx5ZmUudjEuRXZvbHV0aW9uUGhlbm90eXBlU3VtbWFyeRI3Cg5iZW5lZml0X3RpbWluZxgPIAEoDjIfLmx5ZmUudjEuRXZvbHV0aW9uQmVuZWZpdFRpbWluZxJAChNhY3RpdmF0aW9uX3dhcm5pbmdzGBAgAygLMiMubHlmZS52MS5Fdm9sdXRpb25BY3RpdmF0aW9uV2FybmluZxJKChh0aWxlX2FjdGl2YXRpb25fZXZpZGVuY2UYESADKAsyKC5seWZlLnYxLkV2b2x1dGlvblRpbGVBY3RpdmF0aW9uRXZpZGVuY2USPAoRc3RyYXRlZ2ljX2ludGVudHMYEiADKA4yIS5seWZlLnYxLkV2b2x1dGlvblN0cmF0ZWdpY0ludGVudBIjChtjb25zZXF1ZW5jZV9mb2xsb3dfdXBfaG91cnMYEyABKAQSSQoZY29uc2VxdWVuY2VfZXZpZGVuY2Vfa2luZBgUIAEoDjImLmx5ZmUudjEuRXZvbHV0aW9uRm9sbG93VXBFdmlkZW5jZUtpbmQiaQoWQXBwbHlTcGVjaWF0aW9uUmVxdWVzdBIZChFjbGllbnRfY29tbWFuZF9pZBgBIAEoCRI0Cghwcm9wb3NhbBgCIAEoCzIiLmx5ZmUudjEuU3BlY2lhdGlvblByb3Bvc2FsUmVxdWVzdCKMAgoXQXBwbHlTcGVjaWF0aW9uUmVzcG9uc2USGQoRY2xpZW50X2NvbW1hbmRfaWQYASABKAkSFQoNY29tbWFuZF9vcmRlchgCIAEoBBItCghwcm9wb3NhbBgDIAEoCzIbLmx5ZmUudjEuU3BlY2lhdGlvblByb3Bvc2FsEg8KB2FwcGxpZWQYBCABKAgSEAoIZXZlbnRfaWQYBSABKAQSHQoVZGVzY2VuZGFudF9zcGVjaWVzX2lkGAYgASgEEhwKFGRlc2NlbmRhbnRfZ2Vub21lX2lkGAcgASgEEhgKEGFwcGxpY2F0aW9uX3RpY2sYCCABKAQSFgoOd29ybGRfcmV2aXNpb24YCSABKAQqyQUKEVNwZWNpYXRpb25GYWlsdXJlEhsKF1NQRUNJQVRJT05fRkFJTFVSRV9OT05FEAASJwojU1BFQ0lBVElPTl9GQUlMVVJFX1dST05HX0NPTlRST0xMRVIQARIlCiFTUEVDSUFUSU9OX0ZBSUxVUkVfU1BFQ0lFU19MT0NLRUQQAhImCiJTUEVDSUFUSU9OX0ZBSUxVUkVfU1BFQ0lFU19FWFRJTkNUEAMSLworU1BFQ0lBVElPTl9GQUlMVVJFX1NUQUxFX0VWT0xVVElPTl9SRVZJU0lPThAEEiUKIVNQRUNJQVRJT05fRkFJTFVSRV9HRU5PTUVfQ0hBTkdFRBAFEioKJlNQRUNJQVRJT05fRkFJTFVSRV9TUEVDSUFUSU9OX0NPT0xET1dOEAYSJAogU1BFQ0lBVElPTl9GQUlMVVJFX1VOS05PV05fVFJBSVQQBxItCilTUEVDSUFUSU9OX0ZBSUxVUkVfVFJBSVRfQUxSRUFEWV9BQ1FVSVJFRBAIEisKJ1NQRUNJQVRJT05fRkFJTFVSRV9NSVNTSU5HX1BSRVJFUVVJU0lURRAJEikKJVNQRUNJQVRJT05fRkFJTFVSRV9JTkNPTVBBVElCTEVfVFJBSVQQChIxCi1TUEVDSUFUSU9OX0ZBSUxVUkVfQ0hBTkdFX0NPTVBMRVhJVFlfRVhDRUVERUQQCxIzCi9TUEVDSUFUSU9OX0ZBSUxVUkVfSU5TVUZGSUNJRU5UX01VVEFUSU9OX1BPSU5UUxAMEikKJVNQRUNJQVRJT05fRkFJTFVSRV9JTlZBTElEX1RJTEVfQ09VTlQQDRIoCiRTUEVDSUFUSU9OX0ZBSUxVUkVfVElMRV9OT1RfT0NDVVBJRUQQDhIxCi1TUEVDSUFUSU9OX0ZBSUxVUkVfQU5DRVNUT1JfV09VTERfQkVfREVQTEVURUQQDyrlAQoWRXZvbHV0aW9uQmVuZWZpdFRpbWluZxIoCiRFVk9MVVRJT05fQkVORUZJVF9USU1JTkdfVU5TUEVDSUZJRUQQABImCiJFVk9MVVRJT05fQkVORUZJVF9USU1JTkdfSU1NRURJQVRFEAESJQohRVZPTFVUSU9OX0JFTkVGSVRfVElNSU5HX01BVFVSSU5HEAISKAokRVZPTFVUSU9OX0JFTkVGSVRfVElNSU5HX0NPTkRJVElPTkFMEAMSKAokRVZPTFVUSU9OX0JFTkVGSVRfVElNSU5HX1BSRVBBUkFUT1JZEAQqlwMKGEV2b2x1dGlvblN0cmF0ZWdpY0ludGVudBIqCiZFVk9MVVRJT05fU1RSQVRFR0lDX0lOVEVOVF9VTlNQRUNJRklFRBAAEjQKMEVWT0xVVElPTl9TVFJBVEVHSUNfSU5URU5UX0VYUExPSVRfQ1VSUkVOVF9OSUNIRRABEjwKOEVWT0xVVElPTl9TVFJBVEVHSUNfSU5URU5UX0VORFVSRV9FTlZJUk9OTUVOVEFMX1BSRVNTVVJFEAISLgoqRVZPTFVUSU9OX1NUUkFURUdJQ19JTlRFTlRfQUxURVJfRElTUEVSU0FMEAMSPwo7RVZPTFVUSU9OX1NUUkFURUdJQ19JTlRFTlRfRElWRVJTSUZZX1JFU09VUkNFX0VORVJHWV9BQ0NFU1MQBBI1CjFFVk9MVVRJT05fU1RSQVRFR0lDX0lOVEVOVF9CSU9MT0dJQ0FMX0lOVEVSQUNUSU9OEAUSMwovRVZPTFVUSU9OX1NUUkFURUdJQ19JTlRFTlRfSU5WRVNUX0lOX0NPTVBMRVhJVFkQBiqNAgoeRXZvbHV0aW9uQWN0aXZhdGlvbldhcm5pbmdLaW5kEjEKLUVWT0xVVElPTl9BQ1RJVkFUSU9OX1dBUk5JTkdfS0lORF9VTlNQRUNJRklFRBAAEjgKNEVWT0xVVElPTl9BQ1RJVkFUSU9OX1dBUk5JTkdfS0lORF9OT19DT01QSUxFRF9DSEFOR0UQARJACjxFVk9MVVRJT05fQUNUSVZBVElPTl9XQVJOSU5HX0tJTkRfUkVTT1VSQ0VfUFJFU1NVUkVfUkVRVUlSRUQQAhI8CjhFVk9MVVRJT05fQUNUSVZBVElPTl9XQVJOSU5HX0tJTkRfTk9fTkVXX0FDVElWRV9SRUFDVElPThADKsUBCiJFdm9sdXRpb25BY3RpdmF0aW9uV2FybmluZ1NldmVyaXR5EjUKMUVWT0xVVElPTl9BQ1RJVkFUSU9OX1dBUk5JTkdfU0VWRVJJVFlfVU5TUEVDSUZJRUQQABI1CjFFVk9MVVRJT05fQUNUSVZBVElPTl9XQVJOSU5HX1NFVkVSSVRZX0lORk9STUFUSU9OEAESMQotRVZPTFVUSU9OX0FDVElWQVRJT05fV0FSTklOR19TRVZFUklUWV9DQVVUSU9OEAIqjQEKHUV2b2x1dGlvblJlY3VycmluZ0Nvc3RDaGFubmVsEjAKLEVWT0xVVElPTl9SRUNVUlJJTkdfQ09TVF9DSEFOTkVMX1VOU1BFQ0lGSUVEEAASOgo2RVZPTFVUSU9OX1JFQ1VSUklOR19DT1NUX0NIQU5ORUxfTUFOREFUT1JZX01BSU5URU5BTkNFEAEqigIKIkV2b2x1dGlvblJlYWN0aW9uT3Bwb3J0dW5pdHlTdGF0dXMSNQoxRVZPTFVUSU9OX1JFQUNUSU9OX09QUE9SVFVOSVRZX1NUQVRVU19VTlNQRUNJRklFRBAAEjMKL0VWT0xVVElPTl9SRUFDVElPTl9PUFBPUlRVTklUWV9TVEFUVVNfQVZBSUxBQkxFEAESOgo2RVZPTFVUSU9OX1JFQUNUSU9OX09QUE9SVFVOSVRZX1NUQVRVU19SRVNPVVJDRV9MSU1JVEVEEAISPAo4RVZPTFVUSU9OX1JFQUNUSU9OX09QUE9SVFVOSVRZX1NUQVRVU19JTkFDQ0VTU0lCTEVfTElHSFQQAyrcAgojRXZvbHV0aW9uUmVzb3VyY2VGbG93Rm9yZWNhc3RTdGF0dXMSNwozRVZPTFVUSU9OX1JFU09VUkNFX0ZMT1dfRk9SRUNBU1RfU1RBVFVTX1VOU1BFQ0lGSUVEEAASNgoyRVZPTFVUSU9OX1JFU09VUkNFX0ZMT1dfRk9SRUNBU1RfU1RBVFVTX05PX0hJU1RPUlkQARJBCj1FVk9MVVRJT05fUkVTT1VSQ0VfRkxPV19GT1JFQ0FTVF9TVEFUVVNfV0lUSElOX1JFQ0VOVF9SRU5FV0FMEAISQgo+RVZPTFVUSU9OX1JFU09VUkNFX0ZMT1dfRk9SRUNBU1RfU1RBVFVTX0VYQ0VFRFNfUkVDRU5UX1JFTkVXQUwQAxI9CjlFVk9MVVRJT05fUkVTT1VSQ0VfRkxPV19GT1JFQ0FTVF9TVEFUVVNfTk9fUkVDRU5UX1JFTkVXQUwQBCq9AgodRXZvbHV0aW9uRm9sbG93VXBFdmlkZW5jZUtpbmQSMQotRVZPTFVUSU9OX0ZPTExPV19VUF9FVklERU5DRV9LSU5EX1VOU1BFQ0lGSUVEEAASOwo3RVZPTFVUSU9OX0ZPTExPV19VUF9FVklERU5DRV9LSU5EX0NBUEFCSUxJVFlfQUNUSVZBVElPThABEjwKOEVWT0xVVElPTl9GT0xMT1dfVVBfRVZJREVOQ0VfS0lORF9DT05ESVRJT05fQU5EX1BSRVNTVVJFEAISNwozRVZPTFVUSU9OX0ZPTExPV19VUF9FVklERU5DRV9LSU5EX0dFT0dSQVBISUNfU1BSRUFEEAMSNQoxRVZPTFVUSU9OX0ZPTExPV19VUF9FVklERU5DRV9LSU5EX1JFU0VSVkVfU1RPUkFHRRAEQhOqAhBMeWZlLlByb3RvY29sLlYxYgZwcm90bzM");
 
 /**
  * @generated from message lyfe.v1.EvolutionTraitOption
@@ -65,6 +65,26 @@ export type EvolutionTraitOption = Message<"lyfe.v1.EvolutionTraitOption"> & {
    * @generated from field: repeated uint32 incompatible_trait_ids = 10;
    */
   incompatibleTraitIds: number[];
+
+  /**
+   * @generated from field: bool enables_resource_conservation = 11;
+   */
+  enablesResourceConservation: boolean;
+
+  /**
+   * @generated from field: repeated lyfe.v1.EvolutionStrategicIntent strategic_intents = 12;
+   */
+  strategicIntents: EvolutionStrategicIntent[];
+
+  /**
+   * @generated from field: uint64 consequence_follow_up_hours = 13;
+   */
+  consequenceFollowUpHours: bigint;
+
+  /**
+   * @generated from field: lyfe.v1.EvolutionFollowUpEvidenceKind consequence_evidence_kind = 14;
+   */
+  consequenceEvidenceKind: EvolutionFollowUpEvidenceKind;
 };
 
 /**
@@ -87,6 +107,61 @@ export type EvolutionOccupiedTile = Message<"lyfe.v1.EvolutionOccupiedTile"> & {
    * @generated from field: uint64 population = 2;
    */
   population: bigint;
+
+  /**
+   * @generated from field: uint32 average_health_q = 3;
+   */
+  averageHealthQ: number;
+
+  /**
+   * @generated from field: uint32 average_reserve_q = 4;
+   */
+  averageReserveQ: number;
+
+  /**
+   * @generated from field: uint32 average_environmental_factor_q = 5;
+   */
+  averageEnvironmentalFactorQ: number;
+
+  /**
+   * @generated from field: uint32 average_resource_pressure_q = 6;
+   */
+  averageResourcePressureQ: number;
+
+  /**
+   * @generated from field: sint32 elevation_meters = 7;
+   */
+  elevationMeters: number;
+
+  /**
+   * @generated from field: bool has_current_climate = 8;
+   */
+  hasCurrentClimate: boolean;
+
+  /**
+   * @generated from field: sint32 current_temperature_milli_c = 9;
+   */
+  currentTemperatureMilliC: number;
+
+  /**
+   * @generated from field: uint32 current_surface_moisture_q = 10;
+   */
+  currentSurfaceMoistureQ: number;
+
+  /**
+   * @generated from field: uint32 current_accessible_light_q = 11;
+   */
+  currentAccessibleLightQ: number;
+
+  /**
+   * @generated from field: uint32 baseline_volcanism_q = 12;
+   */
+  baselineVolcanismQ: number;
+
+  /**
+   * @generated from field: repeated lyfe.v1.EvolutionResourceStock resource_stocks = 13;
+   */
+  resourceStocks: EvolutionResourceStock[];
 };
 
 /**
@@ -95,6 +170,72 @@ export type EvolutionOccupiedTile = Message<"lyfe.v1.EvolutionOccupiedTile"> & {
  */
 export const EvolutionOccupiedTileSchema: GenMessage<EvolutionOccupiedTile> = /*@__PURE__*/
   messageDesc(file_lyfe_v1_evolution, 1);
+
+/**
+ * @generated from message lyfe.v1.EvolutionResourceStock
+ */
+export type EvolutionResourceStock = Message<"lyfe.v1.EvolutionResourceStock"> & {
+  /**
+   * @generated from field: uint32 resource_id = 1;
+   */
+  resourceId: number;
+
+  /**
+   * @generated from field: sint64 quantity_q = 2;
+   */
+  quantityQ: bigint;
+};
+
+/**
+ * Describes the message lyfe.v1.EvolutionResourceStock.
+ * Use `create(EvolutionResourceStockSchema)` to create a new message.
+ */
+export const EvolutionResourceStockSchema: GenMessage<EvolutionResourceStock> = /*@__PURE__*/
+  messageDesc(file_lyfe_v1_evolution, 2);
+
+/**
+ * @generated from message lyfe.v1.EvolutionResourceDefinition
+ */
+export type EvolutionResourceDefinition = Message<"lyfe.v1.EvolutionResourceDefinition"> & {
+  /**
+   * @generated from field: uint32 resource_id = 1;
+   */
+  resourceId: number;
+
+  /**
+   * @generated from field: string display_name = 2;
+   */
+  displayName: string;
+};
+
+/**
+ * Describes the message lyfe.v1.EvolutionResourceDefinition.
+ * Use `create(EvolutionResourceDefinitionSchema)` to create a new message.
+ */
+export const EvolutionResourceDefinitionSchema: GenMessage<EvolutionResourceDefinition> = /*@__PURE__*/
+  messageDesc(file_lyfe_v1_evolution, 3);
+
+/**
+ * @generated from message lyfe.v1.EvolutionReactionDefinition
+ */
+export type EvolutionReactionDefinition = Message<"lyfe.v1.EvolutionReactionDefinition"> & {
+  /**
+   * @generated from field: uint32 reaction_id = 1;
+   */
+  reactionId: number;
+
+  /**
+   * @generated from field: string display_name = 2;
+   */
+  displayName: string;
+};
+
+/**
+ * Describes the message lyfe.v1.EvolutionReactionDefinition.
+ * Use `create(EvolutionReactionDefinitionSchema)` to create a new message.
+ */
+export const EvolutionReactionDefinitionSchema: GenMessage<EvolutionReactionDefinition> = /*@__PURE__*/
+  messageDesc(file_lyfe_v1_evolution, 4);
 
 /**
  * @generated from message lyfe.v1.EvolutionDecisionSurface
@@ -179,6 +320,16 @@ export type EvolutionDecisionSurface = Message<"lyfe.v1.EvolutionDecisionSurface
    * @generated from field: repeated lyfe.v1.EvolutionOccupiedTile occupied_tiles = 16;
    */
   occupiedTiles: EvolutionOccupiedTile[];
+
+  /**
+   * @generated from field: repeated lyfe.v1.EvolutionResourceDefinition resource_definitions = 17;
+   */
+  resourceDefinitions: EvolutionResourceDefinition[];
+
+  /**
+   * @generated from field: repeated lyfe.v1.EvolutionReactionDefinition reaction_definitions = 18;
+   */
+  reactionDefinitions: EvolutionReactionDefinition[];
 };
 
 /**
@@ -186,7 +337,7 @@ export type EvolutionDecisionSurface = Message<"lyfe.v1.EvolutionDecisionSurface
  * Use `create(EvolutionDecisionSurfaceSchema)` to create a new message.
  */
 export const EvolutionDecisionSurfaceSchema: GenMessage<EvolutionDecisionSurface> = /*@__PURE__*/
-  messageDesc(file_lyfe_v1_evolution, 2);
+  messageDesc(file_lyfe_v1_evolution, 5);
 
 /**
  * @generated from message lyfe.v1.SpeciationProposalRequest
@@ -233,7 +384,7 @@ export type SpeciationProposalRequest = Message<"lyfe.v1.SpeciationProposalReque
  * Use `create(SpeciationProposalRequestSchema)` to create a new message.
  */
 export const SpeciationProposalRequestSchema: GenMessage<SpeciationProposalRequest> = /*@__PURE__*/
-  messageDesc(file_lyfe_v1_evolution, 3);
+  messageDesc(file_lyfe_v1_evolution, 6);
 
 /**
  * @generated from message lyfe.v1.SpeciationFounderCount
@@ -255,7 +406,326 @@ export type SpeciationFounderCount = Message<"lyfe.v1.SpeciationFounderCount"> &
  * Use `create(SpeciationFounderCountSchema)` to create a new message.
  */
 export const SpeciationFounderCountSchema: GenMessage<SpeciationFounderCount> = /*@__PURE__*/
-  messageDesc(file_lyfe_v1_evolution, 4);
+  messageDesc(file_lyfe_v1_evolution, 7);
+
+/**
+ * @generated from message lyfe.v1.EvolutionPhenotypeSummary
+ */
+export type EvolutionPhenotypeSummary = Message<"lyfe.v1.EvolutionPhenotypeSummary"> & {
+  /**
+   * @generated from field: uint32 mutation_income_modifier_q = 1;
+   */
+  mutationIncomeModifierQ: number;
+
+  /**
+   * @generated from field: uint32 maximum_change_complexity = 2;
+   */
+  maximumChangeComplexity: number;
+
+  /**
+   * @generated from field: bool resource_conservation = 3;
+   */
+  resourceConservation: boolean;
+
+  /**
+   * @generated from field: uint32 maximum_capture_extents_per_hour = 4;
+   */
+  maximumCaptureExtentsPerHour: number;
+
+  /**
+   * @generated from field: uint32 favorable_capture_efficiency_q = 5;
+   */
+  favorableCaptureEfficiencyQ: number;
+
+  /**
+   * @generated from field: sint64 maintenance_cost_q_per_hour = 6;
+   */
+  maintenanceCostQPerHour: bigint;
+
+  /**
+   * @generated from field: sint64 charged_reserve_capacity_q = 7;
+   */
+  chargedReserveCapacityQ: bigint;
+
+  /**
+   * @generated from field: uint32 minimum_reproduction_health_q = 8;
+   */
+  minimumReproductionHealthQ: number;
+
+  /**
+   * @generated from field: repeated uint32 active_reaction_ids = 9;
+   */
+  activeReactionIds: number[];
+
+  /**
+   * @generated from field: repeated lyfe.v1.EvolutionRecurringCost recurring_costs = 10;
+   */
+  recurringCosts: EvolutionRecurringCost[];
+
+  /**
+   * @generated from field: bool requires_light = 11;
+   */
+  requiresLight: boolean;
+};
+
+/**
+ * Describes the message lyfe.v1.EvolutionPhenotypeSummary.
+ * Use `create(EvolutionPhenotypeSummarySchema)` to create a new message.
+ */
+export const EvolutionPhenotypeSummarySchema: GenMessage<EvolutionPhenotypeSummary> = /*@__PURE__*/
+  messageDesc(file_lyfe_v1_evolution, 8);
+
+/**
+ * @generated from message lyfe.v1.EvolutionRecurringCost
+ */
+export type EvolutionRecurringCost = Message<"lyfe.v1.EvolutionRecurringCost"> & {
+  /**
+   * @generated from field: lyfe.v1.EvolutionRecurringCostChannel channel = 1;
+   */
+  channel: EvolutionRecurringCostChannel;
+
+  /**
+   * @generated from field: sint64 amount_q_per_organism_hour = 2;
+   */
+  amountQPerOrganismHour: bigint;
+};
+
+/**
+ * Describes the message lyfe.v1.EvolutionRecurringCost.
+ * Use `create(EvolutionRecurringCostSchema)` to create a new message.
+ */
+export const EvolutionRecurringCostSchema: GenMessage<EvolutionRecurringCost> = /*@__PURE__*/
+  messageDesc(file_lyfe_v1_evolution, 9);
+
+/**
+ * @generated from message lyfe.v1.EvolutionActivationWarning
+ */
+export type EvolutionActivationWarning = Message<"lyfe.v1.EvolutionActivationWarning"> & {
+  /**
+   * @generated from field: lyfe.v1.EvolutionActivationWarningKind kind = 1;
+   */
+  kind: EvolutionActivationWarningKind;
+
+  /**
+   * @generated from field: lyfe.v1.EvolutionActivationWarningSeverity severity = 2;
+   */
+  severity: EvolutionActivationWarningSeverity;
+
+  /**
+   * @generated from field: repeated uint32 trait_ids = 3;
+   */
+  traitIds: number[];
+};
+
+/**
+ * Describes the message lyfe.v1.EvolutionActivationWarning.
+ * Use `create(EvolutionActivationWarningSchema)` to create a new message.
+ */
+export const EvolutionActivationWarningSchema: GenMessage<EvolutionActivationWarning> = /*@__PURE__*/
+  messageDesc(file_lyfe_v1_evolution, 10);
+
+/**
+ * @generated from message lyfe.v1.EvolutionReactionInputOpportunity
+ */
+export type EvolutionReactionInputOpportunity = Message<"lyfe.v1.EvolutionReactionInputOpportunity"> & {
+  /**
+   * @generated from field: uint32 resource_id = 1;
+   */
+  resourceId: number;
+
+  /**
+   * @generated from field: sint64 tile_stock_q = 2;
+   */
+  tileStockQ: bigint;
+
+  /**
+   * @generated from field: sint64 accessible_stock_q = 3;
+   */
+  accessibleStockQ: bigint;
+
+  /**
+   * @generated from field: sint64 required_per_extent_q = 4;
+   */
+  requiredPerExtentQ: bigint;
+
+  /**
+   * @generated from field: bool inexhaustible = 5;
+   */
+  inexhaustible: boolean;
+
+  /**
+   * @generated from field: lyfe.v1.EvolutionResourceFlowForecast flow_forecast = 6;
+   */
+  flowForecast?: EvolutionResourceFlowForecast | undefined;
+};
+
+/**
+ * Describes the message lyfe.v1.EvolutionReactionInputOpportunity.
+ * Use `create(EvolutionReactionInputOpportunitySchema)` to create a new message.
+ */
+export const EvolutionReactionInputOpportunitySchema: GenMessage<EvolutionReactionInputOpportunity> = /*@__PURE__*/
+  messageDesc(file_lyfe_v1_evolution, 11);
+
+/**
+ * @generated from message lyfe.v1.EvolutionResourceFlowForecast
+ */
+export type EvolutionResourceFlowForecast = Message<"lyfe.v1.EvolutionResourceFlowForecast"> & {
+  /**
+   * @generated from field: lyfe.v1.EvolutionResourceFlowForecastStatus status = 1;
+   */
+  status: EvolutionResourceFlowForecastStatus;
+
+  /**
+   * @generated from field: uint32 history_period_hours = 2;
+   */
+  historyPeriodHours: number;
+
+  /**
+   * @generated from field: sint64 recent_environmental_inflow_q = 3;
+   */
+  recentEnvironmentalInflowQ: bigint;
+
+  /**
+   * @generated from field: sint64 recent_environmental_outflow_q = 4;
+   */
+  recentEnvironmentalOutflowQ: bigint;
+
+  /**
+   * @generated from field: sint64 recent_organism_uptake_q = 5;
+   */
+  recentOrganismUptakeQ: bigint;
+
+  /**
+   * @generated from field: sint64 proposed_cohort_demand_q = 6;
+   */
+  proposedCohortDemandQ: bigint;
+
+  /**
+   * @generated from field: uint32 latest_observation_period_hours = 7;
+   */
+  latestObservationPeriodHours: number;
+
+  /**
+   * @generated from field: sint64 latest_controlled_species_uptake_q = 8;
+   */
+  latestControlledSpeciesUptakeQ: bigint;
+
+  /**
+   * @generated from field: sint64 latest_observed_competitor_uptake_q = 9;
+   */
+  latestObservedCompetitorUptakeQ: bigint;
+};
+
+/**
+ * Describes the message lyfe.v1.EvolutionResourceFlowForecast.
+ * Use `create(EvolutionResourceFlowForecastSchema)` to create a new message.
+ */
+export const EvolutionResourceFlowForecastSchema: GenMessage<EvolutionResourceFlowForecast> = /*@__PURE__*/
+  messageDesc(file_lyfe_v1_evolution, 12);
+
+/**
+ * @generated from message lyfe.v1.EvolutionReactionOpportunity
+ */
+export type EvolutionReactionOpportunity = Message<"lyfe.v1.EvolutionReactionOpportunity"> & {
+  /**
+   * @generated from field: uint32 reaction_id = 1;
+   */
+  reactionId: number;
+
+  /**
+   * @generated from field: lyfe.v1.EvolutionReactionOpportunityStatus status = 2;
+   */
+  status: EvolutionReactionOpportunityStatus;
+
+  /**
+   * @generated from field: sint64 stock_supported_extents = 3;
+   */
+  stockSupportedExtents: bigint;
+
+  /**
+   * @generated from field: uint32 limiting_resource_id = 4;
+   */
+  limitingResourceId: number;
+
+  /**
+   * @generated from field: repeated lyfe.v1.EvolutionReactionInputOpportunity inputs = 5;
+   */
+  inputs: EvolutionReactionInputOpportunity[];
+};
+
+/**
+ * Describes the message lyfe.v1.EvolutionReactionOpportunity.
+ * Use `create(EvolutionReactionOpportunitySchema)` to create a new message.
+ */
+export const EvolutionReactionOpportunitySchema: GenMessage<EvolutionReactionOpportunity> = /*@__PURE__*/
+  messageDesc(file_lyfe_v1_evolution, 13);
+
+/**
+ * @generated from message lyfe.v1.EvolutionTileActivationEvidence
+ */
+export type EvolutionTileActivationEvidence = Message<"lyfe.v1.EvolutionTileActivationEvidence"> & {
+  /**
+   * @generated from field: uint32 tile_id = 1;
+   */
+  tileId: number;
+
+  /**
+   * @generated from field: uint32 founder_count = 2;
+   */
+  founderCount: number;
+
+  /**
+   * @generated from field: uint32 average_health_q = 3;
+   */
+  averageHealthQ: number;
+
+  /**
+   * @generated from field: uint32 average_reserve_q = 4;
+   */
+  averageReserveQ: number;
+
+  /**
+   * @generated from field: uint32 average_environmental_factor_q = 5;
+   */
+  averageEnvironmentalFactorQ: number;
+
+  /**
+   * @generated from field: uint32 average_resource_pressure_q = 6;
+   */
+  averageResourcePressureQ: number;
+
+  /**
+   * @generated from field: bool has_current_climate = 7;
+   */
+  hasCurrentClimate: boolean;
+
+  /**
+   * @generated from field: sint32 current_temperature_milli_c = 8;
+   */
+  currentTemperatureMilliC: number;
+
+  /**
+   * @generated from field: uint32 current_surface_moisture_q = 9;
+   */
+  currentSurfaceMoistureQ: number;
+
+  /**
+   * @generated from field: uint32 current_accessible_light_q = 10;
+   */
+  currentAccessibleLightQ: number;
+
+  /**
+   * @generated from field: repeated lyfe.v1.EvolutionReactionOpportunity reaction_opportunities = 11;
+   */
+  reactionOpportunities: EvolutionReactionOpportunity[];
+};
+
+/**
+ * Describes the message lyfe.v1.EvolutionTileActivationEvidence.
+ * Use `create(EvolutionTileActivationEvidenceSchema)` to create a new message.
+ */
+export const EvolutionTileActivationEvidenceSchema: GenMessage<EvolutionTileActivationEvidence> = /*@__PURE__*/
+  messageDesc(file_lyfe_v1_evolution, 14);
 
 /**
  * @generated from message lyfe.v1.SpeciationProposal
@@ -320,6 +790,46 @@ export type SpeciationProposal = Message<"lyfe.v1.SpeciationProposal"> & {
    * @generated from field: uint64 resulting_speciation_not_before_tick = 12;
    */
   resultingSpeciationNotBeforeTick: bigint;
+
+  /**
+   * @generated from field: lyfe.v1.EvolutionPhenotypeSummary current_phenotype = 13;
+   */
+  currentPhenotype?: EvolutionPhenotypeSummary | undefined;
+
+  /**
+   * @generated from field: lyfe.v1.EvolutionPhenotypeSummary proposed_phenotype = 14;
+   */
+  proposedPhenotype?: EvolutionPhenotypeSummary | undefined;
+
+  /**
+   * @generated from field: lyfe.v1.EvolutionBenefitTiming benefit_timing = 15;
+   */
+  benefitTiming: EvolutionBenefitTiming;
+
+  /**
+   * @generated from field: repeated lyfe.v1.EvolutionActivationWarning activation_warnings = 16;
+   */
+  activationWarnings: EvolutionActivationWarning[];
+
+  /**
+   * @generated from field: repeated lyfe.v1.EvolutionTileActivationEvidence tile_activation_evidence = 17;
+   */
+  tileActivationEvidence: EvolutionTileActivationEvidence[];
+
+  /**
+   * @generated from field: repeated lyfe.v1.EvolutionStrategicIntent strategic_intents = 18;
+   */
+  strategicIntents: EvolutionStrategicIntent[];
+
+  /**
+   * @generated from field: uint64 consequence_follow_up_hours = 19;
+   */
+  consequenceFollowUpHours: bigint;
+
+  /**
+   * @generated from field: lyfe.v1.EvolutionFollowUpEvidenceKind consequence_evidence_kind = 20;
+   */
+  consequenceEvidenceKind: EvolutionFollowUpEvidenceKind;
 };
 
 /**
@@ -327,7 +837,7 @@ export type SpeciationProposal = Message<"lyfe.v1.SpeciationProposal"> & {
  * Use `create(SpeciationProposalSchema)` to create a new message.
  */
 export const SpeciationProposalSchema: GenMessage<SpeciationProposal> = /*@__PURE__*/
-  messageDesc(file_lyfe_v1_evolution, 5);
+  messageDesc(file_lyfe_v1_evolution, 15);
 
 /**
  * @generated from message lyfe.v1.ApplySpeciationRequest
@@ -349,7 +859,7 @@ export type ApplySpeciationRequest = Message<"lyfe.v1.ApplySpeciationRequest"> &
  * Use `create(ApplySpeciationRequestSchema)` to create a new message.
  */
 export const ApplySpeciationRequestSchema: GenMessage<ApplySpeciationRequest> = /*@__PURE__*/
-  messageDesc(file_lyfe_v1_evolution, 6);
+  messageDesc(file_lyfe_v1_evolution, 16);
 
 /**
  * @generated from message lyfe.v1.ApplySpeciationResponse
@@ -406,7 +916,7 @@ export type ApplySpeciationResponse = Message<"lyfe.v1.ApplySpeciationResponse">
  * Use `create(ApplySpeciationResponseSchema)` to create a new message.
  */
 export const ApplySpeciationResponseSchema: GenMessage<ApplySpeciationResponse> = /*@__PURE__*/
-  messageDesc(file_lyfe_v1_evolution, 7);
+  messageDesc(file_lyfe_v1_evolution, 17);
 
 /**
  * @generated from enum lyfe.v1.SpeciationFailure
@@ -498,4 +1008,267 @@ export enum SpeciationFailure {
  */
 export const SpeciationFailureSchema: GenEnum<SpeciationFailure> = /*@__PURE__*/
   enumDesc(file_lyfe_v1_evolution, 0);
+
+/**
+ * @generated from enum lyfe.v1.EvolutionBenefitTiming
+ */
+export enum EvolutionBenefitTiming {
+  /**
+   * @generated from enum value: EVOLUTION_BENEFIT_TIMING_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: EVOLUTION_BENEFIT_TIMING_IMMEDIATE = 1;
+   */
+  IMMEDIATE = 1,
+
+  /**
+   * @generated from enum value: EVOLUTION_BENEFIT_TIMING_MATURING = 2;
+   */
+  MATURING = 2,
+
+  /**
+   * @generated from enum value: EVOLUTION_BENEFIT_TIMING_CONDITIONAL = 3;
+   */
+  CONDITIONAL = 3,
+
+  /**
+   * @generated from enum value: EVOLUTION_BENEFIT_TIMING_PREPARATORY = 4;
+   */
+  PREPARATORY = 4,
+}
+
+/**
+ * Describes the enum lyfe.v1.EvolutionBenefitTiming.
+ */
+export const EvolutionBenefitTimingSchema: GenEnum<EvolutionBenefitTiming> = /*@__PURE__*/
+  enumDesc(file_lyfe_v1_evolution, 1);
+
+/**
+ * @generated from enum lyfe.v1.EvolutionStrategicIntent
+ */
+export enum EvolutionStrategicIntent {
+  /**
+   * @generated from enum value: EVOLUTION_STRATEGIC_INTENT_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: EVOLUTION_STRATEGIC_INTENT_EXPLOIT_CURRENT_NICHE = 1;
+   */
+  EXPLOIT_CURRENT_NICHE = 1,
+
+  /**
+   * @generated from enum value: EVOLUTION_STRATEGIC_INTENT_ENDURE_ENVIRONMENTAL_PRESSURE = 2;
+   */
+  ENDURE_ENVIRONMENTAL_PRESSURE = 2,
+
+  /**
+   * @generated from enum value: EVOLUTION_STRATEGIC_INTENT_ALTER_DISPERSAL = 3;
+   */
+  ALTER_DISPERSAL = 3,
+
+  /**
+   * @generated from enum value: EVOLUTION_STRATEGIC_INTENT_DIVERSIFY_RESOURCE_ENERGY_ACCESS = 4;
+   */
+  DIVERSIFY_RESOURCE_ENERGY_ACCESS = 4,
+
+  /**
+   * @generated from enum value: EVOLUTION_STRATEGIC_INTENT_BIOLOGICAL_INTERACTION = 5;
+   */
+  BIOLOGICAL_INTERACTION = 5,
+
+  /**
+   * @generated from enum value: EVOLUTION_STRATEGIC_INTENT_INVEST_IN_COMPLEXITY = 6;
+   */
+  INVEST_IN_COMPLEXITY = 6,
+}
+
+/**
+ * Describes the enum lyfe.v1.EvolutionStrategicIntent.
+ */
+export const EvolutionStrategicIntentSchema: GenEnum<EvolutionStrategicIntent> = /*@__PURE__*/
+  enumDesc(file_lyfe_v1_evolution, 2);
+
+/**
+ * @generated from enum lyfe.v1.EvolutionActivationWarningKind
+ */
+export enum EvolutionActivationWarningKind {
+  /**
+   * @generated from enum value: EVOLUTION_ACTIVATION_WARNING_KIND_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: EVOLUTION_ACTIVATION_WARNING_KIND_NO_COMPILED_CHANGE = 1;
+   */
+  NO_COMPILED_CHANGE = 1,
+
+  /**
+   * @generated from enum value: EVOLUTION_ACTIVATION_WARNING_KIND_RESOURCE_PRESSURE_REQUIRED = 2;
+   */
+  RESOURCE_PRESSURE_REQUIRED = 2,
+
+  /**
+   * @generated from enum value: EVOLUTION_ACTIVATION_WARNING_KIND_NO_NEW_ACTIVE_REACTION = 3;
+   */
+  NO_NEW_ACTIVE_REACTION = 3,
+}
+
+/**
+ * Describes the enum lyfe.v1.EvolutionActivationWarningKind.
+ */
+export const EvolutionActivationWarningKindSchema: GenEnum<EvolutionActivationWarningKind> = /*@__PURE__*/
+  enumDesc(file_lyfe_v1_evolution, 3);
+
+/**
+ * @generated from enum lyfe.v1.EvolutionActivationWarningSeverity
+ */
+export enum EvolutionActivationWarningSeverity {
+  /**
+   * @generated from enum value: EVOLUTION_ACTIVATION_WARNING_SEVERITY_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: EVOLUTION_ACTIVATION_WARNING_SEVERITY_INFORMATION = 1;
+   */
+  INFORMATION = 1,
+
+  /**
+   * @generated from enum value: EVOLUTION_ACTIVATION_WARNING_SEVERITY_CAUTION = 2;
+   */
+  CAUTION = 2,
+}
+
+/**
+ * Describes the enum lyfe.v1.EvolutionActivationWarningSeverity.
+ */
+export const EvolutionActivationWarningSeveritySchema: GenEnum<EvolutionActivationWarningSeverity> = /*@__PURE__*/
+  enumDesc(file_lyfe_v1_evolution, 4);
+
+/**
+ * @generated from enum lyfe.v1.EvolutionRecurringCostChannel
+ */
+export enum EvolutionRecurringCostChannel {
+  /**
+   * @generated from enum value: EVOLUTION_RECURRING_COST_CHANNEL_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: EVOLUTION_RECURRING_COST_CHANNEL_MANDATORY_MAINTENANCE = 1;
+   */
+  MANDATORY_MAINTENANCE = 1,
+}
+
+/**
+ * Describes the enum lyfe.v1.EvolutionRecurringCostChannel.
+ */
+export const EvolutionRecurringCostChannelSchema: GenEnum<EvolutionRecurringCostChannel> = /*@__PURE__*/
+  enumDesc(file_lyfe_v1_evolution, 5);
+
+/**
+ * @generated from enum lyfe.v1.EvolutionReactionOpportunityStatus
+ */
+export enum EvolutionReactionOpportunityStatus {
+  /**
+   * @generated from enum value: EVOLUTION_REACTION_OPPORTUNITY_STATUS_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: EVOLUTION_REACTION_OPPORTUNITY_STATUS_AVAILABLE = 1;
+   */
+  AVAILABLE = 1,
+
+  /**
+   * @generated from enum value: EVOLUTION_REACTION_OPPORTUNITY_STATUS_RESOURCE_LIMITED = 2;
+   */
+  RESOURCE_LIMITED = 2,
+
+  /**
+   * @generated from enum value: EVOLUTION_REACTION_OPPORTUNITY_STATUS_INACCESSIBLE_LIGHT = 3;
+   */
+  INACCESSIBLE_LIGHT = 3,
+}
+
+/**
+ * Describes the enum lyfe.v1.EvolutionReactionOpportunityStatus.
+ */
+export const EvolutionReactionOpportunityStatusSchema: GenEnum<EvolutionReactionOpportunityStatus> = /*@__PURE__*/
+  enumDesc(file_lyfe_v1_evolution, 6);
+
+/**
+ * @generated from enum lyfe.v1.EvolutionResourceFlowForecastStatus
+ */
+export enum EvolutionResourceFlowForecastStatus {
+  /**
+   * @generated from enum value: EVOLUTION_RESOURCE_FLOW_FORECAST_STATUS_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: EVOLUTION_RESOURCE_FLOW_FORECAST_STATUS_NO_HISTORY = 1;
+   */
+  NO_HISTORY = 1,
+
+  /**
+   * @generated from enum value: EVOLUTION_RESOURCE_FLOW_FORECAST_STATUS_WITHIN_RECENT_RENEWAL = 2;
+   */
+  WITHIN_RECENT_RENEWAL = 2,
+
+  /**
+   * @generated from enum value: EVOLUTION_RESOURCE_FLOW_FORECAST_STATUS_EXCEEDS_RECENT_RENEWAL = 3;
+   */
+  EXCEEDS_RECENT_RENEWAL = 3,
+
+  /**
+   * @generated from enum value: EVOLUTION_RESOURCE_FLOW_FORECAST_STATUS_NO_RECENT_RENEWAL = 4;
+   */
+  NO_RECENT_RENEWAL = 4,
+}
+
+/**
+ * Describes the enum lyfe.v1.EvolutionResourceFlowForecastStatus.
+ */
+export const EvolutionResourceFlowForecastStatusSchema: GenEnum<EvolutionResourceFlowForecastStatus> = /*@__PURE__*/
+  enumDesc(file_lyfe_v1_evolution, 7);
+
+/**
+ * @generated from enum lyfe.v1.EvolutionFollowUpEvidenceKind
+ */
+export enum EvolutionFollowUpEvidenceKind {
+  /**
+   * @generated from enum value: EVOLUTION_FOLLOW_UP_EVIDENCE_KIND_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: EVOLUTION_FOLLOW_UP_EVIDENCE_KIND_CAPABILITY_ACTIVATION = 1;
+   */
+  CAPABILITY_ACTIVATION = 1,
+
+  /**
+   * @generated from enum value: EVOLUTION_FOLLOW_UP_EVIDENCE_KIND_CONDITION_AND_PRESSURE = 2;
+   */
+  CONDITION_AND_PRESSURE = 2,
+
+  /**
+   * @generated from enum value: EVOLUTION_FOLLOW_UP_EVIDENCE_KIND_GEOGRAPHIC_SPREAD = 3;
+   */
+  GEOGRAPHIC_SPREAD = 3,
+
+  /**
+   * @generated from enum value: EVOLUTION_FOLLOW_UP_EVIDENCE_KIND_RESERVE_STORAGE = 4;
+   */
+  RESERVE_STORAGE = 4,
+}
+
+/**
+ * Describes the enum lyfe.v1.EvolutionFollowUpEvidenceKind.
+ */
+export const EvolutionFollowUpEvidenceKindSchema: GenEnum<EvolutionFollowUpEvidenceKind> = /*@__PURE__*/
+  enumDesc(file_lyfe_v1_evolution, 8);
 

@@ -189,6 +189,13 @@ The v1 canonical registry-manifest SHA-256 is
 The implementation refuses a typed operation that is not the operation declared
 for its domain.
 
+`OPENING-210` will require a pre-alpha registry extension for founder-cohort
+desynchronization. Founder biological age, initial reproduction schedule, and each other
+independently sampled readiness parameter receive distinct permanent domains; they may not reuse
+`ReproductionCooldownJitter` or distinguish concepts only through `sampleIndex`. Those IDs are not
+part of the frozen manifest above until the implementation slice assigns them through the normal
+compatibility workflow and updates the RNG schema/version and manifest hash together.
+
 X and Y founder placement, Brownian direction and magnitude, exploration versus weighted choice, and other conceptually independent results receive separate domain IDs even when their coordinates match. One mechanic must not obtain a second conceptual decision by incrementing an implicit cursor.
 
 ## Occurrence ordinals

@@ -88,6 +88,30 @@ internal static class CanonicalRuleHashWriter
             15,
             source.FounderAllocations.Select(allocation =>
                 (allocation.NumericId, allocation.StableKey, allocation.DisplayName)));
+        Field(writer, 16);
+        var traits = source.Traits.OrderBy(trait => trait.NumericId).ToArray();
+        writer.WriteUInt32(checked((uint)traits.Length));
+        foreach (var trait in traits)
+        {
+            writer.WriteUInt32(0x1102);
+            WriteUInt32Field(writer, 1, trait.NumericId);
+            var intents = (trait.StrategicIntents ?? [])
+                .Order(StringComparer.Ordinal)
+                .ToArray();
+            Field(writer, 2);
+            writer.WriteUInt32(checked((uint)intents.Length));
+            foreach (var intent in intents)
+            {
+                writer.WriteUtf8Nfc(intent);
+            }
+            Field(writer, 3);
+            writer.WriteBoolean(trait.ConsequenceFollowUpHours.HasValue);
+            if (trait.ConsequenceFollowUpHours.HasValue)
+            {
+                writer.WriteUInt64(trait.ConsequenceFollowUpHours.Value);
+                writer.WriteUtf8Nfc(trait.ConsequenceEvidenceKind!);
+            }
+        }
         return Hash(writer);
     }
 

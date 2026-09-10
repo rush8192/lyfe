@@ -6,18 +6,21 @@ import {
   ResourceBiologicalForm,
   ResourceEnvironmentalPhase,
   ResourceFlowKind,
+  ResourceFlowProcess,
   type ActorWorldProjection,
   type AcquisitionGateEvidence,
   type LiveTile,
   type OrganismActionGateEvidence,
   type ResourceAcquisitionEvidence,
   type ResourceDefinition,
+  type ReactionDefinition,
 } from "../generated/lyfe/v1/projection_pb";
 import { useState } from "react";
 
 interface ResourcePressurePanelProps {
   readonly world: ActorWorldProjection;
   readonly selectedOrganismId: bigint | null;
+  readonly selectedTileId?: number | null;
 }
 
 export interface ResourceFlowRow {
@@ -39,13 +42,21 @@ export interface ResourceHistoryPoint {
   readonly netQ: bigint;
 }
 
+export interface ResourceContributorRow {
+  readonly process: string;
+  readonly actor: string;
+  readonly direction: string;
+  readonly amountQ: bigint;
+}
+
 export function ResourcePressurePanel({
   world,
   selectedOrganismId,
+  selectedTileId = null,
 }: ResourcePressurePanelProps) {
   const [showAbsent, setShowAbsent] = useState(false);
   const [selectedHistoryResourceId, setSelectedHistoryResourceId] = useState<number | null>(null);
-  const selection = selectLiveTile(world, selectedOrganismId);
+  const selection = selectLiveTile(world, selectedOrganismId, selectedTileId);
   if (selection === null) return null;
 
   const { tileId, tile, organism } = selection;
@@ -73,6 +84,13 @@ export function ResourcePressurePanel({
   const history = historyResource === undefined
     ? []
     : buildResourceHistorySeries(tile, historyResource.resourceId);
+  const contributors = historyResource === undefined
+    ? []
+    : buildResourceContributorRows(
+        tile,
+        historyResource.resourceId,
+        world.reactionDefinitions,
+      );
 
   return (
     <section className="resource-panel" aria-labelledby="resource-title">
@@ -169,6 +187,24 @@ export function ResourcePressurePanel({
         ) : (
           <ResourceHistoryChart points={history} />
         )}
+        <div className="resource-contributors">
+          <h4>Last completed tick contributors</h4>
+          {contributors.length === 0 ? (
+            <p>No applied flow contributors for this compound.</p>
+          ) : (
+            <ul>
+              {contributors.map((value, index) => (
+                <li key={`${value.process}:${value.actor}:${value.direction}:${index}`}>
+                  <span>
+                    <strong>{value.process}</strong>
+                    <small>{value.actor} · {value.direction}</small>
+                  </span>
+                  <b>{formatQuantity(value.amountQ)}</b>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </section>
 
       <div className="resource-table-toolbar">
@@ -503,12 +539,73 @@ export function buildResourceHistorySeries(
   }, ...endpoints];
 }
 
-function selectLiveTile(world: ActorWorldProjection, selectedOrganismId: bigint | null) {
+export function buildResourceContributorRows(
+  tile: Pick<LiveTile, "resourceFlowContributors">,
+  resourceId: number,
+  reactions: readonly ReactionDefinition[],
+): ResourceContributorRow[] {
+  const reactionsById = new Map(reactions.map((reaction) => [reaction.reactionId, reaction]));
+  return tile.resourceFlowContributors
+    .filter((value) => value.resourceId === resourceId)
+    .map((value) => ({
+      process: value.reactionId === 0
+        ? flowProcessLabel(value.process)
+        : reactionsById.get(value.reactionId)?.displayName ?? `Reaction ${value.reactionId}`,
+      actor: value.speciesId !== 0n
+        ? `Species ${value.speciesId}`
+        : isEnvironmentalProcess(value.process)
+          ? "Environment"
+          : "Other biological activity",
+      direction: flowKindLabel(value.kind),
+      amountQ: value.amountQ,
+    }))
+    .sort((left, right) => left.amountQ === right.amountQ
+      ? left.process.localeCompare(right.process)
+      : left.amountQ > right.amountQ ? -1 : 1);
+}
+
+function isEnvironmentalProcess(process: ResourceFlowProcess): boolean {
+  return process === ResourceFlowProcess.ENVIRONMENTAL_GAS_SOURCE ||
+    process === ResourceFlowProcess.ENVIRONMENTAL_GAS_SINK ||
+    process === ResourceFlowProcess.ENVIRONMENTAL_GAS_EXCHANGE;
+}
+
+function flowProcessLabel(process: ResourceFlowProcess): string {
+  switch (process) {
+    case ResourceFlowProcess.EXTERNAL_ENERGY_CAPTURE: return "External energy capture";
+    case ResourceFlowProcess.PARTICULATE_DIGESTION: return "Particulate digestion";
+    case ResourceFlowProcess.ENVIRONMENTAL_GAS_SOURCE: return "Volcanic gas source";
+    case ResourceFlowProcess.ENVIRONMENTAL_GAS_SINK: return "Environmental gas loss";
+    case ResourceFlowProcess.ENVIRONMENTAL_GAS_EXCHANGE: return "Neighbor gas exchange";
+    case ResourceFlowProcess.MANDATORY_MAINTENANCE: return "Mandatory maintenance";
+    case ResourceFlowProcess.BIOMASS_ASSEMBLY: return "Biomass assembly";
+    case ResourceFlowProcess.MICRONUTRIENT_UPTAKE: return "Micronutrient uptake";
+    default: return "Unclassified process";
+  }
+}
+
+function selectLiveTile(
+  world: ActorWorldProjection,
+  selectedOrganismId: bigint | null,
+  selectedTileId: number | null,
+) {
   const liveTiles: { readonly tileId: number; readonly tile: LiveTile }[] = [];
   for (const projected of world.tiles) {
     if (projected.detail.case === "live") {
       liveTiles.push({ tileId: projected.tileId, tile: projected.detail.value });
     }
+  }
+  const requestedTile = liveTiles.find((candidate) => candidate.tileId === selectedTileId);
+  if (requestedTile !== undefined) {
+    return {
+      tileId: requestedTile.tileId,
+      tile: requestedTile.tile,
+      organism: requestedTile.tile.organisms.find((candidate) =>
+        candidate.organismId === selectedOrganismId &&
+        candidate.speciesId === world.controlledSpeciesId) ??
+        requestedTile.tile.organisms.find((candidate) =>
+          candidate.speciesId === world.controlledSpeciesId),
+    };
   }
   for (const projected of liveTiles) {
     const organism = projected.tile.organisms.find((candidate) =>

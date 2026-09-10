@@ -14,17 +14,58 @@ import {
   ResourceAcquisitionEvidenceSchema,
   ResourceFlowKind,
   ResourceFlowHistoryIntervalSchema,
+  ResourceFlowContributorSchema,
+  ResourceFlowProcess,
   ResourceFlowSchema,
+  ReactionDefinitionSchema,
 } from "../generated/lyfe/v1/projection_pb";
 import {
   buildResourceFlowRows,
   buildResourceHistorySeries,
+  buildResourceContributorRows,
   describeAcquisitionGate,
   describeOrganismActionGate,
   selectLimitingAcquisition,
 } from "./ResourcePressurePanel";
 
 describe("resource flow rows", () => {
+  it("names true reactions separately from environmental and masked biological contributors", () => {
+    const rows = buildResourceContributorRows({
+      resourceFlowContributors: [
+        create(ResourceFlowContributorSchema, {
+          resourceId: 7,
+          kind: ResourceFlowKind.ORGANISM_UPTAKE,
+          process: ResourceFlowProcess.EXTERNAL_ENERGY_CAPTURE,
+          reactionId: 2,
+          speciesId: 9n,
+          amountQ: 80n,
+        }),
+        create(ResourceFlowContributorSchema, {
+          resourceId: 7,
+          kind: ResourceFlowKind.ENVIRONMENTAL_SOURCE,
+          process: ResourceFlowProcess.ENVIRONMENTAL_GAS_SOURCE,
+          amountQ: 100n,
+        }),
+        create(ResourceFlowContributorSchema, {
+          resourceId: 7,
+          kind: ResourceFlowKind.ORGANISM_UPTAKE,
+          process: ResourceFlowProcess.MICRONUTRIENT_UPTAKE,
+          amountQ: 20n,
+        }),
+      ],
+    }, 7, [create(ReactionDefinitionSchema, {
+      reactionId: 2,
+      stableKey: "reaction.test",
+      displayName: "Hydrogen acetogenesis",
+    })]);
+
+    expect(rows).toEqual([
+      { process: "Volcanic gas source", actor: "Environment", direction: "source", amountQ: 100n },
+      { process: "Hydrogen acetogenesis", actor: "Species 9", direction: "organism uptake", amountQ: 80n },
+      { process: "Micronutrient uptake", actor: "Other biological activity", direction: "organism uptake", amountQ: 20n },
+    ]);
+  });
+
   it("reconstructs exact historical stocks backward from current stock and sparse flows", () => {
     const series = buildResourceHistorySeries({
       resourceStocks: [create(ExactResourceStockSchema, { resourceId: 7, quantityQ: 1_040n })],

@@ -23,6 +23,65 @@ enum SpeciationFailure {
   SPECIATION_FAILURE_ANCESTOR_WOULD_BE_DEPLETED = 15;
 }
 
+enum EvolutionBenefitTiming {
+  EVOLUTION_BENEFIT_TIMING_UNSPECIFIED = 0;
+  EVOLUTION_BENEFIT_TIMING_IMMEDIATE = 1;
+  EVOLUTION_BENEFIT_TIMING_MATURING = 2;
+  EVOLUTION_BENEFIT_TIMING_CONDITIONAL = 3;
+  EVOLUTION_BENEFIT_TIMING_PREPARATORY = 4;
+}
+
+enum EvolutionStrategicIntent {
+  EVOLUTION_STRATEGIC_INTENT_UNSPECIFIED = 0;
+  EVOLUTION_STRATEGIC_INTENT_EXPLOIT_CURRENT_NICHE = 1;
+  EVOLUTION_STRATEGIC_INTENT_ENDURE_ENVIRONMENTAL_PRESSURE = 2;
+  EVOLUTION_STRATEGIC_INTENT_ALTER_DISPERSAL = 3;
+  EVOLUTION_STRATEGIC_INTENT_DIVERSIFY_RESOURCE_ENERGY_ACCESS = 4;
+  EVOLUTION_STRATEGIC_INTENT_BIOLOGICAL_INTERACTION = 5;
+  EVOLUTION_STRATEGIC_INTENT_INVEST_IN_COMPLEXITY = 6;
+}
+
+enum EvolutionActivationWarningKind {
+  EVOLUTION_ACTIVATION_WARNING_KIND_UNSPECIFIED = 0;
+  EVOLUTION_ACTIVATION_WARNING_KIND_NO_COMPILED_CHANGE = 1;
+  EVOLUTION_ACTIVATION_WARNING_KIND_RESOURCE_PRESSURE_REQUIRED = 2;
+  EVOLUTION_ACTIVATION_WARNING_KIND_NO_NEW_ACTIVE_REACTION = 3;
+}
+
+enum EvolutionActivationWarningSeverity {
+  EVOLUTION_ACTIVATION_WARNING_SEVERITY_UNSPECIFIED = 0;
+  EVOLUTION_ACTIVATION_WARNING_SEVERITY_INFORMATION = 1;
+  EVOLUTION_ACTIVATION_WARNING_SEVERITY_CAUTION = 2;
+}
+
+enum EvolutionRecurringCostChannel {
+  EVOLUTION_RECURRING_COST_CHANNEL_UNSPECIFIED = 0;
+  EVOLUTION_RECURRING_COST_CHANNEL_MANDATORY_MAINTENANCE = 1;
+}
+
+enum EvolutionReactionOpportunityStatus {
+  EVOLUTION_REACTION_OPPORTUNITY_STATUS_UNSPECIFIED = 0;
+  EVOLUTION_REACTION_OPPORTUNITY_STATUS_AVAILABLE = 1;
+  EVOLUTION_REACTION_OPPORTUNITY_STATUS_RESOURCE_LIMITED = 2;
+  EVOLUTION_REACTION_OPPORTUNITY_STATUS_INACCESSIBLE_LIGHT = 3;
+}
+
+enum EvolutionResourceFlowForecastStatus {
+  EVOLUTION_RESOURCE_FLOW_FORECAST_STATUS_UNSPECIFIED = 0;
+  EVOLUTION_RESOURCE_FLOW_FORECAST_STATUS_NO_HISTORY = 1;
+  EVOLUTION_RESOURCE_FLOW_FORECAST_STATUS_WITHIN_RECENT_RENEWAL = 2;
+  EVOLUTION_RESOURCE_FLOW_FORECAST_STATUS_EXCEEDS_RECENT_RENEWAL = 3;
+  EVOLUTION_RESOURCE_FLOW_FORECAST_STATUS_NO_RECENT_RENEWAL = 4;
+}
+
+enum EvolutionFollowUpEvidenceKind {
+  EVOLUTION_FOLLOW_UP_EVIDENCE_KIND_UNSPECIFIED = 0;
+  EVOLUTION_FOLLOW_UP_EVIDENCE_KIND_CAPABILITY_ACTIVATION = 1;
+  EVOLUTION_FOLLOW_UP_EVIDENCE_KIND_CONDITION_AND_PRESSURE = 2;
+  EVOLUTION_FOLLOW_UP_EVIDENCE_KIND_GEOGRAPHIC_SPREAD = 3;
+  EVOLUTION_FOLLOW_UP_EVIDENCE_KIND_RESERVE_STORAGE = 4;
+}
+
 message EvolutionTraitOption {
   uint32 trait_id = 1;
   string stable_key = 2;
@@ -34,11 +93,41 @@ message EvolutionTraitOption {
   uint32 change_complexity = 8;
   repeated uint32 prerequisite_trait_ids = 9;
   repeated uint32 incompatible_trait_ids = 10;
+  bool enables_resource_conservation = 11;
+  repeated EvolutionStrategicIntent strategic_intents = 12;
+  uint64 consequence_follow_up_hours = 13;
+  EvolutionFollowUpEvidenceKind consequence_evidence_kind = 14;
 }
 
 message EvolutionOccupiedTile {
   uint32 tile_id = 1;
   uint64 population = 2;
+  uint32 average_health_q = 3;
+  uint32 average_reserve_q = 4;
+  uint32 average_environmental_factor_q = 5;
+  uint32 average_resource_pressure_q = 6;
+  sint32 elevation_meters = 7;
+  bool has_current_climate = 8;
+  sint32 current_temperature_milli_c = 9;
+  uint32 current_surface_moisture_q = 10;
+  uint32 current_accessible_light_q = 11;
+  uint32 baseline_volcanism_q = 12;
+  repeated EvolutionResourceStock resource_stocks = 13;
+}
+
+message EvolutionResourceStock {
+  uint32 resource_id = 1;
+  sint64 quantity_q = 2;
+}
+
+message EvolutionResourceDefinition {
+  uint32 resource_id = 1;
+  string display_name = 2;
+}
+
+message EvolutionReactionDefinition {
+  uint32 reaction_id = 1;
+  string display_name = 2;
 }
 
 message EvolutionDecisionSurface {
@@ -58,6 +147,8 @@ message EvolutionDecisionSurface {
   uint32 maximum_change_complexity = 14;
   repeated EvolutionTraitOption traits = 15;
   repeated EvolutionOccupiedTile occupied_tiles = 16;
+  repeated EvolutionResourceDefinition resource_definitions = 17;
+  repeated EvolutionReactionDefinition reaction_definitions = 18;
 }
 
 message SpeciationProposalRequest {
@@ -75,6 +166,74 @@ message SpeciationFounderCount {
   uint32 count = 2;
 }
 
+message EvolutionPhenotypeSummary {
+  uint32 mutation_income_modifier_q = 1;
+  uint32 maximum_change_complexity = 2;
+  bool resource_conservation = 3;
+  uint32 maximum_capture_extents_per_hour = 4;
+  uint32 favorable_capture_efficiency_q = 5;
+  sint64 maintenance_cost_q_per_hour = 6;
+  sint64 charged_reserve_capacity_q = 7;
+  uint32 minimum_reproduction_health_q = 8;
+  repeated uint32 active_reaction_ids = 9;
+  repeated EvolutionRecurringCost recurring_costs = 10;
+  bool requires_light = 11;
+}
+
+message EvolutionRecurringCost {
+  EvolutionRecurringCostChannel channel = 1;
+  sint64 amount_q_per_organism_hour = 2;
+}
+
+message EvolutionActivationWarning {
+  EvolutionActivationWarningKind kind = 1;
+  EvolutionActivationWarningSeverity severity = 2;
+  repeated uint32 trait_ids = 3;
+}
+
+message EvolutionReactionInputOpportunity {
+  uint32 resource_id = 1;
+  sint64 tile_stock_q = 2;
+  sint64 accessible_stock_q = 3;
+  sint64 required_per_extent_q = 4;
+  bool inexhaustible = 5;
+  EvolutionResourceFlowForecast flow_forecast = 6;
+}
+
+message EvolutionResourceFlowForecast {
+  EvolutionResourceFlowForecastStatus status = 1;
+  uint32 history_period_hours = 2;
+  sint64 recent_environmental_inflow_q = 3;
+  sint64 recent_environmental_outflow_q = 4;
+  sint64 recent_organism_uptake_q = 5;
+  sint64 proposed_cohort_demand_q = 6;
+  uint32 latest_observation_period_hours = 7;
+  sint64 latest_controlled_species_uptake_q = 8;
+  sint64 latest_observed_competitor_uptake_q = 9;
+}
+
+message EvolutionReactionOpportunity {
+  uint32 reaction_id = 1;
+  EvolutionReactionOpportunityStatus status = 2;
+  sint64 stock_supported_extents = 3;
+  uint32 limiting_resource_id = 4;
+  repeated EvolutionReactionInputOpportunity inputs = 5;
+}
+
+message EvolutionTileActivationEvidence {
+  uint32 tile_id = 1;
+  uint32 founder_count = 2;
+  uint32 average_health_q = 3;
+  uint32 average_reserve_q = 4;
+  uint32 average_environmental_factor_q = 5;
+  uint32 average_resource_pressure_q = 6;
+  bool has_current_climate = 7;
+  sint32 current_temperature_milli_c = 8;
+  uint32 current_surface_moisture_q = 9;
+  uint32 current_accessible_light_q = 10;
+  repeated EvolutionReactionOpportunity reaction_opportunities = 11;
+}
+
 message SpeciationProposal {
   bool accepted = 1;
   SpeciationFailure failure = 2;
@@ -88,6 +247,14 @@ message SpeciationProposal {
   uint64 ancestor_population_after = 10;
   uint64 descendant_population = 11;
   uint64 resulting_speciation_not_before_tick = 12;
+  EvolutionPhenotypeSummary current_phenotype = 13;
+  EvolutionPhenotypeSummary proposed_phenotype = 14;
+  EvolutionBenefitTiming benefit_timing = 15;
+  repeated EvolutionActivationWarning activation_warnings = 16;
+  repeated EvolutionTileActivationEvidence tile_activation_evidence = 17;
+  repeated EvolutionStrategicIntent strategic_intents = 18;
+  uint64 consequence_follow_up_hours = 19;
+  EvolutionFollowUpEvidenceKind consequence_evidence_kind = 20;
 }
 
 message ApplySpeciationRequest {

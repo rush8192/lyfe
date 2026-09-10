@@ -230,6 +230,8 @@ public static class RulePackCompiler
 
             var reaction = new CompiledReaction(
                 id,
+                definition.StableKey,
+                definition.DisplayName,
                 processKind,
                 inputs,
                 outputs,
@@ -472,6 +474,52 @@ public static class RulePackCompiler
                 }
             }
 
+            var strategicIntents = ImmutableArray.CreateBuilder<EvolutionStrategicIntent>();
+            foreach (var intent in definition.StrategicIntents ?? [])
+            {
+                var compiled = intent switch
+                {
+                    "exploit-current-niche" => EvolutionStrategicIntent.ExploitCurrentNiche,
+                    "endure-environmental-pressure" => EvolutionStrategicIntent.EndureEnvironmentalPressure,
+                    "alter-dispersal" => EvolutionStrategicIntent.AlterDispersal,
+                    "diversify-resource-energy-access" => EvolutionStrategicIntent.DiversifyResourceEnergyAccess,
+                    "biological-interaction" => EvolutionStrategicIntent.BiologicalInteraction,
+                    "invest-in-complexity" => EvolutionStrategicIntent.InvestInComplexity,
+                    _ => default,
+                };
+                if (compiled == default || strategicIntents.Contains(compiled))
+                {
+                    AddError("LYFE-COMPILE-TRAIT-004", $"Trait '{definition.StableKey}' has an invalid or duplicate strategic intent '{intent}'.", diagnostics);
+                }
+                else
+                {
+                    strategicIntents.Add(compiled);
+                }
+            }
+
+            EvolutionFollowUpEvidenceKind? followUpEvidenceKind =
+                definition.ConsequenceEvidenceKind switch
+                {
+                    null => null,
+                    "capability-activation" => EvolutionFollowUpEvidenceKind.CapabilityActivation,
+                    "condition-and-pressure" => EvolutionFollowUpEvidenceKind.ConditionAndPressure,
+                    "geographic-spread" => EvolutionFollowUpEvidenceKind.GeographicSpread,
+                    "reserve-storage" => EvolutionFollowUpEvidenceKind.ReserveStorage,
+                    _ => default(EvolutionFollowUpEvidenceKind),
+                };
+            if (definition.ConsequenceFollowUpHours.HasValue !=
+                    (definition.ConsequenceEvidenceKind is not null) ||
+                definition.ConsequenceFollowUpHours is > 0 and <= 168 ||
+                (definition.ConsequenceEvidenceKind is not null &&
+                    (!followUpEvidenceKind.HasValue ||
+                        followUpEvidenceKind.Value == (EvolutionFollowUpEvidenceKind)0)))
+            {
+                AddError(
+                    "LYFE-COMPILE-TRAIT-005",
+                    $"Trait '{definition.StableKey}' has an invalid consequence follow-up contract.",
+                    diagnostics);
+            }
+
             if (definition.MutationIncomeMultiplierQ is < 250_000 or > 3_000_000 ||
                 definition.BaseEvolutionWeightQ == 0 ||
                 definition.MaximumChangeComplexity is 0)
@@ -492,6 +540,9 @@ public static class RulePackCompiler
                 incompatibilities,
                 definition.BaseEvolutionWeightQ,
                 pressureTags.ToImmutable(),
+                strategicIntents.Order().ToImmutableArray(),
+                definition.ConsequenceFollowUpHours,
+                followUpEvidenceKind,
                 definition.EnablesResourceConservation,
                 definition.MutationIncomeMultiplierQ,
                 definition.MaximumChangeComplexity));

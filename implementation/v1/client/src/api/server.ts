@@ -16,6 +16,7 @@ import {
   ProjectionSnapshotSchema,
 } from "../generated/lyfe/v1/projection_pb";
 import { createProjectionCache, type ProjectionCache } from "../state/projectionCache";
+import { validateSpeciationProposal } from "../state/evolutionPlanner";
 
 export type ServerConnection =
   | { readonly status: "loading" }
@@ -80,26 +81,33 @@ export async function previewSpeciation(
   request: SpeciationProposalRequest,
   signal: AbortSignal,
 ): Promise<SpeciationProposal> {
-  return postProtobuf(
+  const proposal = await postProtobuf(
     "/api/v1/worlds/active/evolution/preview",
     SpeciationProposalRequestSchema,
     request,
     SpeciationProposalSchema,
     signal,
   );
+  validateSpeciationProposal(proposal, request);
+  return proposal;
 }
 
 export async function applySpeciation(
   request: ApplySpeciationRequest,
   signal: AbortSignal,
 ): Promise<ApplySpeciationResponse> {
-  return postProtobuf(
+  const response = await postProtobuf(
     "/api/v1/worlds/active/evolution/apply",
     ApplySpeciationRequestSchema,
     request,
     ApplySpeciationResponseSchema,
     signal,
   );
+  if (request.proposal === undefined || response.proposal === undefined) {
+    throw new Error("Evolution apply response is missing its proposal contract.");
+  }
+  validateSpeciationProposal(response.proposal, request.proposal);
+  return response;
 }
 
 async function readProtobuf<T extends Message>(

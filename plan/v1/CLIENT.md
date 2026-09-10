@@ -67,6 +67,13 @@ PixiJS world renderer
 - End-of-run summary.
 - World/rule identity and modification status in setup, load, and persistent run information.
 
+All surfaces follow the two-register voice contract in
+[PLAYER_LOOP_AND_NARRATIVE.md](PLAYER_LOOP_AND_NARRATIVE.md). World-facing and narrative moments may
+be playful, strange, and wonder-forward. Controls, diagnostics, warnings, irreversible decisions,
+and numerical evidence state the mechanic first in plain language; any cheekiness is secondary and
+must not obscure a value, scope, time window, uncertainty, or required action. Accessible names and
+error recovery remain literal even when nearby display copy is more expressive.
+
 Survival setup presents the two choices defined in [FOUNDING_METABOLISMS.md](FOUNDING_METABOLISMS.md), including expected opening reproduction time, environmental dependencies, tolerance, and the first route away from volcanism. It makes the paired autonomous founder explicit without displaying its hidden organisms or live resource state.
 
 # Exploration presentation
@@ -255,7 +262,67 @@ The species/evolution view presents mutation balance and current rate as populat
 
 The planner also implements the framing contract in [PLAYER_LOOP_AND_NARRATIVE.md](PLAYER_LOOP_AND_NARRATIVE.md): immediate, maturing, conditional, and preparatory benefit timing; non-dominated proposals grouped by explanatory strategic intent; expandable prerequisite-closed milestone cards; saved goals with current-rate ETA; and side-by-side proposal comparison. Strategic-intent labels and private notes are presentation state, not simulation inputs. A preparatory node must never inherit the success language or iconography of the capability it only helps unlock; a maturing node must expose physical construction and commissioning rather than displaying its genetic maximum as present capacity.
 
+The first saved-goal slice is browser-local and permits one goal per world/species. It stores only
+canonical prerequisite-closed trait IDs and one-to-four founding tile IDs, reloads them through the
+current decision surface, and reruns the authoritative preview. Its affordability display uses exact
+integer arithmetic over current balance, summed authored prices, the last completed mutation-income
+credit, and tick duration. The result is explicitly labeled a current-rate estimate; zero-rate and
+pre-first-tick states have no invented ETA. A goal reserves no points, applies no mutation, and cannot
+pause a disconnected world. Cross-device/server synchronization and attention-policy pausing remain
+separate actor-state work.
+
+When the builder diverges from a valid pinned goal, the client reruns both plans through the
+authoritative preview at the same current genome/evolution boundary and opens a side-by-side
+decision workspace. It compares prerequisite-closed milestones, strategic intent, benefit timing,
+validity and affordability, price, complexity, balance outcome, founders, ancestor remainder,
+activation warnings, finite-resource outlook, latest observed competitor uptake, descendant
+phenotype, and recurring costs. Only the current builder can be applied. The comparison highlights
+differences but deliberately ranks neither plan, and saved protocol responses are never persisted.
+
+For every finite external-capture input, the first proposal-forecast slice shows the exact recent
+history window, gross environmental inflow and outflow, net local renewal, total organism uptake,
+and the selected founder cohort's demand ceiling at the proposed current capture rate. It plainly
+labels demand above recent net renewal as a likely niche overshoot. Competition evidence is a
+separate latest-interval split between the controlled lineage and other species observed on the
+selected live tile; the client does not imply that this species split covers the longer history.
+The held-current environment/rate assumption and the absence of a survival guarantee remain visible.
+
 After a player speciation, the client pins a 168-hour ancestor/descendant consequence review using authorized completed-tick aggregates. The alert inbox links directly to the evidence that caused each threshold crossing. Chronicle entries navigate to their involved lineage, tile, species, resource interval, or causal record; generated prose remains visibly distinct from a player's private hypothesis note.
+
+The first alert inbox consumes saved actor-filtered alert records rather than synthesizing toasts
+from changing projection values. It labels informational, strategic, and critical classes, explains
+the implemented low-population recovery boundary, and links every item to its chronicle evidence.
+It states explicitly that this pass neither predicts the future nor pauses the simulation.
+
+The first private-note implementation is browser-local and keyed by world plus authoritative
+chronicle-event identity. It accepts bounded normalized text, removes whitespace-only entries, and
+fails closed on malformed stored state. Its label states that the text is the player's hypothesis,
+not a simulation fact. Notes never enter projection messages, world saves, hashes, decision scores,
+or organism behavior; cross-device synchronization remains separate future actor-state work.
+
+The first evidence-navigation implementation is confined to authoritative lineage landmarks. Typed
+references point to the accepted decision facts, reviewed and comparison summaries, the reviewed
+species' journey window, and resource tiles that were live when the landmark was recorded. Internal
+summary links always resolve to the immutable chronicle entry. Journey navigation is enabled only
+when that reviewed species is currently controlled, and exact resource navigation is enabled only
+when the referenced tile remains live in the current projection; otherwise the historical target is
+shown as unavailable without disclosing current hidden state.
+
+Authoritative lineage observations include average recent acquisition coverage at the same scope as
+their population and condition evidence. The chronicle renders the stored bounded ratio for both
+baseline and completed boundary; it does not recompute an exact branch average from the current
+viewport or imply that the observed intake level will persist.
+
+The same observations freeze canonical nonzero behavior counts at branch start and at the completed
+review boundary. The chronicle compares counts and percentages over the union of behavior states at
+those two boundaries, preserving world-exact versus live-tile-observed scope and never rebuilding a
+historical mix from organisms in the current viewport.
+
+Each review also presents world-exact activation counters accumulated for the reviewed branch from
+the decision through that boundary. It distinguishes proposal-introduced capabilities and reactions
+from inherited reactions, reports entries into conservation behavior and recorded reaction
+transactions, and explicitly says when no new reaction was installed. A zero counter means no activation
+was recorded; it is not a verdict about the proposal's value.
 
 # Performance strategy
 
@@ -281,6 +348,14 @@ organism collection from cache. This intentionally small surface proves the
 thin-client, hidden-state, generated-contract, and one-to-one rendering seams;
 it is not yet the playable map/inspector UI.
 
+The resource-pressure panel keeps long-horizon history aggregate and presents a
+separate attribution list for the latest completed tick. Each row names either a
+rule-authored reaction or a typed non-reaction process, identifies a species only
+when actor knowledge permits it, and preserves exact integer quantities. The cache
+rejects contributor batches whose grouped totals do not equal the corresponding
+live-tile aggregate flows, so explanatory detail cannot silently disagree with the
+chart or stock reconstruction.
+
 # Required decisions and artifacts
 
 - [x] Stage-A Vite/TypeScript/Vitest tooling and package versions pinned; release/CI upgrade policy remains.
@@ -295,8 +370,31 @@ it is not yet the playable map/inspector UI.
   cold historical segments remain `UI-200` work.
 - [x] First controlled-species mutation builder with prerequisite-closing selection,
   occupied-tile selection, authoritative preview, affordability/founder/cooldown summary,
-  and idempotent apply transport; strategic intent, activation warnings, comparison, and
-  saved goals remain.
+  idempotent apply transport, typed initial activation warnings, benefit timing, and a
+  nine-attribute current/proposed compiled comparison. It separately compares typed mandatory
+  maintenance and presents current selected-tile cohort, climate, accessible-stock, limiting-input,
+  and stock-supported-reaction evidence. The manual tree and preview use canonical rule-authored
+  strategic-intent grouping without ranking choices. One versioned browser-local goal per
+  world/species now persists canonical prerequisite/tile selections and shows a clearly caveated
+  last-rate affordability estimate; server-synchronized/attention-triggering goals, additional cost
+  channels, and longer-horizon compacted forecasts remain. Finite capture inputs now compare the
+  proposed cohort's held-current demand with recent net renewal and separately show the latest
+  controlled-versus-other-observed-species uptake split. A builder that differs from the pinned goal
+  now re-previews both plans at the current decision boundary and shows the required side-by-side
+  decision and descendant-phenotype comparison without ranking them.
+- [x] Accepted player speciation pins the browser-local 168-hour live comparison and creates a
+  save-stable authoritative review schedule. The exact cooldown boundary and any longer
+  proposal-authored window append chronicle landmarks through snapshots/deltas. The chronicle
+  clearly labels cooldown summary versus proposal-specific follow-up, exact versus observed scope,
+  and unavailable comparison activity; it reports acquisition coverage and behavior-mix changes
+  without declaring success or extending the mechanical cooldown. Typed evidence navigation and
+  bounded browser-local hypothesis notes and capability/reaction activation evidence are
+  implemented. The first canonical generic stream covers speciation, reproduction, population,
+  occupation, compiled-reaction, and extinction events. Saved attention routing links grouped
+  alerts to those facts and applies entry/recovery hysteresis to low population, trailing-24-hour
+  decline, sustained low health, sustained composite resource pressure, and first realized death
+  causes without automatically pausing. Per-compound transitions, retention policy, and deeper
+  narrative treatment remain.
 - [x] First resource chart uses dependency-free SVG over exact `bigint` reconstruction; choose a
   chart library only if later interaction/downsampling needs justify it. The lineage graph library
   remains undecided.

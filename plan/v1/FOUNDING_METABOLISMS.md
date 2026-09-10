@@ -125,6 +125,31 @@ Survival begins with two independently founded species:
 
 The two populations do not begin in the same tile. Separate resource reservoirs prevent proportional contention in one well-mixed compartment from deciding the opening before either species can act. Edge adjacency keeps gas exchange, environmental spillover, later migration, scavenging, and competition relevant.
 
+## Founder cohort desynchronization
+
+A playable scenario must not initialize every founder as a coeval organism with the same
+reproductive-readiness boundary. Before playable alpha, each scenario defines bounded founder
+cohort distributions for biological age, initial reproduction schedule, and any other starting
+state that can make the whole cohort cross a reproduction gate at once. This is initialization
+spread, not per-tick reproduction randomness and not an undeclared fitness bonus.
+
+Each independently meaningful parameter uses its own registered keyed-random domain, addressed by
+the stable setup/origin identity and organism ID as defined by that domain. Parameter kinds must not
+share a domain by hiding their meaning in a coordinate or sample index. Repeating a setup command
+therefore produces the same organism values, hashes, saves, and future outcomes regardless of
+iteration order or worker count. Player and autonomous founder cohorts use the same declared
+distributions. The declared bounds must retain the configured mature lifecycle phase, avoid
+starting beyond a senescence or viability boundary,
+and preserve all resource and matter accounting; varying a material readiness input requires an
+equal initialization debit rather than free structure, reserve, or nutrient inventory.
+
+The opening acceptance fixture must show first births distributed across multiple completed ticks
+instead of one cohort-wide event. It must also verify that the spread does not materially move the
+authored first-reproduction and first-decision pacing bands. Small reaction, ledger, and deterministic
+arithmetic fixtures may explicitly select a zero-spread setup profile, but the default playable
+Sandbox and Survival scenarios may not. Exact ranges remain a balance decision until the coupled
+opening is playtested.
+
 The competitor uses the same mutation income and autonomous-evolution rules as every uncontrolled species and receives no hidden economic or probability bonuses. Its heuristic should tend to deepen specialization while its niche remains productive, and weight regulation, tolerance, or escape traits more heavily when recent deaths and failed metabolism indicate sulfide, light, substrate, or habitat pressure.
 
 Survival control remains bound to the chosen species and the descendant selected at each player-directed speciation. Extinction of the competitor does not end the run. Extinction of the currently controlled species causes the existing v1 survival loss.
@@ -177,6 +202,7 @@ The v1 scenario's competitor policy maps each founder to the other of its two al
 - The hydrogen-to-fermentation path validates at its lower cumulative mutation price; the sulfur path cannot bypass regulation and generalized catabolism.
 - Oxygenic photosynthesis fails trait validation without its prerequisites and population expansion fails where manganese/calcium quotas cannot be reproduced.
 - A paired-region fixture initializes equal-sized populations without sharing a starting resource reservoir.
+- Default playable setup uses deterministic bounded founder age/readiness spread, produces first births across multiple ticks, and gives both roots the same distribution without unbalanced matter or hidden advantage.
 - The coupled authoring fixture reproduces the first-reproduction, mutation-income, first player-speciation, and seven-day branch-viability bands in [SURVIVAL_OPENING_VALIDATION.md](SURVIVAL_OPENING_VALIDATION.md).
 - Neither founder receives an implicit matter, energy, mutation-point, or probability advantage outside its declared DNA and environment.
 - Repeating the paired setup reproduces initialization and simulation hashes.

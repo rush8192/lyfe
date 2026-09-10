@@ -25,6 +25,15 @@ variants have no current flow field. Resource definitions remain stable for a pr
 so delta application retains the snapshot catalogue while whole-live-tile replacements carry
 the latest interval.
 
+The latest completed interval additionally carries canonical contributor groups. Each
+group has an aggregate flow kind and a typed process, with a reaction ID only when the
+ledger cause refers to a real compiled reaction and a species ID only when actor knowledge
+permits it. Environmental source, sink, exchange, and micronutrient uptake therefore do not
+borrow resource IDs as misleading reaction labels. The snapshot publishes the stable key
+and display name for every compiled reaction. Projector and client both regroup contributors
+and require exact equality with their aggregate flow totals; hidden species collapse into one
+anonymous biological group before transmission.
+
 Each live organism may also carry its exact last-completed-tick acquisition request and grant
 per named resource. Separate flags identify tile-supply scarcity and scavenging claim
 contention. A coupled reaction can therefore show every co-input's proportional reduction while
@@ -86,12 +95,83 @@ each batch. This deliberately favors simple idempotent apply semantics; a future
 profiled optimization may replace it with absolute composite-key upserts/removals
 without changing the projection model.
 
+Player speciation also creates an authoritative lineage-review schedule. At the exact
+168-hour cooldown boundary it appends a `LineageReviewLandmark`; a trait may author one
+longer follow-up duration and evidence family, which appends a second landmark without
+changing mechanical cooldown. Snapshots carry the complete saved landmark history and
+deltas carry strictly ordered appends. Each record freezes a world-exact reviewed-branch
+observation and a comparison limited to the reviewed branch's live tiles. Comparison
+activity counters are explicitly unavailable rather than inferred from hidden history.
+Both observations include average recent acquisition coverage at the same scope, preserving the
+behavior system's bounded `0..2.0` coverage measure rather than recomputing it in the client.
+They also include canonical nonzero behavior counts whose sum equals the scoped population, so the
+client can compare the saved branch-start and completed-boundary mix without reconstructing it from
+the current viewport.
+The saved schedule also accumulates world-exact activation counters for the reviewed branch. Typed
+capability records currently count entries into resource-conservation behavior; reaction records
+count exact executed transactions and distinguish reactions introduced by the proposal from those
+inherited by the branch. Each landmark freezes the cumulative decision-to-boundary values, including
+zero, and the client does not infer operation merely because a capability is installed.
+Each landmark includes typed, bounded evidence references for the decision record, both branch
+summaries, the reviewed journey window, and event-time live resource tiles. A retained tile
+reference does not authorize current exact tile data; clients enable that destination only when the
+current projection still marks the tile live. Presentation wording and success judgments remain
+client concerns.
+
+`NotableEvent` is the shared factual chronicle envelope. Significance-rule version 1 emits
+speciation, first reproduction, fixed population crossings, first species/tile occupation, first
+true compiled-reaction execution, extinction, trailing-24-hour population decline, and sustained
+low health. It also records each species' first realized death cause and sustained high composite
+resource pressure. Records carry stable involved IDs, an optional source-event reference, the observed
+value, an optional rule-specific baseline, and a canonical deduplication key; prose is derived by
+the client. Snapshot histories and delta appends are actor-filtered, append-only, and share a global
+event-ID namespace with lineage-review landmarks.
+
+`AttentionAlert` is a separate saved notification record, not presentation prose. It groups one or
+more chronicle IDs at a completed boundary, carries an informational/strategic/critical class, and
+uses its own append-only identity and deduplication key. Saved threshold state tracks entry into the
+controlled-lineage population band at ten or fewer (rearming above fifteen), a population decline
+of at least 25% across the trailing 24 hours (rearming below 10%), and average health below 25% for
+six hours (rearming only after six hours above 35%). A first realized death cause is critical and
+permanently deduplicated by species/cause; composite resource pressure sustained at or above 75%
+for six hours is strategic and rearms after six hours below 55%. Snapshots and deltas include
+actor-filtered alerts; no alert in this slice changes the world clock.
+
 `evolution.proto` owns the first on-demand controlled-species decision surface and
 speciation command shapes. The query exposes compiled trait IDs, server-provided display
 names, families, costs, complexity, prerequisites/incompatibilities, current acquisition,
 mutation-income inputs, cooldown, and exact occupied-tile populations. Preview and apply
 requests carry the expected evolution revision and genome hash; an unaffordable preview
-still includes its calculated cost, founder split, and resulting genome identity.
+still includes its calculated cost, founder split, and resulting genome identity. A valid
+compiled proposal additionally carries current and proposed phenotype summaries, a benefit-timing
+class, and canonical typed activation warnings. The first summary covers active reactions, capture
+throughput/efficiency, maintenance, reserve capacity, reproduction health, conservation behavior,
+mutation income, and future change capacity. Preparatory and conditional labels describe current
+compiled mechanics only; they do not predict survival or expose hidden environmental state. The
+client validates warning/comparison consistency before rendering the assessment. Trait and proposal
+messages also expose an optional authored follow-up duration/evidence kind so the player can see the
+later observation contract before committing.
+
+The phenotype summary additionally carries explicit light dependence and recurring costs keyed by
+typed channel; mandatory maintenance is the first channel and mirrors the legacy scalar during the
+transition. Each selected founding tile carries authorized current cohort health, reserve,
+environmental-fit, and pressure averages, plus generated current climate when available. Proposed
+external-capture reactions report each input's tile stock, biologically accessible stock, quantity
+per extent, limiting input, and the number of complete extents supported by the present stock.
+Boundary resources remain marked inexhaustible. Each finite input also carries a typed bounded-flow
+forecast: recent gross environmental inflow and outflow, aggregate organism uptake, proposed-cohort
+demand under the current capture rate and conditions held across the same window, and a status that
+marks renewal coverage or likely overshoot. Controlled-versus-other-observed-species uptake is
+reported only for the latest interval on the selected live tile because contributor identity is not
+retained across the rolling aggregate history. The message explicitly supports a no-history state;
+it does not predict future climate, hidden competition, or survival.
+
+Selectable trait definitions also carry a canonical ordered set of rule-authored strategic intents,
+and valid compiled proposals carry the union for their requested prerequisite-closed trait set. The
+closed v1 vocabulary distinguishes current-niche exploitation, environmental endurance, dispersal,
+resource/energy diversification, biological interaction, and investment in complexity. These tags
+are presentation identity: they organize the manual tree and explain a proposal, but do not enter
+mutation validity, autonomous scoring, phenotype compilation, or world continuation.
 
 The local v1 HTTP host exposes protobuf GET decision, POST preview, and POST apply routes.
 Apply also carries a bounded client command ID: the server serializes requests and retains

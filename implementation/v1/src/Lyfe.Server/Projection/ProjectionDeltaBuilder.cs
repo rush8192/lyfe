@@ -20,7 +20,10 @@ public sealed record ProjectionDelta(
     ImmutableArray<SpeciesId> RemovedSpeciesIds,
     ImmutableArray<OrganismJourneyEventProjection> JourneyEventAppends,
     ImmutableArray<OrganismRoutineActivitySummaryProjection> RoutineActivitySummaries,
-    ImmutableArray<OrganismJourneyEventProjection> ActivityPulseEvents);
+    ImmutableArray<OrganismJourneyEventProjection> ActivityPulseEvents,
+    ImmutableArray<LineageReviewLandmarkProjection> LineageReviewLandmarkAppends,
+    ImmutableArray<NotableEventProjection> NotableEventAppends,
+    ImmutableArray<AttentionAlertProjection> AttentionAlertAppends);
 
 public static class ProjectionDeltaBuilder
 {
@@ -101,6 +104,45 @@ public static class ProjectionDeltaBuilder
         var journeyEventAppends = current.JourneyEvents
             .Skip(previous.JourneyEvents.Length)
             .ToImmutableArray();
+        if (current.LineageReviewLandmarks.Length < previous.LineageReviewLandmarks.Length ||
+            !previous.LineageReviewLandmarks.Select(value => value.EventId)
+                .SequenceEqual(current.LineageReviewLandmarks
+                    .Take(previous.LineageReviewLandmarks.Length)
+                    .Select(value => value.EventId)))
+        {
+            throw new ArgumentException(
+                "Lineage-review landmarks must be an append-only stream for a projection actor.",
+                nameof(current));
+        }
+        var lineageReviewLandmarkAppends = current.LineageReviewLandmarks
+            .Skip(previous.LineageReviewLandmarks.Length)
+            .ToImmutableArray();
+        if (current.NotableEvents.Length < previous.NotableEvents.Length ||
+            !previous.NotableEvents.Select(value => value.EventId)
+                .SequenceEqual(current.NotableEvents
+                    .Take(previous.NotableEvents.Length)
+                    .Select(value => value.EventId)))
+        {
+            throw new ArgumentException(
+                "Notable events must be an append-only stream for a projection actor.",
+                nameof(current));
+        }
+        var notableEventAppends = current.NotableEvents
+            .Skip(previous.NotableEvents.Length)
+            .ToImmutableArray();
+        if (current.AttentionAlerts.Length < previous.AttentionAlerts.Length ||
+            !previous.AttentionAlerts.Select(value => value.AlertId)
+                .SequenceEqual(current.AttentionAlerts
+                    .Take(previous.AttentionAlerts.Length)
+                    .Select(value => value.AlertId)))
+        {
+            throw new ArgumentException(
+                "Attention alerts must be an append-only stream for a projection actor.",
+                nameof(current));
+        }
+        var attentionAlertAppends = current.AttentionAlerts
+            .Skip(previous.AttentionAlerts.Length)
+            .ToImmutableArray();
 
         return new ProjectionDelta(
             prior.ProjectionStreamId,
@@ -114,7 +156,10 @@ public static class ProjectionDeltaBuilder
             removedSpecies,
             journeyEventAppends,
             current.RoutineActivitySummaries,
-            current.ActivityPulseEvents);
+            current.ActivityPulseEvents,
+            lineageReviewLandmarkAppends,
+            notableEventAppends,
+            attentionAlertAppends);
     }
 
     private static bool TileEquivalent(TileProjection left, TileProjection right) =>
@@ -139,6 +184,7 @@ public static class ProjectionDeltaBuilder
                 a.ResourceFlowPeriodHours == b.ResourceFlowPeriodHours &&
                 a.ResourceFlows.SequenceEqual(b.ResourceFlows) &&
                 a.ResourceFlowHistory.SequenceEqual(b.ResourceFlowHistory) &&
+                a.ResourceFlowContributors.SequenceEqual(b.ResourceFlowContributors) &&
                 a.Organisms.SequenceEqual(b.Organisms) &&
                 a.Remnants.SequenceEqual(b.Remnants) &&
                 BehaviorDistributionsEquivalent(

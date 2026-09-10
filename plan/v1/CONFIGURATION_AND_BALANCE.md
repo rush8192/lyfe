@@ -15,7 +15,7 @@ Use the validated layering model defined in [RULE_PACK_AUTHORING_AND_COMPILATION
 1. Engine constants that cannot change without a simulation-version change.
 2. Versioned rules data for resources, traits, reactions, environments, and actions.
 3. Data-only balance/presentation mods that replace explicitly marked base-rule fields against an exact base-pack hash.
-4. Gameplay scenarios that define mode, deadline, founders, starting population, speed presets, and constraints a compatible world must satisfy.
+4. Gameplay scenarios that define mode, deadline, founders, starting population, bounded founder age/readiness distributions, speed presets, and constraints a compatible world must satisfy.
 5. One selected world-generation pack/profile defining geography, climate, tile initialization, continuing environmental coefficients, and its bounded setup surface.
 6. Player-selected options permitted by both scenario and world profile, including seed and selected values within declared ranges.
 7. Development-only full-pack forks used for tests and structural experiments.
@@ -65,6 +65,7 @@ Evaluate data schemas for:
 - Simple-scavenging action cost, handling cooldown, per-compartment transfer caps, compatibility rules, and trait modifiers from [LIFECYCLE_AND_RECYCLING.md](LIFECYCLE_AND_RECYCLING.md).
 - The exact hydrogen-acetogenesis and sulfide-anoxygenic-phototrophy founding definitions, trait paths, opening targets, and paired setup constraints from [FOUNDING_METABOLISMS.md](FOUNDING_METABOLISMS.md).
 - Scenario-defined allowed founding-metabolism IDs, tile-eligibility rules, setup-card metadata, and deterministic competitor-pairing policy. The v1 scenario contains exactly two; the engine must not encode that count.
+- Scenario-defined bounded founder biological-age, initial reproduction-schedule, and other explicitly admitted readiness-phase distributions. Default playable scenarios require nonzero spread; narrow deterministic fixtures may explicitly select a zero-spread profile. Any material-state variation remains part of the balanced initialization transaction.
 - Mutation-price lint bands, exact per-node costs/complexity, milestone anchors, base and expanded per-event complexity limits, evolutionary-machinery modifiers/liabilities, and the speciation refractory interval from [EVOLUTION.md](EVOLUTION.md).
 - Mutation-income effective-population table, normalization, DNA modifier bounds, `MutationQ` scale, fractional accumulation denominator, and numeric ceiling from [EVOLUTION.md](EVOLUTION.md).
 - Autonomous pressure mappings/weights/decay, material-opportunity composition, evaluation cadence, savings horizon, exploration probability, goal invalidation rules, commit curve, base and opportunity-adjusted tile-count weights, and explanation retention from [EVOLUTION.md](EVOLUTION.md).

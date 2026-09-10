@@ -67,6 +67,159 @@ enum OrganismJourneyEventFamily {
   ORGANISM_JOURNEY_EVENT_FAMILY_BEHAVIOR_TRANSITION = 8;
 }
 
+enum LineageReviewLandmarkKind {
+  LINEAGE_REVIEW_LANDMARK_KIND_UNSPECIFIED = 0;
+  LINEAGE_REVIEW_LANDMARK_KIND_COOLDOWN_BOUNDARY = 1;
+  LINEAGE_REVIEW_LANDMARK_KIND_PROPOSAL_FOLLOW_UP = 2;
+}
+
+enum LineageReviewEvidenceKind {
+  LINEAGE_REVIEW_EVIDENCE_KIND_UNSPECIFIED = 0;
+  LINEAGE_REVIEW_EVIDENCE_KIND_GENERAL_OUTCOMES = 1;
+  LINEAGE_REVIEW_EVIDENCE_KIND_CAPABILITY_ACTIVATION = 2;
+  LINEAGE_REVIEW_EVIDENCE_KIND_CONDITION_AND_PRESSURE = 3;
+  LINEAGE_REVIEW_EVIDENCE_KIND_GEOGRAPHIC_SPREAD = 4;
+  LINEAGE_REVIEW_EVIDENCE_KIND_RESERVE_STORAGE = 5;
+}
+
+enum LineageReviewEvidenceReferenceKind {
+  LINEAGE_REVIEW_EVIDENCE_REFERENCE_KIND_UNSPECIFIED = 0;
+  LINEAGE_REVIEW_EVIDENCE_REFERENCE_KIND_SPECIATION_DECISION = 1;
+  LINEAGE_REVIEW_EVIDENCE_REFERENCE_KIND_REVIEWED_SPECIES_SUMMARY = 2;
+  LINEAGE_REVIEW_EVIDENCE_REFERENCE_KIND_COMPARISON_SPECIES_SUMMARY = 3;
+  LINEAGE_REVIEW_EVIDENCE_REFERENCE_KIND_REVIEWED_JOURNEY_WINDOW = 4;
+  LINEAGE_REVIEW_EVIDENCE_REFERENCE_KIND_LIVE_TILE_RESOURCE_WINDOW = 5;
+}
+
+enum LineageReviewCapabilityKind {
+  LINEAGE_REVIEW_CAPABILITY_KIND_UNSPECIFIED = 0;
+  LINEAGE_REVIEW_CAPABILITY_KIND_RESOURCE_CONSERVATION = 1;
+}
+
+enum NotableEventFamily {
+  NOTABLE_EVENT_FAMILY_UNSPECIFIED = 0;
+  NOTABLE_EVENT_FAMILY_SPECIATION = 1;
+  NOTABLE_EVENT_FAMILY_FIRST_REPRODUCTION = 2;
+  NOTABLE_EVENT_FAMILY_POPULATION_MILESTONE = 3;
+  NOTABLE_EVENT_FAMILY_FIRST_TILE_OCCUPATION = 4;
+  NOTABLE_EVENT_FAMILY_FIRST_REACTION_EXECUTION = 5;
+  NOTABLE_EVENT_FAMILY_SPECIES_EXTINCTION = 6;
+  NOTABLE_EVENT_FAMILY_POPULATION_DANGER_THRESHOLD = 7;
+  NOTABLE_EVENT_FAMILY_POPULATION_DECLINE_THRESHOLD = 8;
+  NOTABLE_EVENT_FAMILY_SUSTAINED_LOW_HEALTH = 9;
+  NOTABLE_EVENT_FAMILY_REALIZED_DEATH_MECHANISM = 10;
+  NOTABLE_EVENT_FAMILY_SUSTAINED_RESOURCE_PRESSURE = 11;
+}
+
+enum NotableEventSignificance {
+  NOTABLE_EVENT_SIGNIFICANCE_UNSPECIFIED = 0;
+  NOTABLE_EVENT_SIGNIFICANCE_INFORMATIONAL = 1;
+  NOTABLE_EVENT_SIGNIFICANCE_STRATEGIC = 2;
+  NOTABLE_EVENT_SIGNIFICANCE_CRITICAL = 3;
+}
+
+message NotableEvent {
+  uint64 event_id = 1;
+  NotableEventFamily family = 2;
+  NotableEventSignificance significance = 3;
+  uint32 significance_rule_version = 4;
+  uint64 completed_tick = 5;
+  uint64 simulated_hours = 6;
+  uint64 species_id = 7;
+  optional uint64 related_species_id = 8;
+  optional uint32 tile_id = 9;
+  optional uint32 reaction_id = 10;
+  uint64 source_event_id = 11;
+  uint64 milestone_value = 12;
+  string deduplication_key = 13;
+  uint64 baseline_value = 14;
+}
+
+enum AttentionAlertClass {
+  ATTENTION_ALERT_CLASS_UNSPECIFIED = 0;
+  ATTENTION_ALERT_CLASS_INFORMATIONAL = 1;
+  ATTENTION_ALERT_CLASS_STRATEGIC = 2;
+  ATTENTION_ALERT_CLASS_CRITICAL = 3;
+}
+
+enum AttentionAlertKind {
+  ATTENTION_ALERT_KIND_UNSPECIFIED = 0;
+  ATTENTION_ALERT_KIND_NOTABLE_EVENT_GROUP = 1;
+  ATTENTION_ALERT_KIND_LINEAGE_REVIEW_BOUNDARY = 2;
+}
+
+message AttentionAlert {
+  uint64 alert_id = 1;
+  AttentionAlertClass alert_class = 2;
+  AttentionAlertKind kind = 3;
+  optional NotableEventFamily event_family = 4;
+  uint64 completed_tick = 5;
+  uint64 simulated_hours = 6;
+  uint64 species_id = 7;
+  repeated uint64 chronicle_event_ids = 8;
+  string deduplication_key = 9;
+}
+
+message LineageReviewCapabilityActivation {
+  LineageReviewCapabilityKind kind = 1;
+  uint32 source_trait_id = 2;
+  bool introduced_by_proposal = 3;
+  bool installed = 4;
+  uint64 activation_count = 5;
+}
+
+message LineageReviewReactionActivation {
+  uint32 reaction_id = 1;
+  bool introduced_by_proposal = 2;
+  bool installed = 3;
+  uint64 activation_count = 4;
+}
+
+message LineageReviewEvidenceReference {
+  LineageReviewEvidenceReferenceKind kind = 1;
+  optional uint64 species_id = 2;
+  optional uint32 tile_id = 3;
+  uint64 from_exclusive_tick = 4;
+  uint64 through_completed_tick = 5;
+}
+
+message LineageReviewObservation {
+  uint64 species_id = 1;
+  SpeciesPopulationScope population_scope = 2;
+  uint64 population = 3;
+  uint32 average_health_q = 4;
+  uint32 average_reserve_q = 5;
+  uint32 occupied_tile_count = 6;
+  bool activity_counts_available = 7;
+  uint64 birth_count = 8;
+  uint64 death_count = 9;
+  uint64 migration_count = 10;
+  uint32 average_resource_pressure_q = 11;
+  uint32 average_acquisition_coverage_q = 12;
+  repeated BehaviorCount behavior_counts = 13;
+}
+
+message LineageReviewLandmark {
+  uint64 event_id = 1;
+  LineageReviewLandmarkKind kind = 2;
+  uint64 completed_tick = 3;
+  uint64 simulated_hours = 4;
+  uint64 window_hours = 5;
+  uint64 speciation_event_id = 6;
+  uint64 ancestor_species_id = 7;
+  uint64 descendant_species_id = 8;
+  uint64 perspective_species_id = 9;
+  repeated uint32 trait_ids = 10;
+  LineageReviewEvidenceKind evidence_kind = 11;
+  LineageReviewObservation perspective_baseline = 12;
+  LineageReviewObservation comparison_baseline = 13;
+  LineageReviewObservation perspective_current = 14;
+  LineageReviewObservation comparison_current = 15;
+  repeated LineageReviewEvidenceReference evidence_references = 16;
+  repeated LineageReviewCapabilityActivation capability_activations = 17;
+  repeated LineageReviewReactionActivation reaction_activations = 18;
+}
+
 enum ResourceBiologicalForm {
   RESOURCE_BIOLOGICAL_FORM_UNSPECIFIED = 0;
   RESOURCE_BIOLOGICAL_FORM_INORGANIC = 1;
@@ -90,6 +243,18 @@ enum ResourceFlowKind {
   RESOURCE_FLOW_KIND_NEIGHBOR_EXCHANGE_OUT = 4;
   RESOURCE_FLOW_KIND_ORGANISM_UPTAKE = 5;
   RESOURCE_FLOW_KIND_ORGANISM_RELEASE = 6;
+}
+
+enum ResourceFlowProcess {
+  RESOURCE_FLOW_PROCESS_UNSPECIFIED = 0;
+  RESOURCE_FLOW_PROCESS_EXTERNAL_ENERGY_CAPTURE = 1;
+  RESOURCE_FLOW_PROCESS_PARTICULATE_DIGESTION = 2;
+  RESOURCE_FLOW_PROCESS_ENVIRONMENTAL_GAS_SOURCE = 3;
+  RESOURCE_FLOW_PROCESS_ENVIRONMENTAL_GAS_SINK = 4;
+  RESOURCE_FLOW_PROCESS_ENVIRONMENTAL_GAS_EXCHANGE = 5;
+  RESOURCE_FLOW_PROCESS_MANDATORY_MAINTENANCE = 6;
+  RESOURCE_FLOW_PROCESS_BIOMASS_ASSEMBLY = 7;
+  RESOURCE_FLOW_PROCESS_MICRONUTRIENT_UPTAKE = 8;
 }
 
 message JourneyDeathCauseProbability {
@@ -143,6 +308,12 @@ message ResourceDefinition {
   ResourceEnvironmentalPhase environmental_phase = 5;
 }
 
+message ReactionDefinition {
+  uint32 reaction_id = 1;
+  string stable_key = 2;
+  string display_name = 3;
+}
+
 message ResourceFlow {
   uint32 resource_id = 1;
   ResourceFlowKind kind = 2;
@@ -154,6 +325,15 @@ message ResourceFlowHistoryInterval {
   uint64 end_simulated_hour = 2;
   uint32 period_hours = 3;
   repeated ResourceFlow resource_flows = 4;
+}
+
+message ResourceFlowContributor {
+  uint32 resource_id = 1;
+  ResourceFlowKind kind = 2;
+  ResourceFlowProcess process = 3;
+  uint32 reaction_id = 4;
+  uint64 species_id = 5;
+  sint64 amount_q = 6;
 }
 
 message ResourceAcquisitionEvidence {
@@ -305,6 +485,7 @@ message LiveTile {
   uint32 resource_flow_period_hours = 7;
   repeated ResourceFlow resource_flows = 8;
   repeated ResourceFlowHistoryInterval resource_flow_history = 9;
+  repeated ResourceFlowContributor resource_flow_contributors = 10;
 }
 
 message TileProjection {
@@ -386,6 +567,10 @@ message ActorWorldProjection {
   repeated OrganismRoutineActivitySummary routine_activity_summaries = 17;
   repeated OrganismJourneyEvent activity_pulse_events = 18;
   repeated ResourceDefinition resource_definitions = 19;
+  repeated ReactionDefinition reaction_definitions = 20;
+  repeated LineageReviewLandmark lineage_review_landmarks = 21;
+  repeated NotableEvent notable_events = 22;
+  repeated AttentionAlert attention_alerts = 23;
 }
 
 message ProjectionSnapshot {
@@ -413,4 +598,7 @@ message ProjectionBatch {
   repeated OrganismJourneyEvent journey_event_appends = 16;
   repeated OrganismRoutineActivitySummary routine_activity_summaries = 17;
   repeated OrganismJourneyEvent activity_pulse_events = 18;
+  repeated LineageReviewLandmark lineage_review_landmark_appends = 19;
+  repeated NotableEvent notable_event_appends = 20;
+  repeated AttentionAlert attention_alert_appends = 21;
 }

@@ -38,7 +38,7 @@ public sealed class SaveEnvelopeTests
         Assert.Equal(SaveCompressionKind.Brotli, descriptor.Compression);
         Assert.Equal((ulong)payload.Length, descriptor.LogicalPayloadLength);
         Assert.Equal(
-            "4142870c251ae6894c96fed7048999b6aa524f9bc9286c7aff92130b5f792196",
+            "c935f09c8eea5f8338a7b2e7a51551da9ff20cb5f0992eb025ae39f9cc20ff84",
             descriptor.MetadataSha256);
         Assert.True(descriptorStream.Position < descriptorStream.Length);
 
@@ -247,7 +247,7 @@ public sealed class SaveEnvelopeTests
             nonDefaultBehavior.Organisms[0].FreeMicronutrientsQ,
             decodedBehavior.Organisms[0].FreeMicronutrientsQ);
         Assert.Equal(
-            "6100f3b2c06185dd846aca88aa239744175d3e8d7adcc9645d58a6b4ad3e0a42",
+            "f0182a6c1539493e5462e621a24c0b667295d43d49c217f7cc1c7d13626ae793",
             Convert.ToHexStringLower(SHA256.HashData(payload)));
 
         runner.AdvanceOneTick();

@@ -65,12 +65,23 @@ Live organism projections for carrier-retaining species distinguish charged rese
 
 Each completed tick appends one world-owned resource-flow history interval containing its boundary
 tick/hour, duration, and canonical sparse tile/resource/kind totals. V1 retains exact intervals for
-the latest 168 simulated hours and persists them in save schema 12. Actor projection filters every
+the latest 168 simulated hours and persists them in save schema 21. Actor projection filters every
 interval to currently live tiles; reduced and unknown tiles receive none. Historical stock is not
 duplicated: clients reconstruct it exactly from current authorized stock by walking signed interval
 net changes backward. This diagnostic history does not affect future simulation or
 `WorldStateHashV9`, but save compatibility preserves it so restore does not erase the player's
 recent view. Seasonal compaction is future work.
+
+The latest completed interval also exposes canonical contributor groups keyed by
+tile, resource, aggregate flow kind, typed process, optional compiled reaction, and
+optional species. Only actual rule-pack reactions carry a reaction ID; gas sources,
+sinks, exchange, and micronutrient uptake remain explicit processes rather than
+being mislabeled with resource IDs. Projection masks unauthorized species IDs and
+regroups before transmission, then requires contributor sums to reconcile exactly
+with every projected aggregate flow. The protocol publishes stable reaction
+definitions for client labels. Attribution is reconstructed from the saved last
+completed balanced ledger and therefore survives restore without adding a second
+authoritative simulation state.
 
 Movement and migration events expose active, Brownian-like passive, and directional environmental displacement contributions plus the admitted crossing cause. The passive contribution reflects the organism's compiled environmental-spread multiplier. Directional environmental contribution is always zero under the v1 rule pack, but the protocol field is versioned now so later current- or wind-driven dispersal does not masquerade as active locomotion or require a breaking event-shape change. These fields remain subject to ordinary tile/species visibility.
 
@@ -116,9 +127,60 @@ Queue admission is not authoritative application. An applied result identifies t
 
 The first speciation command carries ancestor species ID, expected evolution revision, expected genome hash, explicit new trait IDs, one to four selected tile IDs, and the permitted sandbox follow-descendant preference. Its preview and rejection payloads expose the typed reasons defined in [EVOLUTION.md](EVOLUTION.md), exact founder counts, price, complexity, cooldown boundary, activation warnings, and resulting attribute/cost provenance. For a material-dependent proposal, the preview also exposes the authorized named-resource stock/flow inputs, replacement demand, local opportunity, and whether the selected founding cohort materially overshoots the estimated niche; this remains a warning rather than a validity gate. Autonomous phase-10 decisions enqueue the same semantic command for next-boundary application rather than mutating species state through a private path.
 
+The first executable comparison subset carries current and proposed values for active reactions,
+capture ceiling and efficiency, maintenance, charged-reserve capacity, reproduction-health gate,
+resource-conservation behavior, mutation-income modifier, and future change capacity. The server
+derives immediate, conditional, or preparatory timing from these compiled values and emits typed
+warnings when no executed value changes, conservation requires pressure, or a metabolism/resource
+acquisition trait adds no active reaction. Rejected proposals that fail before valid genome
+compilation omit this assessment. A typed recurring-cost collection initially exposes mandatory
+maintenance, while each selected tile reports current founding-cohort condition, generated climate
+when available, and accessible-stock support/limiting inputs for every proposed external-capture
+reaction. This is an authoritative present-boundary diagnostic, not a renewable-flow, contention,
+or survival forecast. The first bounded forecast extension now adds, for each finite input, the
+available rolling-history duration; gross environmental source/exchange inflow; environmental
+sink/exchange outflow; aggregate organism uptake; and the proposed cohort's capture-demand ceiling
+under current conditions held across that duration. A typed result distinguishes no history,
+within recent net renewal, demand above recent net renewal, and no recent renewal. Species
+attribution is deliberately limited to controlled-lineage versus other observed-species uptake in
+the latest interval on the selected live tile; it is not extrapolated across the history window and
+does not expose species outside actor-authorized live-tile observation. This is a current-state
+warning rather than a command validity gate or survival forecast. Rule-authored strategic-intent tags are canonical presentation metadata on
+traits; a proposal carries their sorted union, while mechanics and autonomous scoring ignore them.
+Maturing construction and additional recurring-cost provenance remain later compatible extensions.
+
+The first authoritative consequence-review protocol is an append-only species-landmark stream.
+Accepted player speciation captures a saved schedule and scoped branch baselines. The universal
+landmark is emitted at the exact 168-hour cooldown boundary; a trait may author one longer duration
+and typed primary-evidence family, with 720 hours as the first long window. That later observation
+does not delay another speciation. Each event freezes the reviewed branch's world-exact population,
+condition, reserve, occupancy, and retained birth/death/migration counts plus only live-tile-observed
+comparison population/condition/reserve/occupancy. It marks comparison activity unavailable rather
+than reconstructing it from hidden organism history. Snapshots contain the complete saved stream and
+deltas contain ordered appends; presentation wording and any success interpretation are noncanonical.
+Both branch observations also freeze average recent acquisition coverage. The reviewed value is
+world-exact; the comparison value is averaged only across organisms on the reviewed branch's live
+tiles. This bounded behavior-state measure is evidence about recent material acquisition, not a
+claim that the same rate will continue.
+The schedule additionally accumulates world-exact reviewed-branch activation evidence from the
+speciation decision through each due boundary. Capability records count authoritative entries into
+tracked behavior-backed capabilities; reaction records count exact executed transactions for each
+compiled process and mark whether it was introduced by the proposal or inherited. These counters
+survive save/restore, remain separate from the live-tile-observed comparison, and do not turn zero
+activity into a success or failure judgment.
+Each landmark also freezes typed navigation references for its decision facts, reviewed and
+comparison summaries, reviewed-species journey window, and event-time live resource tiles. Tile
+references preserve historical identity only: the client may open exact resource evidence solely
+while that tile remains live under the current actor projection.
+
 Proposal-preview schemas additionally carry the deterministic benefit-timing class—immediate, maturing, conditional, or preparatory—per selected tile plan, strategic-intent tags, completed versus merely opened capabilities, remaining prerequisite route, recurring costs by named channel, and relevant observable consequence fields. Maturing proposals expose current assignments, construction targets, commissioned effects, and blockers rather than equating a genetic maximum with present capacity. Intent is explanatory metadata and never authorizes the server to choose for the player. The server may expose a bounded non-dominated frontier while retaining a manual trait-set preview endpoint.
 
 Evolution goals and proposal drafts do not reserve points or mutate a species. If stored server-side so a goal can trigger an auto-pause while the client is disconnected, they are actor planning state with explicit create/update/delete commands and revisions. An attention policy that can pause a single-player world is also authoritative actor/world state: it evaluates after a completed tick, records the resulting pause transition, and cannot use client subscriptions or presentation randomness. Future shared-clock worlds use a different policy rather than granting unilateral pause authority.
+
+The implemented first goal slice is deliberately browser-local: it stores one versioned canonical
+trait/tile plan per world/species and reruns the existing authoritative preview when loaded. It has no
+server command, point reservation, automatic application, or disconnected pause behavior. Promoting
+goals to synchronized actor planning state requires the explicit command/revision contract above.
 
 # Snapshots, deltas, and interest
 

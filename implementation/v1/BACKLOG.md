@@ -26,12 +26,18 @@ rolls routine uptake from a 168-hour window into sparse daily summaries, and pub
 worsening stress-band crossings plus actual behavior transitions without per-tick noise.
 The mutation-control slice now exposes the controlled species' compiled
 trait catalogue and occupied tiles, prerequisite-closing client selection, authoritative
-preview, and idempotent apply with optimistic genome/evolution identity. The first resource
+preview, and idempotent apply with optimistic genome/evolution identity. Proposal previews now
+compare nine current/descendant compiled phenotype attributes, classify benefit timing as
+immediate, conditional, or preparatory, and carry typed warnings for pressure-gated behavior,
+path-only DNA, and metabolic traits that do not yet install a reaction. The client validates that
+warning claims agree with the comparison before displaying them. The first resource
 diagnostic publishes moddable compound names/forms plus sparse source, sink, neighbor-exchange,
 organism-uptake, and organism-release totals directly from the balanced ledger. A save-stable
 rolling history retains each exact interval for up to 168 simulated hours; only live tiles receive
-exact stocks and current/history flows. The client reconstructs stock history from current stock
-plus sparse net changes and shows gross in/out and net without
+exact stocks and current/history flows. The latest completed interval also carries contributors
+grouped by typed process, optional compiled reaction, and visibility-filtered species; their sums
+must reconcile exactly to the aggregate flow categories. The client reconstructs stock history from
+current stock plus sparse net changes and shows gross in/out and net without
 conflating compound and elemental quantities, ties organism resource pressure to the selected
 live tile, and hides absent compounds by default. Per-organism last-tick acquisition evidence
 now reports exact requested/granted quantities per named compound and distinguishes an actual
@@ -41,9 +47,99 @@ across save restoration. The same last-tick channel now
 reports why recurring external energy capture emitted no resource request: no compiled pathway,
 zero accessible light/environmental opportunity, or less reserve room than one reaction extent
 requires. Conservation behavior deliberately remains absent from this list because it cannot
-suppress useful passive capture. Rich activation warnings, proposal comparison/goals, compacted
-long-horizon resource histories, species/reaction contributors, opportunistic scavenging and other action-gate
+suppress useful passive capture. Each selectable trait now carries one or more rule-authored
+strategic intents; the client groups the manual tree by primary intent and previews the canonical
+union without turning those labels into simulation input or a recommendation. Proposal previews
+also add selected-tile cohort health, reserves,
+environmental fit, resource pressure, current generated climate where available, and per-reaction
+accessible-stock limits. A typed recurring-cost table exposes mandatory maintenance separately
+from benefits. The browser now retains one versioned proposal goal per world/species, stores its
+canonical prerequisite closure and founding tiles, reloads it through the current decision surface,
+and labels an exact-integer affordability ETA as a current-rate estimate based only on the last
+completed mutation-income interval. Goals reserve no points and never apply themselves. Server-side
+goal synchronization/attention policy, additional recurring-cost channels, compacted long-horizon
+resource histories, opportunistic scavenging and other action-gate
 failures, richer event prose/linking, cold historical segments, and the hosted command queue remain.
+
+Finite external-capture inputs now pair current stock with a bounded proposal forecast. The server
+sums up to 168 recent simulated hours of environmental source/exchange inflow, environmental
+sink/exchange outflow, and organism uptake on each selected live tile; compares net local renewal
+with the proposed founder cohort's held-current capture-demand ceiling; and emits a typed within,
+overshoot, no-renewal, or no-history status. The latest completed interval separately attributes
+uptake to the controlled lineage versus other species observed on that tile. The client labels both
+windows and the held-current assumption, and never presents the result as a survival guarantee.
+
+When a valid current builder diverges from the browser-local pinned goal, the client now requests a
+fresh authoritative preview for both at the same current species boundary. A side-by-side decision
+workspace compares milestone and prerequisite closure, intent, timing, validity/affordability,
+price, complexity, balance outcome, founding plan, ancestor remainder, warnings, flow/competition
+evidence, descendant phenotype, and recurring cost. It highlights differences without ranking a
+winner; only the current builder retains an apply action, and preview payloads are not persisted.
+
+The consequence-review slice now anchors a versioned browser-local baseline to every accepted
+player speciation event and pins it through the shared 168-hour branch cooldown. The client compares
+branch-start and current ancestor/descendant population, condition, acquisition, pressure, behavior,
+visible occupancy, retained descendant birth/death events, proposal recurring costs, and latest
+new-reaction uptake evidence. Every current population is labeled world-exact or live-tile-observed;
+ancestor event history and other unavailable evidence remain explicitly unavailable rather than
+becoming zero. The panel reports what changed and preserves immediate/conditional/preparatory intent
+without scoring branch success. Accepted player branches now also create save-stable authoritative
+review schedules. At the exact 168-hour cooldown boundary the runner appends a factual chronicle
+summary; rule-authored longer windows append proposal-specific follow-up landmarks without extending
+the cooldown. The reviewed branch retains world-exact baseline/current facts while its comparison
+retains only live-tile-observed facts; unavailable comparison activity is labeled unavailable rather
+than zero. The client applies the events as an ordered append-only stream and shows population,
+health, reserve, occupancy, birth/death, and migration evidence without a success score. Each saved
+observation now also freezes a canonical behavior-state mix and average recent acquisition coverage
+at its own exact or observed scope; the client compares boundary counts and percentages without
+reconstructing either historical aggregate from the present viewport. The saved schedule now also
+accumulates world-exact reviewed-branch activation evidence through every due boundary: entries into
+resource conservation and executed transactions for every compiled reaction. Landmarks distinguish
+proposal-introduced from inherited machinery, retain zero as a factual absence of recorded use, and
+explicitly state when the proposal installed no new reaction. The first generic world-event stream
+is now authoritative and save-stable: speciation, first reproduction, fixed population thresholds,
+first species/tile occupation, first true compiled-reaction execution, and extinction carry
+deterministic significance rule v1, canonical deduplication keys, and globally unique chronicle
+IDs. Actor projection retains only events involving the controlled lineage, batches append them
+idempotently, and the client derives factual copy while keeping private hypotheses separate.
+The first attention-routing pass turns those events and lineage-review boundaries into saved,
+actor-filtered, append-only alerts whose evidence links back to chronicle IDs. Same-family facts for
+one species and completed boundary coalesce deterministically. A critical population-band rule fires
+only on entry from above ten to ten or fewer and rearms only after recovery above fifteen. Two saved
+window rules now also report a 25% trailing-24-hour population decline and six consecutive hours
+below 25% average health; they rearm below 10% trailing decline and after six consecutive hours
+above 35% health respectively. Their rolling evidence, latches, and episode ordinals survive
+save/reload. The next transition slice records the first realized death cause per species as a
+critical event linked to its journey evidence, plus a strategic alert after six hours at or above
+75% average composite resource pressure; that pressure rule rearms after six hours below 55%.
+Automatic pausing, per-compound depletion/recovery/reversal events, retention, and broader narrative
+polish remain later slices.
+
+Each authoritative lineage landmark now also has a bounded browser-local hypothesis field keyed by
+world and event identity. The interface labels the note as the player's interpretation rather than
+a simulation fact; malformed local state fails closed, blank text removes the note, and no note
+enters world persistence, protocol messages, hashes, scoring, or organism behavior. Authoritative
+landmarks now retain typed decision, branch-summary, journey-window, and event-time resource-tile
+references. The client validates each target, navigates internal fact records directly, and opens
+exact tile resources only while current actor knowledge still marks that tile live. Cross-device
+annotation synchronization and broader world-event evidence families remain later slices.
+
+Cooldown and longer follow-up observations now freeze average recent acquisition coverage and
+canonical behavior counts alongside health, reserves, and resource pressure. The reviewed branch
+uses its world-exact population while comparison aggregates are limited to organisms on the reviewed
+branch's event-time live tiles. The client displays the bounded coverage ratio and boundary behavior
+mix directly from the authoritative landmark; it neither infers them from currently visible
+organisms nor presents the intake level as a future forecast.
+
+`OPENING-210` is deliberately planned rather than active. It must land after the current UI work and
+before representative performance acceptance or `STAGE-B`: playable founder cohorts need bounded,
+keyed age/readiness spread so their first reproduction does not appear as one artificial mass event.
+Existing narrow deterministic fixtures may retain an explicit zero-spread setup profile.
+
+`COPY-200` is a separate editorial polish track after the UI surface is complete. It does not block
+continued UI, opening, or performance implementation, but `STAGE-B` cannot become the play-tester
+alpha milestone until narrative copy carries LYFE's wonder and mystery and mechanical copy has been
+rewritten for direct comprehension with only restrained personality layered on top.
 
 # Foundation and developer experience
 
@@ -101,9 +197,11 @@ failures, richer event prose/linking, cold historical segments, and the hosted c
 | EVO-200 | Done | Implement mutation income, trait trees, compiled phenotype updates, speciation, lineage, and autonomous opportunity scoring | BEHAVIOR-200 | A compiler-owned and fingerprinted effective-population table drives fixed-point phase-10 income equally for controlled and autonomous species; strict prerequisite-bearing traits recompile immutable genomes/phenotypes; validated atomic speciation uses deterministic founders and exact 50/20/8/3% per-tile fractions, duplicates post-price balances/remainders, preserves organism matter/state, records lineage/events, survives save/load continuation, and exposes controlled evolution through absolute projections/deltas; prerequisite-closed pressure scoring passes frozen fixtures |
 | GAME-200 | Done | Implement survival and sandbox setup/control/loss state machines | EVO-200, DELTA-100 | Typed setup creates one sandbox root or two independent adjacent survival roots; sandbox supports optimistic-revision control transfer and persistent mutation locks; survival follows every player descendant and loses on controlled-species extinction while sandbox loses only on total extinction; terminal state blocks further ticks/evolution and mode/root/control/lock/outcome state is covered by journals, `WorldStateHashV9`, save schema 9, authorized projections, protobuf snapshots/deltas, and atomic client apply. Multiplayer ownership remains out of the world runner. |
 | OPENING-200 | Done | Implement hydrogen and sulfide founder paths plus bounded starting trade-off packages | GAME-200, GAS-200 | Two founder genomes and three allocations compile six distinct choices; survival fixes the opposite metabolism to Balanced. Exact capture, maintenance, needs-only CHNOPS assembly, reserve-floor protection, and failure death/remnants are executable. Fourteen tile/organism/remnant micronutrients use fixed-width persistent committed/free inventories; founders debit one committed quota, keyed needs-only uptake fills at most one quantum per organism-hour opportunity, reproduction requires and transfers one complete extra quota without creating matter, and death/terminal decay recycle every unit. Schema-9 save/hash/publication/protobuf/client paths preserve the state. The generated-world matrix passed all six choices across 64 seeds: `384/384` reproduced, retained at least `95/100` founders at first reproduction, and reached 40 MP within 720 hours. |
-| UI-200 | In progress | Add knowledge-limited map, organism/species inspection, lifecycle activity pulses and journey logs, mutation decisions, behavior summaries, and resource-flow views | OPENING-200 | Player can observe, diagnose, choose, and review consequences without hidden-state leakage; completed birth/reproduction, feeding, uptake, stress, migration/state-transition, and death facts drive configurable accessible on-map icons with bounded wall-clock fading; exact landmarks plus compacted routine summaries provide a save-stable authorized journey; live tiles expose named exact compound stocks, gross last-tick ledger flow categories, and a save-stable 168-hour exact sparse-flow history used to reconstruct stock trends without leaking non-live tile values; selected live organisms expose exact last-tick compound demand/grant plus bounded engine-authored capture, scavenging, biomass-growth, and reproduction blockers with applicable resource, threshold, capacity, action-energy, behavior, and cooldown evidence |
-| PERF-200 | Planned | Profile the full default-grid opening around 10,000 organisms | UI-200 | Stage-B workload records tick, memory, GC, save, projection, wire, apply, and frame metrics |
-| STAGE-B | Planned | Demonstrate a playable survival opening and free sandbox | PERF-200 | Coupled opening/lifecycle/resource scenarios and the end-to-end player loop pass at representative scale |
+| OPENING-210 | Planned | Desynchronize playable founder cohorts with bounded deterministic initialization spread | OPENING-200, LIFE-200 | Scenario-authored age, initial reproduction schedule, and any required readiness-phase ranges use distinct permanent stable-ID-keyed random domains assigned through the RNG compatibility workflow; player and autonomous roots receive the same distributions; all varied material state remains exactly debited and save/hash/replay/worker-count invariant; default Sandbox and Survival first births span multiple completed ticks without materially leaving the authored first-reproduction or first-decision pacing bands; narrow fixtures may explicitly use a zero-spread profile |
+| UI-200 | In progress | Add knowledge-limited map, organism/species inspection, lifecycle activity pulses and journey logs, mutation decisions, behavior summaries, and resource-flow views | OPENING-200 | Player can observe, diagnose, choose, and review consequences without hidden-state leakage; completed birth/reproduction, feeding, uptake, stress, migration/state-transition, and death facts drive configurable accessible on-map icons with bounded wall-clock fading; exact landmarks plus compacted routine summaries provide a save-stable authorized journey; mutation choices are grouped by rule-authored strategic intent, while previews compare current and proposed compiled phenotypes and recurring maintenance, label benefit timing, warn honestly about pressure gates or preparatory DNA, and show current selected-tile cohort/climate/substrate evidence without claiming future survival or recommending an optimum; finite capture inputs distinguish stock from recent local renewal, compare a held-current founder demand ceiling with that renewal, flag likely overshoot, and isolate latest controlled-versus-other-observed-species uptake without hidden-state leakage; one browser-local goal per world/species preserves canonical prerequisite/tile selections and reports a clearly caveated last-rate affordability ETA without reserving points or auto-applying; accepted player speciation pins a browser-local 168-hour ancestor/descendant review and creates an authoritative save-stable schedule whose exact cooldown boundary and optional rule-authored longer window append clearly labeled chronicle landmarks with scoped branch evidence, no cooldown extension, and no success score; each landmark permits a bounded world/event-local private hypothesis that is visibly non-authoritative and excluded from saves, hashes, protocol, and mechanics, plus typed navigation to its immutable decision/branch facts and only currently authorized journey/resource destinations; live tiles expose named exact compound stocks, gross last-tick ledger flow categories, reconciling typed reaction/species contributors, and a save-stable 168-hour exact sparse-flow history used to reconstruct stock trends without leaking non-live tile values; selected live organisms expose exact last-tick compound demand/grant plus bounded engine-authored capture, scavenging, biomass-growth, and reproduction blockers with applicable resource, threshold, capacity, action-energy, behavior, and cooldown evidence |
+| COPY-200 | Planned | Replace generic or synthetic-sounding interface prose with a coherent LYFE voice for play-tester alpha | UI-200 | A complete player-facing string inventory covers setup, world/discovery, organism inspection, resources, evolution, alerts, consequence review, chronicle, empty/loading/error states, extinction, and run summary; narrative copy evokes the wonder and mystery of life without inventing causality or consciousness; mechanics copy states rules, numbers, scope, uncertainty, and recovery plainly before any restrained wit or whimsy; repetitive caveats, inflated abstractions, generic headings, and templated rhythms receive editorial revision; literal accessible names preserve every consequential fact; a terminology/voice sheet and playtest review confirm both mechanical comprehension and a distinctive tone without changing authoritative facts or hashes |
+| PERF-200 | Planned | Profile the full default-grid opening around 10,000 organisms | UI-200, OPENING-210 | Stage-B workload records tick, memory, GC, save, projection, wire, apply, and frame metrics |
+| STAGE-B | Planned | Demonstrate a playable survival opening and free sandbox | PERF-200, COPY-200 | Coupled opening/lifecycle/resource scenarios and the end-to-end player loop pass at representative scale with play-tester-ready copy |
 
 # Mid/late-game biological rule slices
 

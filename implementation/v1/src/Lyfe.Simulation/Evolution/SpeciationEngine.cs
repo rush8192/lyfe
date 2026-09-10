@@ -105,6 +105,8 @@ internal static class SpeciationEngine
             ancestorGenome.FounderGenomeId,
             ancestorGenome.FounderAllocationId,
             allTraits);
+        var currentPhenotype = Snapshot(world.GetCompiledPhenotype(ancestor.Id));
+        var proposedPhenotype = Snapshot(phenotype);
         if (priceQ > ancestor.Evolution.MutationBalanceQ)
         {
             return new SpeciationPreview(
@@ -113,7 +115,9 @@ internal static class SpeciationEngine
                 priceQ,
                 complexity,
                 founders.MoveToImmutable(),
-                phenotype.CanonicalCompiledHash);
+                phenotype.CanonicalCompiledHash,
+                currentPhenotype,
+                proposedPhenotype);
         }
         return new SpeciationPreview(
             true,
@@ -121,7 +125,9 @@ internal static class SpeciationEngine
             priceQ,
             complexity,
             founders.MoveToImmutable(),
-            phenotype.CanonicalCompiledHash);
+            phenotype.CanonicalCompiledHash,
+            currentPhenotype,
+            proposedPhenotype);
     }
 
     public static (SpeciationPreview Preview, ulong EventId, SpeciesId DescendantId, GenomeId GenomeId)
@@ -234,6 +240,21 @@ internal static class SpeciationEngine
         foreach (var id in selected.OrderBy(id => id.Value)) writer.WriteUInt64(id.Value);
         return Convert.ToHexStringLower(SHA256.HashData(writer.WrittenSpan));
     }
+
+    private static EvolutionPhenotypeSnapshot Snapshot(CompiledPhenotype phenotype) => new(
+        phenotype.MutationIncomeModifierQ,
+        phenotype.MaximumChangeComplexity,
+        phenotype.Physiology.Behavior.ResourceConservation,
+        phenotype.Physiology.OpeningMetabolism.MaximumCaptureExtentsPerHour,
+        phenotype.Physiology.OpeningMetabolism.FavorableCaptureEfficiencyQ,
+        phenotype.Physiology.OpeningMetabolism.GeneratedLightCaptureExtentsPerUnitHour,
+        phenotype.Physiology.OpeningMetabolism.MaintenanceCostQPerHour,
+        phenotype.Physiology.ChargedReserveCapacityQ,
+        phenotype.Physiology.Reproduction.MinimumHealthQ,
+        phenotype.Physiology.OpeningMetabolism.RequiresLight,
+        phenotype.Processes
+            .Select(process => process.Reaction.Id)
+            .ToImmutableArray());
 
     private static SpeciationPreview Reject(SpeciationFailure failure) =>
         new(false, failure, 0, 0, [], string.Empty);

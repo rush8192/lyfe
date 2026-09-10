@@ -151,7 +151,7 @@ The existing configuration layers cross this boundary as follows:
 | Player world options | Validated setup command values allowed by both scenario and world profile | Included in the compiled world-rules hash and save |
 | Balance/presentation mods | Typed replacements of explicitly marked fields against an exact base hash | Flattened before validation; included in mod-set and final rule identities |
 | Development override | A tool-generated complete experimental pack | Produces a distinct identity; never masquerades as the canonical pack |
-| Presentation metadata | Names, descriptions, layout hints, visual descriptors | Included in `presentationHash`, excluded from `mechanicsHash` unless a field affects simulation |
+| Presentation metadata | Names, descriptions, strategic-intent tags, layout hints, visual descriptors | Included in `presentationHash`, excluded from `mechanicsHash` unless a field affects simulation |
 
 A scenario references founding genomes, available setup choices, deadline, tick duration, allowed trait/content IDs, and capabilities a selected world profile must guarantee. It cannot replace a reaction coefficient, trait effect, or world-profile value. The chosen world profile owns dimensions/default ranges, climate and geography parameters, tile initialization, and continuing environmental coefficients. A different balance or world-profile value produces a different final identity.
 

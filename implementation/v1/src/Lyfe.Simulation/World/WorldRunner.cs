@@ -82,7 +82,18 @@ public sealed class WorldRunner
     private ImmutableArray<OrganismJourneyEvent> journeyEvents = [];
     private ImmutableArray<OrganismRoutineActivitySummary> routineActivitySummaries = [];
     private ImmutableArray<OrganismJourneyEvent> lastActivityPulseEvents = [];
+    private ImmutableArray<LineageReviewSchedule> lineageReviewSchedules = [];
+    private ImmutableArray<LineageReviewLandmark> lineageReviewLandmarks = [];
+    private ImmutableArray<NotableEvent> notableEvents = [];
+    private ImmutableArray<AttentionAlert> attentionAlerts = [];
+    private ImmutableArray<PopulationAttentionState> populationAttentionStates = [];
+    private ImmutableArray<AttentionWindowState> attentionWindowStates = [];
     private ulong nextJourneyEventId = 1;
+    private ulong nextChronicleEventId = 1;
+    private ulong nextAttentionAlertId = 1;
+
+    private static readonly ulong[] PopulationMilestones =
+        [100, 250, 500, 1_000, 2_500, 5_000, 10_000];
 
     private WorldRunner(
         WorldId worldId,
@@ -112,6 +123,29 @@ public sealed class WorldRunner
         randomOracle = new SemanticRandomOracle(rootSeed);
         world = new MutableWorldState(runtimeRules);
         InitializeGamePopulation(rootSeed, setup);
+        populationAttentionStates = world.GetSpeciesIdsInCanonicalOrder()
+            .Select(id =>
+            {
+                var aboveThreshold = world.GetSpecies(id).Population >
+                    PopulationAttentionRules.DangerThreshold;
+                return new PopulationAttentionState(id, aboveThreshold, aboveThreshold, 0);
+            })
+            .ToImmutableArray();
+        attentionWindowStates = world.GetSpeciesIdsInCanonicalOrder()
+            .Select(id => new AttentionWindowState(
+                id,
+                true,
+                0,
+                0,
+                true,
+                0,
+                0,
+                0,
+                true,
+                0,
+                0,
+                [new PopulationAttentionSample(0, world.GetSpecies(id).Population)]))
+            .ToImmutableArray();
         journeyEvents = world.GetOrganismIdsInCanonicalOrder()
             .Select(id =>
             {
@@ -181,8 +215,35 @@ public sealed class WorldRunner
             routineActivitySummaries = persisted.State.RoutineActivitySummaries
                 .Select(ToRoutineActivitySummary)
                 .ToImmutableArray();
+            lineageReviewSchedules = persisted.State.LineageReviewSchedules
+                .Select(ToLineageReviewSchedule)
+                .ToImmutableArray();
+            lineageReviewLandmarks = persisted.State.LineageReviewLandmarks
+                .Select(ToLineageReviewLandmark)
+                .ToImmutableArray();
+            notableEvents = persisted.State.NotableEvents
+                .Select(ToNotableEvent)
+                .ToImmutableArray();
+            attentionAlerts = persisted.State.AttentionAlerts
+                .Select(ToAttentionAlert)
+                .ToImmutableArray();
+            populationAttentionStates = persisted.State.PopulationAttentionStates
+                .Select(ToPopulationAttentionState)
+                .ToImmutableArray();
+            attentionWindowStates = persisted.State.AttentionWindowStates
+                .Select(ToAttentionWindowState)
+                .ToImmutableArray();
             lastActivityPulseEvents = [];
             nextJourneyEventId = persisted.State.NextJourneyEventId;
+            nextChronicleEventId = checked(lineageReviewLandmarks
+                .Select(value => value.EventId)
+                .Concat(notableEvents.Select(value => value.EventId))
+                .DefaultIfEmpty(0UL)
+                .Max() + 1);
+            nextAttentionAlertId = checked(attentionAlerts
+                .Select(value => value.AlertId)
+                .DefaultIfEmpty(0UL)
+                .Max() + 1);
             ResourceLedgerOracle.Reconcile(runtimeRules.RulePack, lastCompletedTransactions);
             publishedSnapshot = CaptureWorkingSnapshot(
                 metadata.Boundary.CompletedTick,
@@ -421,7 +482,18 @@ public sealed class WorldRunner
                     .ToImmutableArray(),
                 BuildPublicationResourceFlows(lastCompletedTransactions),
                 Rules.TickDurationHours,
-                resourceFlowHistory);
+                resourceFlowHistory,
+                Rules.RulePack.Reactions
+                    .OrderBy(reaction => reaction.Id.Value)
+                    .Select(reaction => new PublicationReactionDefinition(
+                        reaction.Id,
+                        reaction.StableKey,
+                        reaction.DisplayName))
+                    .ToImmutableArray(),
+                BuildPublicationResourceFlowContributors(lastCompletedTransactions),
+                lineageReviewLandmarks,
+                notableEvents,
+                attentionAlerts);
         }
     }
 
@@ -468,6 +540,77 @@ public sealed class WorldRunner
             .Where(interval => interval.EndSimulatedHour > retainedAfterHour)
             .ToImmutableArray();
     }
+
+    private ImmutableArray<PublicationTileResourceFlowContributor>
+        BuildPublicationResourceFlowContributors(
+            ImmutableArray<ResourceTransaction> transactions) => transactions
+        .SelectMany(transaction => transaction.MatterEntries
+            .Where(entry => entry.Account.OwnerKind == MatterAccountOwnerKind.Tile &&
+                entry.DeltaQ != 0)
+            .Select(entry => new
+            {
+                TileId = TileId.FromRowMajorIndex(checked((uint)entry.Account.OwnerId)),
+                entry.Account.ResourceId,
+                Kind = ToPublicationFlowKind(transaction.Cause, entry.DeltaQ),
+                Process = ToPublicationFlowProcess(transaction.Cause),
+                ReactionId = UsesCompiledReaction(transaction.Cause)
+                    ? transaction.ReactionId
+                    : (ReactionId?)null,
+                SpeciesId = transaction.ActorId == default
+                    ? (SpeciesId?)null
+                    : world.GetOrganism(transaction.ActorId).SpeciesId,
+                AmountQ = checked(Math.Abs(entry.DeltaQ)),
+            }))
+        .GroupBy(value => (
+            value.TileId,
+            value.ResourceId,
+            value.Kind,
+            value.Process,
+            value.ReactionId,
+            value.SpeciesId))
+        .OrderBy(group => group.Key.TileId.Value)
+        .ThenBy(group => group.Key.ResourceId.Value)
+        .ThenBy(group => group.Key.Kind)
+        .ThenBy(group => group.Key.Process)
+        .ThenBy(group => group.Key.ReactionId?.Value ?? 0)
+        .ThenBy(group => group.Key.SpeciesId?.Value ?? 0)
+        .Select(group => new PublicationTileResourceFlowContributor(
+            group.Key.TileId,
+            group.Key.ResourceId,
+            group.Key.Kind,
+            group.Key.Process,
+            group.Key.ReactionId,
+            group.Key.SpeciesId,
+            group.Sum(value => value.AmountQ)))
+        .ToImmutableArray();
+
+    private static PublicationResourceFlowProcessKind ToPublicationFlowProcess(
+        LedgerCause cause) => cause switch
+        {
+            LedgerCause.ExternalEnergyCapture =>
+                PublicationResourceFlowProcessKind.ExternalEnergyCapture,
+            LedgerCause.ParticulateDigestion =>
+                PublicationResourceFlowProcessKind.ParticulateDigestion,
+            LedgerCause.EnvironmentalGasSource =>
+                PublicationResourceFlowProcessKind.EnvironmentalGasSource,
+            LedgerCause.EnvironmentalGasSink =>
+                PublicationResourceFlowProcessKind.EnvironmentalGasSink,
+            LedgerCause.EnvironmentalGasExchange =>
+                PublicationResourceFlowProcessKind.EnvironmentalGasExchange,
+            LedgerCause.MandatoryMaintenance =>
+                PublicationResourceFlowProcessKind.MandatoryMaintenance,
+            LedgerCause.BiomassAssembly =>
+                PublicationResourceFlowProcessKind.BiomassAssembly,
+            LedgerCause.MicronutrientUptake =>
+                PublicationResourceFlowProcessKind.MicronutrientUptake,
+            _ => throw new ArgumentOutOfRangeException(nameof(cause)),
+        };
+
+    private static bool UsesCompiledReaction(LedgerCause cause) => cause is
+        LedgerCause.ExternalEnergyCapture or
+        LedgerCause.ParticulateDigestion or
+        LedgerCause.MandatoryMaintenance or
+        LedgerCause.BiomassAssembly;
 
     private static PublicationResourceFlowKind ToPublicationFlowKind(
         LedgerCause cause,
@@ -649,6 +792,24 @@ public sealed class WorldRunner
             var persistedRoutineSummaries = routineActivitySummaries
                 .Select(ToPersistenceRoutineActivitySummary)
                 .ToImmutableArray();
+            var persistedLineageReviewSchedules = lineageReviewSchedules
+                .Select(ToPersistenceLineageReviewSchedule)
+                .ToImmutableArray();
+            var persistedLineageReviewLandmarks = lineageReviewLandmarks
+                .Select(ToPersistenceLineageReviewLandmark)
+                .ToImmutableArray();
+            var persistedNotableEvents = notableEvents
+                .Select(ToPersistenceNotableEvent)
+                .ToImmutableArray();
+            var persistedAttentionAlerts = attentionAlerts
+                .Select(ToPersistenceAttentionAlert)
+                .ToImmutableArray();
+            var persistedPopulationAttentionStates = populationAttentionStates
+                .Select(ToPersistencePopulationAttentionState)
+                .ToImmutableArray();
+            var persistedAttentionWindowStates = attentionWindowStates
+                .Select(ToPersistenceAttentionWindowState)
+                .ToImmutableArray();
             var game = world.GetGameplayState();
             var persistedGame = new PersistenceGameState(
                 (byte)game.Mode,
@@ -686,7 +847,13 @@ public sealed class WorldRunner
                     persistedRoutineSummaries,
                     persistedResourceFlowHistory,
                     transactions,
-                    persistedGame));
+                    persistedGame,
+                    persistedLineageReviewSchedules,
+                    persistedLineageReviewLandmarks,
+                    persistedNotableEvents,
+                    persistedAttentionAlerts,
+                    persistedPopulationAttentionStates,
+                    persistedAttentionWindowStates));
         }
     }
 
@@ -719,6 +886,8 @@ public sealed class WorldRunner
 
             try
             {
+                var priorPopulations = world.GetSpeciesIdsInCanonicalOrder()
+                    .ToDictionary(id => id, id => world.GetSpecies(id).Population);
                 var changes = tickPipeline.Execute(world, context);
                 var completedTransactions = GetTransactions(changes);
                 var nextResourceFlowHistory = AppendResourceFlowHistory(
@@ -741,6 +910,23 @@ public sealed class WorldRunner
                     checked((nextTick - 1) * Rules.TickDurationHours),
                     nextSimulatedHours,
                     Rules.TickDurationHours);
+                UpdateLineageReviewActivationEvidence(
+                    completedJourneyEvents,
+                    completedTransactions,
+                    nextTick);
+                AppendNotableTickEvents(
+                    priorPopulations,
+                    completedJourneyEvents,
+                    completedTransactions,
+                    nextTick,
+                    nextSimulatedHours);
+                AppendPopulationDangerEvents(
+                    priorPopulations,
+                    nextTick,
+                    nextSimulatedHours);
+                AppendWindowAttentionEvents(nextTick, nextSimulatedHours);
+                AppendDueLineageReviewLandmarks(nextTick, nextSimulatedHours);
+                AppendAttentionAlerts(nextTick, nextSimulatedHours);
                 var nextSnapshot = CaptureWorkingSnapshot(
                     nextTick,
                     nextRevision,
@@ -1164,6 +1350,72 @@ public sealed class WorldRunner
                         GameplayRevision = checked(game.GameplayRevision + 1),
                     }, changes);
                 }
+                if (command.ActorKind == SpeciationActorKind.Player)
+                {
+                    lineageReviewSchedules = lineageReviewSchedules.Add(
+                        CreateLineageReviewSchedule(
+                            command,
+                            applied.EventId,
+                            applied.DescendantId,
+                            followPlayerControl));
+                }
+                AppendNotableEvent(new PendingNotableEvent(
+                    NotableEventFamily.Speciation,
+                    NotableEventSignificance.Strategic,
+                    applied.DescendantId,
+                    command.AncestorSpeciesId,
+                    null,
+                    null,
+                    applied.EventId,
+                    applied.Preview.FounderCounts.Aggregate(
+                        0UL,
+                        (sum, value) => checked(sum + value.Count)),
+                    $"speciation:{applied.EventId}"),
+                    publishedSnapshot.CompletedTick,
+                    publishedSnapshot.SimulatedHours);
+                foreach (var founder in applied.Preview.FounderCounts
+                    .OrderBy(value => value.TileId.Value))
+                {
+                    AppendNotableEvent(new PendingNotableEvent(
+                        NotableEventFamily.FirstTileOccupation,
+                        NotableEventSignificance.Strategic,
+                        applied.DescendantId,
+                        null,
+                        founder.TileId,
+                        null,
+                        applied.EventId,
+                        founder.Count,
+                        $"first-occupation:species:{applied.DescendantId.Value}:tile:{founder.TileId.Value}"),
+                        publishedSnapshot.CompletedTick,
+                        publishedSnapshot.SimulatedHours);
+                }
+                var descendantPopulation = world.GetSpecies(applied.DescendantId).Population;
+                var aboveDangerThreshold = descendantPopulation >
+                    PopulationAttentionRules.DangerThreshold;
+                populationAttentionStates = populationAttentionStates.Add(
+                    new PopulationAttentionState(
+                        applied.DescendantId,
+                        aboveDangerThreshold,
+                        aboveDangerThreshold,
+                        0));
+                attentionWindowStates = attentionWindowStates.Add(new AttentionWindowState(
+                    applied.DescendantId,
+                    true,
+                    0,
+                    0,
+                    true,
+                    0,
+                    0,
+                    0,
+                    true,
+                    0,
+                    0,
+                    [new PopulationAttentionSample(
+                        publishedSnapshot.SimulatedHours,
+                        descendantPopulation)]));
+                AppendAttentionAlerts(
+                    publishedSnapshot.CompletedTick,
+                    publishedSnapshot.SimulatedHours);
                 world.ValidateInvariants();
                 world.ValidateGameplayOutcomeInvariants();
                 world.SealChanges(changes);
@@ -1723,6 +1975,721 @@ public sealed class WorldRunner
     private ImmutableArray<ResourceTransaction> GetLastCompletedTransactions() =>
         lastCompletedTransactions;
 
+    private LineageReviewSchedule CreateLineageReviewSchedule(
+        SpeciationCommand command,
+        ulong speciationEventId,
+        SpeciesId descendantSpeciesId,
+        bool followPlayerControl)
+    {
+        var perspectiveSpeciesId = followPlayerControl
+            ? descendantSpeciesId
+            : command.AncestorSpeciesId;
+        var comparisonSpeciesId = perspectiveSpeciesId == descendantSpeciesId
+            ? command.AncestorSpeciesId
+            : descendantSpeciesId;
+        var followUpTraits = Rules.RulePack.Traits
+            .Where(trait => command.NewTraitIds.Contains(trait.Id) &&
+                trait.ConsequenceFollowUpHours.HasValue)
+            .OrderByDescending(trait => trait.ConsequenceFollowUpHours)
+            .ThenBy(trait => trait.Id.Value)
+            .ToImmutableArray();
+        var followUpHours = followUpTraits.IsEmpty
+            ? 0
+            : followUpTraits[0].ConsequenceFollowUpHours!.Value;
+        var evidenceKinds = followUpTraits
+            .Where(trait => trait.ConsequenceFollowUpHours == followUpHours)
+            .Select(trait => trait.ConsequenceEvidenceKind)
+            .Distinct()
+            .ToImmutableArray();
+        var followUpEvidenceKind = evidenceKinds.Length == 1
+            ? ToLineageEvidenceKind(evidenceKinds[0]!.Value)
+            : LineageReviewEvidenceKind.GeneralOutcomes;
+        var cooldownTicks = checked((SpeciationRules.RefractoryHours +
+            Rules.TickDurationHours - 1) / Rules.TickDurationHours);
+        var followUpTicks = followUpHours == 0
+            ? 0
+            : checked((followUpHours + Rules.TickDurationHours - 1) /
+                Rules.TickDurationHours);
+        var liveTiles = GetOccupiedTiles(perspectiveSpeciesId);
+        var perspectivePhenotype = world.GetCompiledPhenotype(perspectiveSpeciesId);
+        var comparisonPhenotype = world.GetCompiledPhenotype(comparisonSpeciesId);
+        var perspectiveTraits = world.GetGenome(
+            world.GetSpecies(perspectiveSpeciesId).GenomeId).AcquiredTraits;
+        var capabilityActivations = perspectivePhenotype.Physiology.Behavior.ResourceConservation
+            ? ImmutableArray.Create(new LineageReviewCapabilityActivation(
+                LineageReviewCapabilityKind.ResourceConservation,
+                Rules.RulePack.Traits
+                    .Where(trait => trait.EnablesResourceConservation &&
+                        perspectiveTraits.Contains(trait.Id))
+                    .OrderBy(trait => trait.Id.Value)
+                    .Select(trait => trait.Id)
+                    .First(),
+                !comparisonPhenotype.Physiology.Behavior.ResourceConservation,
+                true,
+                0))
+            : [];
+        var comparisonReactionIds = comparisonPhenotype.Processes
+            .Select(process => process.Reaction.Id)
+            .ToHashSet();
+        var reactionActivations = perspectivePhenotype.Processes
+            .OrderBy(process => process.Reaction.Id.Value)
+            .Select(process => new LineageReviewReactionActivation(
+                process.Reaction.Id,
+                !comparisonReactionIds.Contains(process.Reaction.Id),
+                true,
+                0))
+            .ToImmutableArray();
+        return new LineageReviewSchedule(
+            speciationEventId,
+            publishedSnapshot.CompletedTick,
+            publishedSnapshot.SimulatedHours,
+            command.AncestorSpeciesId,
+            descendantSpeciesId,
+            perspectiveSpeciesId,
+            command.NewTraitIds.OrderBy(id => id.Value).ToImmutableArray(),
+            checked(publishedSnapshot.CompletedTick + cooldownTicks),
+            followUpTicks == 0 ? 0 : checked(publishedSnapshot.CompletedTick + followUpTicks),
+            followUpHours,
+            followUpEvidenceKind,
+            BuildLineageObservation(
+                perspectiveSpeciesId,
+                LineageReviewObservationScope.WorldExact,
+                null,
+                publishedSnapshot.CompletedTick,
+                false),
+            BuildLineageObservation(
+                comparisonSpeciesId,
+                LineageReviewObservationScope.LiveTilesObserved,
+                liveTiles,
+                publishedSnapshot.CompletedTick,
+                false),
+            capabilityActivations,
+            reactionActivations);
+    }
+
+    private void UpdateLineageReviewActivationEvidence(
+        ImmutableArray<OrganismJourneyEvent> completedEvents,
+        ImmutableArray<ResourceTransaction> completedTransactions,
+        ulong completedTick)
+    {
+        var speciesByOrganism = world.GetOrganismIdsInCanonicalOrder()
+            .Select(world.GetOrganism)
+            .ToDictionary(organism => organism.Id, organism => organism.SpeciesId);
+        foreach (var completedEvent in completedEvents)
+        {
+            speciesByOrganism.TryAdd(
+                completedEvent.SubjectOrganismId,
+                completedEvent.SubjectSpeciesId);
+        }
+        lineageReviewSchedules = lineageReviewSchedules.Select(schedule =>
+        {
+            var trackingThroughTick = schedule.FollowUpBoundaryTick == 0
+                ? schedule.CooldownBoundaryTick
+                : Math.Max(schedule.CooldownBoundaryTick, schedule.FollowUpBoundaryTick);
+            if (completedTick <= schedule.AppliedTick || completedTick > trackingThroughTick)
+            {
+                return schedule;
+            }
+
+            var capabilityActivations = schedule.CapabilityActivations
+                .Select(activation => activation with
+                {
+                    ActivationCount = checked(activation.ActivationCount +
+                        (ulong)completedEvents.LongCount(value =>
+                            value.SubjectSpeciesId == schedule.PerspectiveSpeciesId &&
+                            value.Family == OrganismJourneyEventFamily.BehaviorTransition &&
+                            activation.Kind == LineageReviewCapabilityKind.ResourceConservation &&
+                            (OrganismBehaviorId)(value.DetailId & 0xff) ==
+                                OrganismBehaviorId.Conserving)),
+                })
+                .ToImmutableArray();
+            var reactionActivations = schedule.ReactionActivations
+                .Select(activation => activation with
+                {
+                    ActivationCount = checked(activation.ActivationCount +
+                        (ulong)completedTransactions.LongCount(transaction =>
+                            transaction.ActorId != default &&
+                            transaction.ReactionId == activation.ReactionId &&
+                            speciesByOrganism.GetValueOrDefault(transaction.ActorId) ==
+                                schedule.PerspectiveSpeciesId)),
+                })
+                .ToImmutableArray();
+            return schedule with
+            {
+                CapabilityActivations = capabilityActivations,
+                ReactionActivations = reactionActivations,
+            };
+        }).ToImmutableArray();
+    }
+
+    private void AppendDueLineageReviewLandmarks(ulong completedTick, ulong simulatedHours)
+    {
+        foreach (var schedule in lineageReviewSchedules.OrderBy(value => value.SpeciationEventId))
+        {
+            if (schedule.CooldownBoundaryTick == completedTick &&
+                !HasLineageReviewLandmark(
+                    schedule.SpeciationEventId,
+                    LineageReviewLandmarkKind.CooldownBoundary))
+            {
+                AppendLineageReviewLandmark(
+                    schedule,
+                    LineageReviewLandmarkKind.CooldownBoundary,
+                    LineageReviewEvidenceKind.GeneralOutcomes,
+                    SpeciationRules.RefractoryHours,
+                    completedTick,
+                    simulatedHours);
+            }
+            if (schedule.FollowUpBoundaryTick == completedTick &&
+                !HasLineageReviewLandmark(
+                    schedule.SpeciationEventId,
+                    LineageReviewLandmarkKind.ProposalFollowUp))
+            {
+                AppendLineageReviewLandmark(
+                    schedule,
+                    LineageReviewLandmarkKind.ProposalFollowUp,
+                    schedule.FollowUpEvidenceKind,
+                    schedule.FollowUpHours,
+                    completedTick,
+                    simulatedHours);
+            }
+        }
+    }
+
+    private void AppendNotableTickEvents(
+        IReadOnlyDictionary<SpeciesId, ulong> priorPopulations,
+        ImmutableArray<OrganismJourneyEvent> completedEvents,
+        ImmutableArray<ResourceTransaction> completedTransactions,
+        ulong completedTick,
+        ulong simulatedHours)
+    {
+        var candidates = ImmutableArray.CreateBuilder<PendingNotableEvent>();
+        foreach (var reproduction in completedEvents
+            .Where(value => value.Family == OrganismJourneyEventFamily.Reproduction)
+            .GroupBy(value => value.SubjectSpeciesId)
+            .Select(group => group.OrderBy(value => value.EventId).First()))
+        {
+            candidates.Add(new PendingNotableEvent(
+                NotableEventFamily.FirstReproduction,
+                NotableEventSignificance.Informational,
+                reproduction.SubjectSpeciesId,
+                null,
+                reproduction.TileId,
+                null,
+                reproduction.EventId,
+                1,
+                $"first-reproduction:species:{reproduction.SubjectSpeciesId.Value}"));
+        }
+
+        foreach (var migration in completedEvents
+            .Where(value => value.Family == OrganismJourneyEventFamily.Migration)
+            .GroupBy(value => (value.SubjectSpeciesId, value.TileId))
+            .Select(group => group.OrderBy(value => value.EventId).First()))
+        {
+            candidates.Add(new PendingNotableEvent(
+                NotableEventFamily.FirstTileOccupation,
+                NotableEventSignificance.Strategic,
+                migration.SubjectSpeciesId,
+                null,
+                migration.TileId,
+                null,
+                migration.EventId,
+                1,
+                $"first-occupation:species:{migration.SubjectSpeciesId.Value}:tile:{migration.TileId.Value}"));
+        }
+
+        var speciesByOrganism = world.GetOrganismIdsInCanonicalOrder()
+            .Select(world.GetOrganism)
+            .ToDictionary(organism => organism.Id, organism => organism.SpeciesId);
+        foreach (var completedEvent in completedEvents)
+        {
+            speciesByOrganism.TryAdd(
+                completedEvent.SubjectOrganismId,
+                completedEvent.SubjectSpeciesId);
+        }
+        foreach (var reaction in completedTransactions
+            .Where(value => IsCompiledReactionExecution(value.Cause) &&
+                value.ActorId != default && value.ReactionId != default &&
+                speciesByOrganism.ContainsKey(value.ActorId))
+            .GroupBy(value => (SpeciesId: speciesByOrganism[value.ActorId], value.ReactionId))
+            .Select(group => group.OrderBy(value => value.Key).First()))
+        {
+            candidates.Add(new PendingNotableEvent(
+                NotableEventFamily.FirstReactionExecution,
+                NotableEventSignificance.Strategic,
+                speciesByOrganism[reaction.ActorId],
+                null,
+                reaction.TileId,
+                reaction.ReactionId,
+                0,
+                1,
+                $"first-reaction:species:{speciesByOrganism[reaction.ActorId].Value}:reaction:{reaction.ReactionId.Value}"));
+        }
+
+        foreach (var death in completedEvents
+            .Where(value => value.Family == OrganismJourneyEventFamily.Death)
+            .GroupBy(value => (value.SubjectSpeciesId, Cause: value.DetailId))
+            .Select(group => group.OrderBy(value => value.EventId).First()))
+        {
+            candidates.Add(new PendingNotableEvent(
+                NotableEventFamily.RealizedDeathMechanism,
+                NotableEventSignificance.Critical,
+                death.SubjectSpeciesId,
+                null,
+                death.TileId,
+                null,
+                death.EventId,
+                death.DetailId,
+                $"death-mechanism:species:{death.SubjectSpeciesId.Value}:cause:{death.DetailId}"));
+        }
+
+        foreach (var speciesId in world.GetSpeciesIdsInCanonicalOrder())
+        {
+            var currentPopulation = world.GetSpecies(speciesId).Population;
+            var priorPopulation = priorPopulations.GetValueOrDefault(speciesId);
+            foreach (var milestone in PopulationMilestones.Where(value =>
+                priorPopulation < value && currentPopulation >= value))
+            {
+                candidates.Add(new PendingNotableEvent(
+                    NotableEventFamily.PopulationMilestone,
+                    NotableEventSignificance.Informational,
+                    speciesId,
+                    null,
+                    null,
+                    null,
+                    0,
+                    milestone,
+                    $"population:species:{speciesId.Value}:threshold:{milestone}"));
+            }
+            if (priorPopulation > 0 && currentPopulation == 0)
+            {
+                candidates.Add(new PendingNotableEvent(
+                    NotableEventFamily.SpeciesExtinction,
+                    NotableEventSignificance.Critical,
+                    speciesId,
+                    null,
+                    null,
+                    null,
+                    0,
+                    priorPopulation,
+                    $"extinction:species:{speciesId.Value}"));
+            }
+        }
+
+        foreach (var candidate in candidates
+            .OrderBy(value => value.Family)
+            .ThenBy(value => value.SpeciesId.Value)
+            .ThenBy(value => value.RelatedSpeciesId?.Value ?? 0)
+            .ThenBy(value => value.TileId?.Value ?? 0)
+            .ThenBy(value => value.ReactionId?.Value ?? 0)
+            .ThenBy(value => value.MilestoneValue)
+            .ThenBy(value => value.SourceEventId))
+        {
+            AppendNotableEvent(candidate, completedTick, simulatedHours);
+        }
+    }
+
+    private static bool IsCompiledReactionExecution(LedgerCause cause) => cause is
+        LedgerCause.ExternalEnergyCapture or
+        LedgerCause.ParticulateDigestion or
+        LedgerCause.MandatoryMaintenance or
+        LedgerCause.BiomassAssembly;
+
+    private void AppendPopulationDangerEvents(
+        IReadOnlyDictionary<SpeciesId, ulong> priorPopulations,
+        ulong completedTick,
+        ulong simulatedHours)
+    {
+        var states = populationAttentionStates.ToDictionary(value => value.SpeciesId);
+        foreach (var speciesId in world.GetSpeciesIdsInCanonicalOrder())
+        {
+            var priorPopulation = priorPopulations.GetValueOrDefault(speciesId);
+            var currentPopulation = world.GetSpecies(speciesId).Population;
+            if (!states.TryGetValue(speciesId, out var state))
+            {
+                var wasAbove = priorPopulation > PopulationAttentionRules.DangerThreshold;
+                state = new PopulationAttentionState(speciesId, wasAbove, wasAbove, 0);
+            }
+            var evaluation = PopulationAttentionRules.Evaluate(
+                state,
+                priorPopulation,
+                currentPopulation);
+            if (evaluation.EnteredLowPopulationBand)
+            {
+                AppendNotableEvent(new PendingNotableEvent(
+                    NotableEventFamily.PopulationDangerThreshold,
+                    NotableEventSignificance.Critical,
+                    speciesId,
+                    null,
+                    null,
+                    null,
+                    0,
+                    currentPopulation,
+                    $"population-danger:species:{speciesId.Value}:episode:{evaluation.State.LowPopulationEpisodeOrdinal}"),
+                    completedTick,
+                    simulatedHours);
+            }
+            states[speciesId] = evaluation.State;
+        }
+        populationAttentionStates = states.Values
+            .OrderBy(value => value.SpeciesId.Value)
+            .ToImmutableArray();
+    }
+
+    private void AppendAttentionAlerts(ulong completedTick, ulong simulatedHours)
+    {
+        var notableGroups = notableEvents
+            .Where(value => value.CompletedTick == completedTick)
+            .GroupBy(value => (value.Family, value.SpeciesId))
+            .OrderBy(group => group.Key.Family)
+            .ThenBy(group => group.Key.SpeciesId.Value);
+        foreach (var group in notableGroups)
+        {
+            var key = $"notable:{(byte)group.Key.Family}:species:{group.Key.SpeciesId.Value}:tick:{completedTick}";
+            if (attentionAlerts.Any(value => value.DeduplicationKey == key)) continue;
+            var events = group.OrderBy(value => value.EventId).ToImmutableArray();
+            attentionAlerts = attentionAlerts.Add(new AttentionAlert(
+                checked(nextAttentionAlertId++),
+                (AttentionAlertClass)events.Max(value => (byte)value.Significance),
+                AttentionAlertKind.NotableEventGroup,
+                group.Key.Family,
+                completedTick,
+                simulatedHours,
+                group.Key.SpeciesId,
+                events.Select(value => value.EventId).ToImmutableArray(),
+                key));
+        }
+        foreach (var landmark in lineageReviewLandmarks
+            .Where(value => value.CompletedTick == completedTick)
+            .OrderBy(value => value.EventId))
+        {
+            var key = $"lineage-review:event:{landmark.EventId}";
+            if (attentionAlerts.Any(value => value.DeduplicationKey == key)) continue;
+            attentionAlerts = attentionAlerts.Add(new AttentionAlert(
+                checked(nextAttentionAlertId++),
+                AttentionAlertClass.Strategic,
+                AttentionAlertKind.LineageReviewBoundary,
+                null,
+                completedTick,
+                simulatedHours,
+                landmark.PerspectiveSpeciesId,
+                [landmark.EventId],
+                key));
+        }
+    }
+
+    private void AppendWindowAttentionEvents(ulong completedTick, ulong simulatedHours)
+    {
+        var states = attentionWindowStates.ToDictionary(value => value.SpeciesId);
+        var resourcePressureBySpecies = ComputeAverageResourcePressureBySpecies();
+        foreach (var speciesId in world.GetSpeciesIdsInCanonicalOrder())
+        {
+            var species = world.GetSpecies(speciesId);
+            if (!states.TryGetValue(speciesId, out var state))
+            {
+                state = new AttentionWindowState(
+                    speciesId,
+                    true,
+                    0,
+                    0,
+                    true,
+                    0,
+                    0,
+                    0,
+                    true,
+                    0,
+                    0,
+                    []);
+            }
+            var averageResourcePressureQ =
+                resourcePressureBySpecies.GetValueOrDefault(speciesId);
+            var evaluation = AttentionWindowRules.Evaluate(
+                state,
+                simulatedHours,
+                Rules.TickDurationHours,
+                species.Population,
+                species.Evolution.AverageHealthQ,
+                averageResourcePressureQ);
+            if (evaluation.EnteredPopulationDecline)
+            {
+                AppendNotableEvent(new PendingNotableEvent(
+                    NotableEventFamily.PopulationDeclineThreshold,
+                    NotableEventSignificance.Critical,
+                    speciesId,
+                    null,
+                    null,
+                    null,
+                    0,
+                    species.Population,
+                    $"population-decline:species:{speciesId.Value}:episode:{evaluation.State.PopulationDeclineEpisodeOrdinal}",
+                    evaluation.PopulationBaseline),
+                    completedTick,
+                    simulatedHours);
+            }
+            if (evaluation.EnteredSustainedLowHealth)
+            {
+                AppendNotableEvent(new PendingNotableEvent(
+                    NotableEventFamily.SustainedLowHealth,
+                    NotableEventSignificance.Critical,
+                    speciesId,
+                    null,
+                    null,
+                    null,
+                    0,
+                    species.Evolution.AverageHealthQ,
+                    $"low-health:species:{speciesId.Value}:episode:{evaluation.State.LowHealthEpisodeOrdinal}",
+                    evaluation.State.LowHealthConsecutiveHours),
+                    completedTick,
+                    simulatedHours);
+            }
+            if (evaluation.EnteredSustainedResourcePressure)
+            {
+                AppendNotableEvent(new PendingNotableEvent(
+                    NotableEventFamily.SustainedResourcePressure,
+                    NotableEventSignificance.Strategic,
+                    speciesId,
+                    null,
+                    null,
+                    null,
+                    0,
+                    averageResourcePressureQ,
+                    $"resource-pressure:species:{speciesId.Value}:episode:{evaluation.State.ResourcePressureEpisodeOrdinal}",
+                    evaluation.State.ResourcePressureConsecutiveHours),
+                    completedTick,
+                    simulatedHours);
+            }
+            states[speciesId] = evaluation.State;
+        }
+        attentionWindowStates = states.Values
+            .OrderBy(value => value.SpeciesId.Value)
+            .ToImmutableArray();
+    }
+
+    private Dictionary<SpeciesId, uint> ComputeAverageResourcePressureBySpecies() =>
+        world.GetOrganismIdsInCanonicalOrder()
+            .Select(world.GetOrganism)
+            .GroupBy(value => value.SpeciesId)
+            .ToDictionary(
+                group => group.Key,
+                group => checked((uint)(group.Aggregate(
+                    0UL,
+                    (sum, organism) => checked(sum + ComputeResourcePressureQ(organism))) /
+                    (ulong)group.LongCount())));
+
+    private void AppendNotableEvent(
+        PendingNotableEvent candidate,
+        ulong completedTick,
+        ulong simulatedHours)
+    {
+        if (notableEvents.Any(value => value.DeduplicationKey == candidate.DeduplicationKey))
+        {
+            return;
+        }
+        notableEvents = notableEvents.Add(new NotableEvent(
+            checked(nextChronicleEventId++),
+            candidate.Family,
+            candidate.Significance,
+            1,
+            completedTick,
+            simulatedHours,
+            candidate.SpeciesId,
+            candidate.RelatedSpeciesId,
+            candidate.TileId,
+            candidate.ReactionId,
+            candidate.SourceEventId,
+            candidate.MilestoneValue,
+            candidate.DeduplicationKey,
+            candidate.BaselineValue));
+    }
+
+    private readonly record struct PendingNotableEvent(
+        NotableEventFamily Family,
+        NotableEventSignificance Significance,
+        SpeciesId SpeciesId,
+        SpeciesId? RelatedSpeciesId,
+        TileId? TileId,
+        ReactionId? ReactionId,
+        ulong SourceEventId,
+        ulong MilestoneValue,
+        string DeduplicationKey,
+        ulong BaselineValue = 0);
+
+    private bool HasLineageReviewLandmark(
+        ulong speciationEventId,
+        LineageReviewLandmarkKind kind) => lineageReviewLandmarks.Any(value =>
+            value.SpeciationEventId == speciationEventId && value.Kind == kind);
+
+    private void AppendLineageReviewLandmark(
+        LineageReviewSchedule schedule,
+        LineageReviewLandmarkKind kind,
+        LineageReviewEvidenceKind evidenceKind,
+        ulong windowHours,
+        ulong completedTick,
+        ulong simulatedHours)
+    {
+        var comparisonSpeciesId = schedule.PerspectiveSpeciesId == schedule.DescendantSpeciesId
+            ? schedule.AncestorSpeciesId
+            : schedule.DescendantSpeciesId;
+        var liveTiles = GetOccupiedTiles(schedule.PerspectiveSpeciesId);
+        var phenotype = world.GetCompiledPhenotype(schedule.PerspectiveSpeciesId);
+        var installedReactionIds = phenotype.Processes
+            .Select(process => process.Reaction.Id)
+            .ToHashSet();
+        var evidenceReferences = ImmutableArray.Create(
+                new LineageReviewEvidenceReference(
+                    LineageReviewEvidenceReferenceKind.SpeciationDecision,
+                    null,
+                    null,
+                    schedule.AppliedTick,
+                    completedTick),
+                new LineageReviewEvidenceReference(
+                    LineageReviewEvidenceReferenceKind.ReviewedSpeciesSummary,
+                    schedule.PerspectiveSpeciesId,
+                    null,
+                    schedule.AppliedTick,
+                    completedTick),
+                new LineageReviewEvidenceReference(
+                    LineageReviewEvidenceReferenceKind.ComparisonSpeciesSummary,
+                    comparisonSpeciesId,
+                    null,
+                    schedule.AppliedTick,
+                    completedTick),
+                new LineageReviewEvidenceReference(
+                    LineageReviewEvidenceReferenceKind.ReviewedJourneyWindow,
+                    schedule.PerspectiveSpeciesId,
+                    null,
+                    schedule.AppliedTick,
+                    completedTick))
+            .AddRange(liveTiles
+                .OrderBy(tileId => tileId.Value)
+                .Select(tileId => new LineageReviewEvidenceReference(
+                    LineageReviewEvidenceReferenceKind.LiveTileResourceWindow,
+                    schedule.PerspectiveSpeciesId,
+                    tileId,
+                    schedule.AppliedTick,
+                    completedTick)));
+        lineageReviewLandmarks = lineageReviewLandmarks.Add(new LineageReviewLandmark(
+            checked(nextChronicleEventId++),
+            kind,
+            completedTick,
+            simulatedHours,
+            windowHours,
+            schedule.SpeciationEventId,
+            schedule.AncestorSpeciesId,
+            schedule.DescendantSpeciesId,
+            schedule.PerspectiveSpeciesId,
+            schedule.TraitDelta,
+            evidenceKind,
+            schedule.PerspectiveBaseline,
+            schedule.ComparisonBaseline,
+            BuildLineageObservation(
+                schedule.PerspectiveSpeciesId,
+                LineageReviewObservationScope.WorldExact,
+                null,
+                schedule.AppliedTick,
+                true),
+            BuildLineageObservation(
+                comparisonSpeciesId,
+                LineageReviewObservationScope.LiveTilesObserved,
+                liveTiles,
+                schedule.AppliedTick,
+                false),
+            schedule.CapabilityActivations.Select(activation => activation with
+            {
+                Installed = activation.Kind switch
+                {
+                    LineageReviewCapabilityKind.ResourceConservation =>
+                        phenotype.Physiology.Behavior.ResourceConservation,
+                    _ => throw new ArgumentOutOfRangeException(nameof(activation)),
+                },
+            }).ToImmutableArray(),
+            schedule.ReactionActivations.Select(activation => activation with
+            {
+                Installed = installedReactionIds.Contains(activation.ReactionId),
+            }).ToImmutableArray(),
+            evidenceReferences));
+    }
+
+    private HashSet<TileId> GetOccupiedTiles(SpeciesId speciesId) => world
+        .GetOrganismIdsInCanonicalOrder()
+        .Select(world.GetOrganism)
+        .Where(organism => organism.SpeciesId == speciesId)
+        .Select(organism => organism.TileId)
+        .ToHashSet();
+
+    private LineageReviewObservation BuildLineageObservation(
+        SpeciesId speciesId,
+        LineageReviewObservationScope scope,
+        HashSet<TileId>? visibleTiles,
+        ulong afterTick,
+        bool includeActivityCounts)
+    {
+        var organisms = world.GetOrganismIdsInCanonicalOrder()
+            .Select(world.GetOrganism)
+            .Where(organism => organism.SpeciesId == speciesId &&
+                (visibleTiles is null || visibleTiles.Contains(organism.TileId)))
+            .ToImmutableArray();
+        var population = checked((ulong)organisms.Length);
+        var averageHealthQ = population == 0
+            ? 0
+            : checked((uint)(organisms.Aggregate(0UL, (sum, organism) =>
+                checked(sum + organism.Condition.RelativeHealthQ)) / population));
+        var averageReserveQ = population == 0
+            ? 0
+            : checked((uint)(organisms.Aggregate(0UL, (sum, organism) =>
+                checked(sum + organism.Condition.ReserveFactorQ)) / population));
+        var averageAcquisitionCoverageQ = population == 0
+            ? 0
+            : checked((uint)(organisms.Aggregate(0UL, (sum, organism) =>
+                checked(sum + organism.Behavior.RecentAcquisitionCoverageQ)) / population));
+        var averageResourcePressureQ = population == 0
+            ? 0
+            : checked((uint)(organisms.Aggregate(0UL, (sum, organism) =>
+                checked(sum + ComputeResourcePressureQ(organism))) / population));
+        var activity = includeActivityCounts
+            ? journeyEvents.Where(value =>
+                value.SubjectSpeciesId == speciesId && value.Tick > afterTick)
+                .ToImmutableArray()
+            : [];
+        var behaviorCounts = organisms
+            .GroupBy(organism => organism.Behavior.BehaviorId)
+            .OrderBy(group => group.Key)
+            .Select(group => new LineageReviewBehaviorCount(
+                group.Key,
+                checked((ulong)group.LongCount())))
+            .ToImmutableArray();
+        return new LineageReviewObservation(
+            speciesId,
+            scope,
+            population,
+            averageHealthQ,
+            averageReserveQ,
+            averageAcquisitionCoverageQ,
+            averageResourcePressureQ,
+            checked((uint)organisms.Select(organism => organism.TileId).Distinct().Count()),
+            behaviorCounts,
+            includeActivityCounts,
+            checked((ulong)activity.LongCount(value =>
+                value.Family == OrganismJourneyEventFamily.Birth)),
+            checked((ulong)activity.LongCount(value =>
+                value.Family == OrganismJourneyEventFamily.Death)),
+            checked((ulong)activity.LongCount(value =>
+                value.Family == OrganismJourneyEventFamily.Migration)));
+    }
+
+    private static LineageReviewEvidenceKind ToLineageEvidenceKind(
+        EvolutionFollowUpEvidenceKind value) => value switch
+        {
+            EvolutionFollowUpEvidenceKind.CapabilityActivation =>
+                LineageReviewEvidenceKind.CapabilityActivation,
+            EvolutionFollowUpEvidenceKind.ConditionAndPressure =>
+                LineageReviewEvidenceKind.ConditionAndPressure,
+            EvolutionFollowUpEvidenceKind.GeographicSpread =>
+                LineageReviewEvidenceKind.GeographicSpread,
+            EvolutionFollowUpEvidenceKind.ReserveStorage =>
+                LineageReviewEvidenceKind.ReserveStorage,
+            _ => throw new ArgumentOutOfRangeException(nameof(value)),
+        };
+
     private static ImmutableArray<ResourceTransaction> GetTransactions(TickChangeSet changes) =>
         changes.Phases
             .SelectMany(phase => phase.ResourceTransactions)
@@ -2056,6 +3023,277 @@ public sealed class WorldRunner
                 (IntrinsicDeathCause)cause.Cause,
                 cause.ProbabilityQ,
                 cause.Triggered)).ToImmutableArray());
+
+    private static PersistenceLineageReviewObservation ToPersistenceLineageReviewObservation(
+        LineageReviewObservation value) => new(
+            value.SpeciesId.Value,
+            (byte)value.Scope,
+            value.Population,
+            value.AverageHealthQ,
+            value.AverageReserveQ,
+            value.AverageAcquisitionCoverageQ,
+            value.AverageResourcePressureQ,
+            value.OccupiedTileCount,
+            value.BehaviorCounts.Select(count =>
+                new PersistenceLineageReviewBehaviorCount(
+                    (byte)count.BehaviorId,
+                    count.Count)).ToImmutableArray(),
+            value.ActivityCountsAvailable,
+            value.BirthCount,
+            value.DeathCount,
+            value.MigrationCount);
+
+    private static LineageReviewObservation ToLineageReviewObservation(
+        PersistenceLineageReviewObservation value) => new(
+            SpeciesId.FromAllocatedValue(value.SpeciesId),
+            (LineageReviewObservationScope)value.Scope,
+            value.Population,
+            value.AverageHealthQ,
+            value.AverageReserveQ,
+            value.AverageAcquisitionCoverageQ,
+            value.AverageResourcePressureQ,
+            value.OccupiedTileCount,
+            value.BehaviorCounts.Select(count => new LineageReviewBehaviorCount(
+                (OrganismBehaviorId)count.BehaviorId,
+                count.Count)).ToImmutableArray(),
+            value.ActivityCountsAvailable,
+            value.BirthCount,
+            value.DeathCount,
+            value.MigrationCount);
+
+    private static PersistenceLineageReviewSchedule ToPersistenceLineageReviewSchedule(
+        LineageReviewSchedule value) => new(
+            value.SpeciationEventId,
+            value.AppliedTick,
+            value.AppliedSimulatedHours,
+            value.AncestorSpeciesId.Value,
+            value.DescendantSpeciesId.Value,
+            value.PerspectiveSpeciesId.Value,
+            value.TraitDelta.Select(id => id.Value).ToImmutableArray(),
+            value.CooldownBoundaryTick,
+            value.FollowUpBoundaryTick,
+            value.FollowUpHours,
+            (byte)value.FollowUpEvidenceKind,
+            ToPersistenceLineageReviewObservation(value.PerspectiveBaseline),
+            ToPersistenceLineageReviewObservation(value.ComparisonBaseline),
+            value.CapabilityActivations.Select(ToPersistenceCapabilityActivation)
+                .ToImmutableArray(),
+            value.ReactionActivations.Select(ToPersistenceReactionActivation)
+                .ToImmutableArray());
+
+    private static LineageReviewSchedule ToLineageReviewSchedule(
+        PersistenceLineageReviewSchedule value) => new(
+            value.SpeciationEventId,
+            value.AppliedTick,
+            value.AppliedSimulatedHours,
+            SpeciesId.FromAllocatedValue(value.AncestorSpeciesId),
+            SpeciesId.FromAllocatedValue(value.DescendantSpeciesId),
+            SpeciesId.FromAllocatedValue(value.PerspectiveSpeciesId),
+            value.TraitDelta.Select(TraitId.From).ToImmutableArray(),
+            value.CooldownBoundaryTick,
+            value.FollowUpBoundaryTick,
+            value.FollowUpHours,
+            (LineageReviewEvidenceKind)value.FollowUpEvidenceKind,
+            ToLineageReviewObservation(value.PerspectiveBaseline),
+            ToLineageReviewObservation(value.ComparisonBaseline),
+            value.CapabilityActivations.Select(ToCapabilityActivation).ToImmutableArray(),
+            value.ReactionActivations.Select(ToReactionActivation).ToImmutableArray());
+
+    private static PersistenceLineageReviewLandmark ToPersistenceLineageReviewLandmark(
+        LineageReviewLandmark value) => new(
+            value.EventId,
+            (byte)value.Kind,
+            value.CompletedTick,
+            value.SimulatedHours,
+            value.WindowHours,
+            value.SpeciationEventId,
+            value.AncestorSpeciesId.Value,
+            value.DescendantSpeciesId.Value,
+            value.PerspectiveSpeciesId.Value,
+            value.TraitDelta.Select(id => id.Value).ToImmutableArray(),
+            (byte)value.EvidenceKind,
+            ToPersistenceLineageReviewObservation(value.PerspectiveBaseline),
+            ToPersistenceLineageReviewObservation(value.ComparisonBaseline),
+            ToPersistenceLineageReviewObservation(value.PerspectiveCurrent),
+            ToPersistenceLineageReviewObservation(value.ComparisonCurrent),
+            value.CapabilityActivations.Select(ToPersistenceCapabilityActivation)
+                .ToImmutableArray(),
+            value.ReactionActivations.Select(ToPersistenceReactionActivation)
+                .ToImmutableArray(),
+            value.EvidenceReferences.Select(reference =>
+                new PersistenceLineageReviewEvidenceReference(
+                    (byte)reference.Kind,
+                    reference.SpeciesId?.Value ?? 0,
+                    reference.TileId?.Value,
+                    reference.FromExclusiveTick,
+                    reference.ThroughCompletedTick)).ToImmutableArray());
+
+    private static LineageReviewLandmark ToLineageReviewLandmark(
+        PersistenceLineageReviewLandmark value) => new(
+            value.EventId,
+            (LineageReviewLandmarkKind)value.Kind,
+            value.CompletedTick,
+            value.SimulatedHours,
+            value.WindowHours,
+            value.SpeciationEventId,
+            SpeciesId.FromAllocatedValue(value.AncestorSpeciesId),
+            SpeciesId.FromAllocatedValue(value.DescendantSpeciesId),
+            SpeciesId.FromAllocatedValue(value.PerspectiveSpeciesId),
+            value.TraitDelta.Select(TraitId.From).ToImmutableArray(),
+            (LineageReviewEvidenceKind)value.EvidenceKind,
+            ToLineageReviewObservation(value.PerspectiveBaseline),
+            ToLineageReviewObservation(value.ComparisonBaseline),
+            ToLineageReviewObservation(value.PerspectiveCurrent),
+            ToLineageReviewObservation(value.ComparisonCurrent),
+            value.CapabilityActivations.Select(ToCapabilityActivation).ToImmutableArray(),
+            value.ReactionActivations.Select(ToReactionActivation).ToImmutableArray(),
+            value.EvidenceReferences.Select(reference =>
+                new LineageReviewEvidenceReference(
+                    (LineageReviewEvidenceReferenceKind)reference.Kind,
+                    reference.SpeciesId == 0
+                        ? null
+                        : SpeciesId.FromAllocatedValue(reference.SpeciesId),
+                    reference.TileId.HasValue
+                        ? TileId.FromRowMajorIndex(reference.TileId.Value)
+                        : null,
+                    reference.FromExclusiveTick,
+                    reference.ThroughCompletedTick)).ToImmutableArray());
+
+    private static PersistenceNotableEvent ToPersistenceNotableEvent(NotableEvent value) => new(
+        value.EventId,
+        (byte)value.Family,
+        (byte)value.Significance,
+        value.SignificanceRuleVersion,
+        value.CompletedTick,
+        value.SimulatedHours,
+        value.SpeciesId.Value,
+        value.RelatedSpeciesId?.Value ?? 0,
+        value.TileId?.Value,
+        value.ReactionId?.Value ?? 0,
+        value.SourceEventId,
+        value.MilestoneValue,
+        value.BaselineValue,
+        value.DeduplicationKey);
+
+    private static NotableEvent ToNotableEvent(PersistenceNotableEvent value) => new(
+        value.EventId,
+        (NotableEventFamily)value.Family,
+        (NotableEventSignificance)value.Significance,
+        value.SignificanceRuleVersion,
+        value.CompletedTick,
+        value.SimulatedHours,
+        SpeciesId.FromAllocatedValue(value.SpeciesId),
+        value.RelatedSpeciesId == 0
+            ? null
+            : SpeciesId.FromAllocatedValue(value.RelatedSpeciesId),
+        value.TileId.HasValue ? TileId.FromRowMajorIndex(value.TileId.Value) : null,
+        value.ReactionId == 0 ? null : ReactionId.From(value.ReactionId),
+        value.SourceEventId,
+        value.MilestoneValue,
+        value.DeduplicationKey,
+        value.BaselineValue);
+
+    private static PersistenceAttentionAlert ToPersistenceAttentionAlert(
+        AttentionAlert value) => new(
+            value.AlertId,
+            (byte)value.AlertClass,
+            (byte)value.Kind,
+            (byte)(value.EventFamily ?? 0),
+            value.CompletedTick,
+            value.SimulatedHours,
+            value.SpeciesId.Value,
+            value.ChronicleEventIds,
+            value.DeduplicationKey);
+
+    private static AttentionAlert ToAttentionAlert(PersistenceAttentionAlert value) => new(
+        value.AlertId,
+        (AttentionAlertClass)value.AlertClass,
+        (AttentionAlertKind)value.Kind,
+        value.EventFamily == 0 ? null : (NotableEventFamily)value.EventFamily,
+        value.CompletedTick,
+        value.SimulatedHours,
+        SpeciesId.FromAllocatedValue(value.SpeciesId),
+        value.ChronicleEventIds,
+        value.DeduplicationKey);
+
+    private static PersistencePopulationAttentionState ToPersistencePopulationAttentionState(
+        PopulationAttentionState value) => new(
+            value.SpeciesId.Value,
+            value.HasExceededDangerThreshold,
+            value.LowPopulationArmed,
+            value.LowPopulationEpisodeOrdinal);
+
+    private static PopulationAttentionState ToPopulationAttentionState(
+        PersistencePopulationAttentionState value) => new(
+            SpeciesId.FromAllocatedValue(value.SpeciesId),
+            value.HasExceededDangerThreshold,
+            value.LowPopulationArmed,
+            value.LowPopulationEpisodeOrdinal);
+
+    private static PersistenceAttentionWindowState ToPersistenceAttentionWindowState(
+        AttentionWindowState value) => new(
+            value.SpeciesId.Value,
+            value.PopulationDeclineArmed,
+            value.PopulationDeclineEpisodeOrdinal,
+            value.LowHealthConsecutiveHours,
+            value.LowHealthArmed,
+            value.HealthyRecoveryConsecutiveHours,
+            value.LowHealthEpisodeOrdinal,
+            value.ResourcePressureConsecutiveHours,
+            value.ResourcePressureArmed,
+            value.ResourcePressureRecoveryConsecutiveHours,
+            value.ResourcePressureEpisodeOrdinal,
+            value.PopulationSamples.Select(sample =>
+                new PersistencePopulationAttentionSample(
+                    sample.SimulatedHours,
+                    sample.Population)).ToImmutableArray());
+
+    private static AttentionWindowState ToAttentionWindowState(
+        PersistenceAttentionWindowState value) => new(
+            SpeciesId.FromAllocatedValue(value.SpeciesId),
+            value.PopulationDeclineArmed,
+            value.PopulationDeclineEpisodeOrdinal,
+            value.LowHealthConsecutiveHours,
+            value.LowHealthArmed,
+            value.HealthyRecoveryConsecutiveHours,
+            value.LowHealthEpisodeOrdinal,
+            value.ResourcePressureConsecutiveHours,
+            value.ResourcePressureArmed,
+            value.ResourcePressureRecoveryConsecutiveHours,
+            value.ResourcePressureEpisodeOrdinal,
+            value.PopulationSamples.Select(sample => new PopulationAttentionSample(
+                sample.SimulatedHours,
+                sample.Population)).ToImmutableArray());
+
+    private static PersistenceLineageReviewCapabilityActivation
+        ToPersistenceCapabilityActivation(LineageReviewCapabilityActivation value) => new(
+            (byte)value.Kind,
+            value.SourceTraitId.Value,
+            value.IntroducedByProposal,
+            value.Installed,
+            value.ActivationCount);
+
+    private static LineageReviewCapabilityActivation ToCapabilityActivation(
+        PersistenceLineageReviewCapabilityActivation value) => new(
+            (LineageReviewCapabilityKind)value.Kind,
+            TraitId.From(value.SourceTraitId),
+            value.IntroducedByProposal,
+            value.Installed,
+            value.ActivationCount);
+
+    private static PersistenceLineageReviewReactionActivation
+        ToPersistenceReactionActivation(LineageReviewReactionActivation value) => new(
+            value.ReactionId.Value,
+            value.IntroducedByProposal,
+            value.Installed,
+            value.ActivationCount);
+
+    private static LineageReviewReactionActivation ToReactionActivation(
+        PersistenceLineageReviewReactionActivation value) => new(
+            ReactionId.From(value.ReactionId),
+            value.IntroducedByProposal,
+            value.Installed,
+            value.ActivationCount);
 
     private static PersistenceOrganismRoutineActivitySummary
         ToPersistenceRoutineActivitySummary(OrganismRoutineActivitySummary value) => new(

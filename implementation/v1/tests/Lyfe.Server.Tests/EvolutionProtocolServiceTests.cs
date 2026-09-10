@@ -30,6 +30,16 @@ public sealed class EvolutionProtocolServiceTests
         Assert.False(stateGated.Acquired);
         Assert.Equal(40_000_000L, stateGated.MutationPointCostQ);
         Assert.Equal([1U], stateGated.PrerequisiteTraitIds);
+        Assert.Equal(
+            [Proto.EvolutionStrategicIntent.InvestInComplexity],
+            stateGated.StrategicIntents);
+        var conservation = surface.Traits.Single(value => value.TraitId == 4);
+        Assert.Equal(720UL, conservation.ConsequenceFollowUpHours);
+        Assert.Equal(Proto.EvolutionFollowUpEvidenceKind.ConditionAndPressure,
+            conservation.ConsequenceEvidenceKind);
+        Assert.NotEmpty(surface.ResourceDefinitions);
+        Assert.NotEmpty(surface.ReactionDefinitions);
+        Assert.NotEmpty(Assert.Single(surface.OccupiedTiles).ResourceStocks);
     }
 
     [Fact]
@@ -50,6 +60,100 @@ public sealed class EvolutionProtocolServiceTests
         Assert.Equal(50UL, preview.DescendantPopulation);
         Assert.Equal(64, preview.ProposedGenomeHash.Length);
         Assert.Equal(168UL, preview.ResultingSpeciationNotBeforeTick);
+        Assert.Equal(Proto.EvolutionBenefitTiming.Preparatory, preview.BenefitTiming);
+        Assert.Equal(
+            [Proto.EvolutionStrategicIntent.InvestInComplexity],
+            preview.StrategicIntents);
+        Assert.NotNull(preview.CurrentPhenotype);
+        Assert.NotNull(preview.ProposedPhenotype);
+        Assert.Equal(preview.CurrentPhenotype, preview.ProposedPhenotype);
+        Assert.Contains(preview.ActivationWarnings, warning =>
+            warning.Kind == Proto.EvolutionActivationWarningKind.NoCompiledChange &&
+            warning.Severity == Proto.EvolutionActivationWarningSeverity.Caution &&
+            warning.TraitIds.SequenceEqual([3U]));
+        var cost = Assert.Single(preview.ProposedPhenotype.RecurringCosts);
+        Assert.Equal(Proto.EvolutionRecurringCostChannel.MandatoryMaintenance, cost.Channel);
+        Assert.Equal(preview.ProposedPhenotype.MaintenanceCostQPerHour,
+            cost.AmountQPerOrganismHour);
+        var tile = Assert.Single(preview.TileActivationEvidence);
+        Assert.Equal(50U, tile.FounderCount);
+        Assert.Equal(Assert.Single(surface.OccupiedTiles).HasCurrentClimate,
+            tile.HasCurrentClimate);
+        Assert.InRange(tile.AverageHealthQ, 1U, 1_000_000U);
+        var opportunity = Assert.Single(tile.ReactionOpportunities);
+        Assert.Equal(1U, opportunity.ReactionId);
+        Assert.Equal(Proto.EvolutionReactionOpportunityStatus.Available, opportunity.Status);
+        Assert.Equal(1U, opportunity.LimitingResourceId);
+        Assert.Equal(12_500_000L, opportunity.StockSupportedExtents);
+        var hydrogen = opportunity.Inputs.Single(input => input.ResourceId == 1);
+        Assert.NotNull(hydrogen.FlowForecast);
+        Assert.Equal(
+            Proto.EvolutionResourceFlowForecastStatus.NoHistory,
+            hydrogen.FlowForecast.Status);
+        Assert.Equal(0U, hydrogen.FlowForecast.HistoryPeriodHours);
+    }
+
+    [Fact]
+    public void PreviewComparesProposedDemandWithRecentFlowAndLatestObservedCompetition()
+    {
+        var runner = CreateRunner();
+        var service = new EvolutionProtocolService();
+        runner.AdvanceOneTick();
+        var surface = service.CaptureDecisionSurface(runner);
+
+        var preview = service.Preview(runner, Proposal(surface, 3));
+
+        var opportunity = Assert.Single(Assert.Single(preview.TileActivationEvidence)
+            .ReactionOpportunities);
+        var hydrogen = opportunity.Inputs.Single(input => input.ResourceId == 1);
+        var forecast = Assert.IsType<Proto.EvolutionResourceFlowForecast>(
+            hydrogen.FlowForecast);
+        Assert.Equal(runner.Rules.TickDurationHours, forecast.HistoryPeriodHours);
+        Assert.Equal(40_000L, forecast.ProposedCohortDemandQ);
+        Assert.Equal(runner.Rules.TickDurationHours, forecast.LatestObservationPeriodHours);
+        Assert.InRange(
+            forecast.LatestControlledSpeciesUptakeQ,
+            0,
+            forecast.RecentOrganismUptakeQ);
+        Assert.Equal(0, forecast.LatestObservedCompetitorUptakeQ);
+        var netRenewal = Math.Max(
+            0,
+            forecast.RecentEnvironmentalInflowQ - forecast.RecentEnvironmentalOutflowQ);
+        var expectedStatus = netRenewal == 0
+            ? Proto.EvolutionResourceFlowForecastStatus.NoRecentRenewal
+            : forecast.ProposedCohortDemandQ > netRenewal
+                ? Proto.EvolutionResourceFlowForecastStatus.ExceedsRecentRenewal
+                : Proto.EvolutionResourceFlowForecastStatus.WithinRecentRenewal;
+        Assert.Equal(expectedStatus, forecast.Status);
+    }
+
+    [Fact]
+    public void PreviewDistinguishesConditionalBehaviorFromPreparatoryMetabolism()
+    {
+        var runner = CreateRunner();
+        var service = new EvolutionProtocolService();
+        var surface = service.CaptureDecisionSurface(runner);
+
+        var conservation = service.Preview(runner, Proposal(surface, 3, 4));
+        var organicUptake = service.Preview(runner, Proposal(surface, 7));
+
+        Assert.Equal(Proto.EvolutionBenefitTiming.Conditional, conservation.BenefitTiming);
+        Assert.False(conservation.CurrentPhenotype.ResourceConservation);
+        Assert.True(conservation.ProposedPhenotype.ResourceConservation);
+        Assert.Equal(720UL, conservation.ConsequenceFollowUpHours);
+        Assert.Equal(Proto.EvolutionFollowUpEvidenceKind.ConditionAndPressure,
+            conservation.ConsequenceEvidenceKind);
+        Assert.Contains(conservation.ActivationWarnings, warning =>
+            warning.Kind == Proto.EvolutionActivationWarningKind.ResourcePressureRequired &&
+            warning.TraitIds.SequenceEqual([4U]));
+
+        Assert.Equal(Proto.EvolutionBenefitTiming.Preparatory, organicUptake.BenefitTiming);
+        Assert.Contains(organicUptake.ActivationWarnings, warning =>
+            warning.Kind == Proto.EvolutionActivationWarningKind.NoNewActiveReaction &&
+            warning.TraitIds.SequenceEqual([7U]));
+        Assert.Equal(
+            organicUptake.CurrentPhenotype.ActiveReactionIds,
+            organicUptake.ProposedPhenotype.ActiveReactionIds);
     }
 
     [Fact]
@@ -110,7 +214,7 @@ public sealed class EvolutionProtocolServiceTests
 
     private static Proto.SpeciationProposalRequest Proposal(
         Proto.EvolutionDecisionSurface surface,
-        uint traitId)
+        params uint[] traitIds)
     {
         var request = new Proto.SpeciationProposalRequest
         {
@@ -120,7 +224,7 @@ public sealed class EvolutionProtocolServiceTests
             ExpectedGenomeHash = surface.GenomeHash,
             FollowDescendantIfPermitted = true,
         };
-        request.NewTraitIds.Add(traitId);
+        request.NewTraitIds.Add(traitIds);
         request.SelectedTileIds.Add(surface.OccupiedTiles[0].TileId);
         return request;
     }

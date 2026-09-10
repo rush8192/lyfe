@@ -187,6 +187,133 @@ public sealed record PersistenceOrganismRoutineActivitySummary(
     uint TileId,
     ImmutableArray<PersistenceRoutineResourceAcquisition> ResourceAcquisitions);
 
+public readonly record struct PersistenceLineageReviewBehaviorCount(
+    byte BehaviorId,
+    ulong Count);
+
+public readonly record struct PersistenceLineageReviewCapabilityActivation(
+    byte Kind,
+    uint SourceTraitId,
+    bool IntroducedByProposal,
+    bool Installed,
+    ulong ActivationCount);
+
+public readonly record struct PersistenceLineageReviewReactionActivation(
+    uint ReactionId,
+    bool IntroducedByProposal,
+    bool Installed,
+    ulong ActivationCount);
+
+public readonly record struct PersistenceLineageReviewObservation(
+    ulong SpeciesId,
+    byte Scope,
+    ulong Population,
+    uint AverageHealthQ,
+    uint AverageReserveQ,
+    uint AverageAcquisitionCoverageQ,
+    uint AverageResourcePressureQ,
+    uint OccupiedTileCount,
+    ImmutableArray<PersistenceLineageReviewBehaviorCount> BehaviorCounts,
+    bool ActivityCountsAvailable,
+    ulong BirthCount,
+    ulong DeathCount,
+    ulong MigrationCount);
+
+public sealed record PersistenceLineageReviewSchedule(
+    ulong SpeciationEventId,
+    ulong AppliedTick,
+    ulong AppliedSimulatedHours,
+    ulong AncestorSpeciesId,
+    ulong DescendantSpeciesId,
+    ulong PerspectiveSpeciesId,
+    ImmutableArray<uint> TraitDelta,
+    ulong CooldownBoundaryTick,
+    ulong FollowUpBoundaryTick,
+    ulong FollowUpHours,
+    byte FollowUpEvidenceKind,
+    PersistenceLineageReviewObservation PerspectiveBaseline,
+    PersistenceLineageReviewObservation ComparisonBaseline,
+    ImmutableArray<PersistenceLineageReviewCapabilityActivation> CapabilityActivations,
+    ImmutableArray<PersistenceLineageReviewReactionActivation> ReactionActivations);
+
+public readonly record struct PersistenceLineageReviewEvidenceReference(
+    byte Kind,
+    ulong SpeciesId,
+    uint? TileId,
+    ulong FromExclusiveTick,
+    ulong ThroughCompletedTick);
+
+public sealed record PersistenceLineageReviewLandmark(
+    ulong EventId,
+    byte Kind,
+    ulong CompletedTick,
+    ulong SimulatedHours,
+    ulong WindowHours,
+    ulong SpeciationEventId,
+    ulong AncestorSpeciesId,
+    ulong DescendantSpeciesId,
+    ulong PerspectiveSpeciesId,
+    ImmutableArray<uint> TraitDelta,
+    byte EvidenceKind,
+    PersistenceLineageReviewObservation PerspectiveBaseline,
+    PersistenceLineageReviewObservation ComparisonBaseline,
+    PersistenceLineageReviewObservation PerspectiveCurrent,
+    PersistenceLineageReviewObservation ComparisonCurrent,
+    ImmutableArray<PersistenceLineageReviewCapabilityActivation> CapabilityActivations,
+    ImmutableArray<PersistenceLineageReviewReactionActivation> ReactionActivations,
+    ImmutableArray<PersistenceLineageReviewEvidenceReference> EvidenceReferences);
+
+public sealed record PersistenceNotableEvent(
+    ulong EventId,
+    byte Family,
+    byte Significance,
+    uint SignificanceRuleVersion,
+    ulong CompletedTick,
+    ulong SimulatedHours,
+    ulong SpeciesId,
+    ulong RelatedSpeciesId,
+    uint? TileId,
+    uint ReactionId,
+    ulong SourceEventId,
+    ulong MilestoneValue,
+    ulong BaselineValue,
+    string DeduplicationKey);
+
+public sealed record PersistenceAttentionAlert(
+    ulong AlertId,
+    byte AlertClass,
+    byte Kind,
+    byte EventFamily,
+    ulong CompletedTick,
+    ulong SimulatedHours,
+    ulong SpeciesId,
+    ImmutableArray<ulong> ChronicleEventIds,
+    string DeduplicationKey);
+
+public readonly record struct PersistencePopulationAttentionState(
+    ulong SpeciesId,
+    bool HasExceededDangerThreshold,
+    bool LowPopulationArmed,
+    uint LowPopulationEpisodeOrdinal);
+
+public readonly record struct PersistencePopulationAttentionSample(
+    ulong SimulatedHours,
+    ulong Population);
+
+public sealed record PersistenceAttentionWindowState(
+    ulong SpeciesId,
+    bool PopulationDeclineArmed,
+    uint PopulationDeclineEpisodeOrdinal,
+    uint LowHealthConsecutiveHours,
+    bool LowHealthArmed,
+    uint HealthyRecoveryConsecutiveHours,
+    uint LowHealthEpisodeOrdinal,
+    uint ResourcePressureConsecutiveHours,
+    bool ResourcePressureArmed,
+    uint ResourcePressureRecoveryConsecutiveHours,
+    uint ResourcePressureEpisodeOrdinal,
+    ImmutableArray<PersistencePopulationAttentionSample> PopulationSamples);
+
 public readonly record struct PersistenceTileResourceFlow(
     uint TileId,
     uint ResourceId,
@@ -232,7 +359,13 @@ public sealed record WorldPersistenceState(
     ImmutableArray<PersistenceOrganismRoutineActivitySummary> RoutineActivitySummaries,
     ImmutableArray<PersistenceResourceFlowHistoryInterval> ResourceFlowHistory,
     ImmutableArray<PersistenceResourceTransaction> LastCompletedTransactions,
-    PersistenceGameState Gameplay);
+    PersistenceGameState Gameplay,
+    ImmutableArray<PersistenceLineageReviewSchedule> LineageReviewSchedules = default,
+    ImmutableArray<PersistenceLineageReviewLandmark> LineageReviewLandmarks = default,
+    ImmutableArray<PersistenceNotableEvent> NotableEvents = default,
+    ImmutableArray<PersistenceAttentionAlert> AttentionAlerts = default,
+    ImmutableArray<PersistencePopulationAttentionState> PopulationAttentionStates = default,
+    ImmutableArray<PersistenceAttentionWindowState> AttentionWindowStates = default);
 
 public sealed record WorldPersistenceSnapshot(
     WorldPersistenceMetadata Metadata,

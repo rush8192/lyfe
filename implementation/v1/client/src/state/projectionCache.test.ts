@@ -5,8 +5,22 @@ import {
   AcquisitionGateReason,
   AcquisitionProcess,
   ActorWorldProjectionSchema,
+  AttentionAlertClass,
+  AttentionAlertKind,
+  AttentionAlertSchema,
   GameMode,
   GameRunStatus,
+  LineageReviewCapabilityKind,
+  LineageReviewEvidenceKind,
+  LineageReviewEvidenceReferenceKind,
+  LineageReviewEvidenceReferenceSchema,
+  LineageReviewLandmarkKind,
+  LineageReviewLandmarkSchema,
+  LineageReviewObservationSchema,
+  NotableEventFamily,
+  NotableEventSchema,
+  NotableEventSignificance,
+  OrganismBehavior,
   OrganismLifecyclePhase,
   OrganismActionGateEvidenceSchema,
   OrganismActionGateReason,
@@ -15,15 +29,23 @@ import {
   OrganismJourneyEventSchema,
   ProjectionBatchSchema,
   ProjectionSnapshotSchema,
+  ReactionDefinitionSchema,
   ResourceAcquisitionEvidenceSchema,
   ResourceBiologicalForm,
   ResourceEnvironmentalPhase,
+  ResourceFlowContributorSchema,
+  ResourceFlowKind,
   ResourceFlowHistoryIntervalSchema,
+  ResourceFlowProcess,
+  ResourceFlowSchema,
   SpeciesPopulationScope,
   TileProjectionSchema,
   WorldLifecycle,
 } from "../generated/lyfe/v1/projection_pb";
-import { applyProjectionBatch, createProjectionCache } from "./projectionCache";
+import {
+  applyProjectionBatch,
+  createProjectionCache,
+} from "./projectionCache";
 
 describe("projection cache", () => {
   it("applies absolute replacements atomically to equal a fresh projection", () => {
@@ -269,6 +291,205 @@ describe("projection cache", () => {
       journeyEventAppends: [{ ...event, tick: 2n }],
     });
     expect(applyProjectionBatch(applied.cache, reused).status).toBe("resync-required");
+
+  });
+
+  it("appends authoritative lineage-review landmarks exactly once", () => {
+    const initialWorld = worldAt(167n, liveTile(167n));
+    const targetWorld = worldAt(168n, liveTile(168n));
+    initialWorld.reactionDefinitions = [create(ReactionDefinitionSchema, {
+      reactionId: 1,
+      stableKey: "reaction.test",
+      displayName: "Test reaction",
+    })];
+    targetWorld.reactionDefinitions = initialWorld.reactionDefinitions;
+    const cache = createProjectionCache(create(ProjectionSnapshotSchema, {
+      projectionStreamId: 7n,
+      streamRevision: 1n,
+      projection: initialWorld,
+    }));
+    const exact = create(LineageReviewObservationSchema, {
+      speciesId: 1n,
+      populationScope: SpeciesPopulationScope.WORLD_EXACT,
+      population: 50n,
+      averageHealthQ: 800_000,
+      averageReserveQ: 700_000,
+      averageAcquisitionCoverageQ: 900_000,
+      averageResourcePressureQ: 300_000,
+      occupiedTileCount: 1,
+      behaviorCounts: [
+        { behavior: OrganismBehavior.BASELINE, count: 30n },
+        { behavior: OrganismBehavior.FORAGING, count: 20n },
+      ],
+      activityCountsAvailable: true,
+      birthCount: 2n,
+      deathCount: 1n,
+    });
+    const observed = create(LineageReviewObservationSchema, {
+      speciesId: 2n,
+      populationScope: SpeciesPopulationScope.LIVE_TILES_OBSERVED,
+      population: 20n,
+      averageHealthQ: 750_000,
+      averageReserveQ: 650_000,
+      averageAcquisitionCoverageQ: 850_000,
+      averageResourcePressureQ: 350_000,
+      occupiedTileCount: 1,
+      behaviorCounts: [{ behavior: OrganismBehavior.BASELINE, count: 20n }],
+    });
+    const landmark = create(LineageReviewLandmarkSchema, {
+      eventId: 1n,
+      kind: LineageReviewLandmarkKind.COOLDOWN_BOUNDARY,
+      completedTick: 168n,
+      simulatedHours: 168n,
+      windowHours: 168n,
+      speciationEventId: 1n,
+      ancestorSpeciesId: 2n,
+      descendantSpeciesId: 1n,
+      perspectiveSpeciesId: 1n,
+      traitIds: [4],
+      evidenceKind: LineageReviewEvidenceKind.GENERAL_OUTCOMES,
+      perspectiveBaseline: {
+        ...exact,
+        activityCountsAvailable: false,
+        birthCount: 0n,
+        deathCount: 0n,
+      },
+      comparisonBaseline: observed,
+      perspectiveCurrent: exact,
+      comparisonCurrent: observed,
+      capabilityActivations: [{
+        kind: LineageReviewCapabilityKind.RESOURCE_CONSERVATION,
+        sourceTraitId: 4,
+        introducedByProposal: true,
+        installed: true,
+        activationCount: 7n,
+      }],
+      reactionActivations: [{
+        reactionId: 1,
+        installed: true,
+        activationCount: 50n,
+      }],
+      evidenceReferences: [
+        create(LineageReviewEvidenceReferenceSchema, {
+          kind: LineageReviewEvidenceReferenceKind.SPECIATION_DECISION,
+          fromExclusiveTick: 0n,
+          throughCompletedTick: 168n,
+        }),
+        create(LineageReviewEvidenceReferenceSchema, {
+          kind: LineageReviewEvidenceReferenceKind.REVIEWED_SPECIES_SUMMARY,
+          speciesId: 1n,
+          fromExclusiveTick: 0n,
+          throughCompletedTick: 168n,
+        }),
+        create(LineageReviewEvidenceReferenceSchema, {
+          kind: LineageReviewEvidenceReferenceKind.COMPARISON_SPECIES_SUMMARY,
+          speciesId: 2n,
+          fromExclusiveTick: 0n,
+          throughCompletedTick: 168n,
+        }),
+        create(LineageReviewEvidenceReferenceSchema, {
+          kind: LineageReviewEvidenceReferenceKind.REVIEWED_JOURNEY_WINDOW,
+          speciesId: 1n,
+          fromExclusiveTick: 0n,
+          throughCompletedTick: 168n,
+        }),
+        create(LineageReviewEvidenceReferenceSchema, {
+          kind: LineageReviewEvidenceReferenceKind.LIVE_TILE_RESOURCE_WINDOW,
+          speciesId: 1n,
+          tileId: 0,
+          fromExclusiveTick: 0n,
+          throughCompletedTick: 168n,
+        }),
+      ],
+    });
+    const notableEvent = create(NotableEventSchema, {
+      eventId: 2n,
+      family: NotableEventFamily.POPULATION_MILESTONE,
+      significance: NotableEventSignificance.INFORMATIONAL,
+      significanceRuleVersion: 1,
+      completedTick: 168n,
+      simulatedHours: 168n,
+      speciesId: 1n,
+      milestoneValue: 100n,
+      deduplicationKey: "population:species:1:threshold:100",
+    });
+    const attentionAlert = create(AttentionAlertSchema, {
+      alertId: 1n,
+      alertClass: AttentionAlertClass.INFORMATIONAL,
+      kind: AttentionAlertKind.NOTABLE_EVENT_GROUP,
+      eventFamily: NotableEventFamily.POPULATION_MILESTONE,
+      completedTick: 168n,
+      simulatedHours: 168n,
+      speciesId: 1n,
+      chronicleEventIds: [2n],
+      deduplicationKey: "notable:3:species:1:tick:168",
+    });
+    const batch = create(ProjectionBatchSchema, {
+      projectionStreamId: 7n,
+      worldId: 1n,
+      worldRulesHash: initialWorld.worldRulesHash,
+      baseStreamRevision: 1n,
+      targetStreamRevision: 2n,
+      fromExclusiveTick: 167n,
+      throughCompletedTick: 168n,
+      worldRevision: 168n,
+      simulatedHours: 168n,
+      lifecycle: WorldLifecycle.PAUSED_READY,
+      gameplay: initialWorld.gameplay,
+      tileReplacements: targetWorld.tiles,
+      lineageReviewLandmarkAppends: [landmark],
+      notableEventAppends: [notableEvent],
+      attentionAlertAppends: [attentionAlert],
+    });
+
+    const applied = applyProjectionBatch(cache, batch);
+    expect(applied.status).toBe("applied");
+    expect(applied.cache.world.lineageReviewLandmarks).toHaveLength(1);
+    expect(applied.cache.world.notableEvents).toEqual([notableEvent]);
+    expect(applied.cache.world.attentionAlerts).toEqual([attentionAlert]);
+
+    const reused = create(ProjectionBatchSchema, {
+      ...batch,
+      baseStreamRevision: 2n,
+      targetStreamRevision: 3n,
+      fromExclusiveTick: 168n,
+      throughCompletedTick: 169n,
+      worldRevision: 169n,
+      simulatedHours: 169n,
+      lineageReviewLandmarkAppends: [{ ...landmark, completedTick: 169n }],
+    });
+    expect(applyProjectionBatch(applied.cache, reused).status).toBe("resync-required");
+
+    expect(() => createProjectionCache(create(ProjectionSnapshotSchema, {
+      projectionStreamId: 8n,
+      streamRevision: 1n,
+      projection: {
+        ...targetWorld,
+        lineageReviewLandmarks: [{
+          ...landmark,
+          evidenceReferences: [
+            landmark.evidenceReferences[1],
+            landmark.evidenceReferences[0],
+            ...landmark.evidenceReferences.slice(2),
+          ],
+        }],
+      },
+    }))).toThrow(/structurally invalid/);
+
+    expect(() => createProjectionCache(create(ProjectionSnapshotSchema, {
+      projectionStreamId: 9n,
+      streamRevision: 1n,
+      projection: {
+        ...targetWorld,
+        lineageReviewLandmarks: [{
+          ...landmark,
+          reactionActivations: [{
+            ...landmark.reactionActivations[0],
+            installed: false,
+          }],
+        }],
+      },
+    }))).toThrow(/structurally invalid/);
   });
 
   it("rejects malformed per-resource acquisition evidence", () => {
@@ -363,6 +584,35 @@ describe("projection cache", () => {
         clearsAtTick: 1n,
       }),
     ];
+
+    expect(() => createProjectionCache(create(ProjectionSnapshotSchema, {
+      projectionStreamId: 7n,
+      streamRevision: 1n,
+      projection: worldAt(1n, tile),
+    }))).toThrow("structurally invalid");
+  });
+
+  it("rejects resource contributors that do not reconcile to aggregate flow", () => {
+    const tile = liveTile(1n);
+    if (tile.detail.case !== "live") throw new Error("Expected live tile.");
+    const flow = create(ResourceFlowSchema, {
+      resourceId: 1,
+      kind: ResourceFlowKind.ENVIRONMENTAL_SOURCE,
+      amountQ: 10n,
+    });
+    tile.detail.value.resourceFlows = [flow];
+    tile.detail.value.resourceFlowHistory = [create(ResourceFlowHistoryIntervalSchema, {
+      completedTick: 1n,
+      endSimulatedHour: 1n,
+      periodHours: 1,
+      resourceFlows: [flow],
+    })];
+    tile.detail.value.resourceFlowContributors = [create(ResourceFlowContributorSchema, {
+      resourceId: 1,
+      kind: ResourceFlowKind.ENVIRONMENTAL_SOURCE,
+      process: ResourceFlowProcess.ENVIRONMENTAL_GAS_SOURCE,
+      amountQ: 9n,
+    })];
 
     expect(() => createProjectionCache(create(ProjectionSnapshotSchema, {
       projectionStreamId: 7n,

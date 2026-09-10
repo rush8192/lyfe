@@ -10,6 +10,39 @@ Turn LYFE's observable simulation and irreversible evolution system into a recur
 
 This document owns player-facing decision rhythm, attention management, proposal framing, consequence review, and the factual chronicle. Biological rules, mutation prices, visibility, and simulation authority remain owned by their subsystem plans.
 
+# Voice and copy contract
+
+Player-facing prose uses two related registers rather than one uniform product voice:
+
+- **World, narrative, and discovery copy** carries wonder, curiosity, and a little mystery.
+  Abiogenesis, organism stories, lineage landmarks, habitat discovery, evolution milestones, and
+  run summaries may be whimsical and evocative. They should make an unfamiliar living world feel
+  worth watching without pretending that the simulation observed intentions, destiny, or causes it
+  did not record.
+- **Mechanics, decisions, and diagnostics** lead with plain meaning. Costs, quantities, time windows,
+  prerequisites, blockers, scopes, warnings, uncertainty, and irreversible consequences use direct,
+  concrete language. A light aside, cheeky label, or small flourish may add personality after the
+  rule is clear; flavor may never replace the rule or make a risky state sound safe.
+
+Copy should sound authored for LYFE, not assembled from generic interface prose. The polish pass
+removes repetitive caveat paragraphs, interchangeable headings, inflated abstractions,
+over-explanation, and conspicuously templated sentence rhythms. Concision alone is not the goal:
+the narrative register may breathe, but every line should earn its place and use the project's own
+biological imagery and vocabulary.
+
+Factual integrity remains the hard boundary. Metaphor cannot imply hidden knowledge, unsupported
+causality, organism consciousness, a survival prediction, or a success judgment. Mechanically
+significant facts must remain available in literal text for accessibility and localization rather
+than being encoded only in a joke, metaphor, icon, color, or tooltip. Canonical event facts and
+simulation hashes never depend on presentation wording.
+
+Before play-tester alpha, perform one coherent editorial pass over setup, empty/loading/error states,
+map and organism inspection, resource diagnostics, evolution planning, alerts, consequence review,
+chronicle, extinction, and end-of-run presentation. Maintain a short terminology and voice sheet so
+later features do not drift back into generic copy. Playtest the result for both comprehension and
+tone: players should be able to restate a consequential mechanic accurately while describing the
+world as intriguing rather than clinical or procedural.
+
 # Engagement contract
 
 V1 should support four kinds of agency:
@@ -199,6 +232,13 @@ The first balance values for critical controlled-lineage alerts are provisional 
 
 Recovery rearms the respective alert after the 24-hour decline is below 10%, health exceeds `0.35` for six hours, or population exceeds fifteen. These values require scenario and playtest calibration. The notification states the observed condition and evidence; it does not say extinction is certain.
 
+The implemented attention pass routes canonical notable events and lineage-review boundaries into a
+saved append-only inbox. Same-family events for one species at one completed boundary are coalesced
+and retain every chronicle evidence ID. Saved hysteresis covers low population, trailing-24-hour
+decline, sustained low health, and sustained composite resource pressure. A realized death cause is
+reported once per species/cause and linked to its retained journey event. This pass reports critical
+and strategic alerts but does not yet apply auto-pause.
+
 An auto-pause policy that changes the world clock is authoritative actor/world state, evaluated after the completed tick and effective before the next tick. Visual-only pins, panel layout, private notes, and non-pausing local notification preferences may remain client profile state. Future multiplayer must replace unilateral pause with a shared-clock policy; v1 schemas cannot assume every alert may stop the world.
 
 ```text
@@ -232,6 +272,13 @@ First v1 notable-event families are:
 - final-date or extinction result.
 
 Each `NotableEvent` stores canonical facts: event ID and type, completed tick, involved stable IDs, authorized evidence references, significance/rule version, and deduplication key. Human-readable title and prose are presentation derived from those facts and may be localized or restyled without changing replay hashes. Event thresholds use hysteresis, minimum duration where appropriate, and per-key cooldowns to prevent noise.
+
+The first implemented significance-rule version covers speciation, first reproduction, fixed
+population thresholds, first species/tile occupation, first true compiled-reaction execution,
+extinction, first realized death cause, and sustained high composite resource pressure. These
+records use their typed IDs and source-event/value fields as bounded evidence identity, share one
+saved event-ID namespace with lineage-review landmarks, and deduplicate by a canonical semantic key.
+Per-compound depletion/recovery, source/sink reversal, and oxygenation-band transitions remain.
 
 Chronicle projection follows knowledge rules. It cannot disclose hidden current organisms, locations, resources, or competitor activity. A later discovery may generate “first observed” evidence, but does not retroactively reveal secret history. Omniscient post-run presentation, if later allowed, is a separate explicit mode.
 

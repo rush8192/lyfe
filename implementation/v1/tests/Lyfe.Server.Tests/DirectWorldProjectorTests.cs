@@ -137,6 +137,28 @@ public sealed class DirectWorldProjectorTests
         Assert.Equal(source.CompletedTick, interval.CompletedTick);
         Assert.Equal(source.SimulatedHours, interval.EndSimulatedHour);
         Assert.Equal(expected, interval.ResourceFlows);
+        Assert.NotEmpty(projection.ReactionDefinitions);
+        Assert.NotEmpty(projection.AttentionAlerts);
+        Assert.All(projection.AttentionAlerts, alert =>
+        {
+            Assert.Equal(controlled, alert.SpeciesId);
+            Assert.All(alert.ChronicleEventIds, eventId =>
+                Assert.Contains(projection.NotableEvents, value => value.EventId == eventId));
+        });
+        Assert.NotEmpty(live.ResourceFlowContributors);
+        Assert.Equal(
+            live.ResourceFlows.Select(flow => (flow.ResourceId, flow.Kind, flow.AmountQ)),
+            live.ResourceFlowContributors
+                .GroupBy(value => (value.ResourceId, value.Kind))
+                .OrderBy(group => group.Key.ResourceId.Value)
+                .ThenBy(group => group.Key.Kind)
+                .Select(group => (
+                    group.Key.ResourceId,
+                    group.Key.Kind,
+                    group.Sum(value => value.AmountQ))));
+        Assert.All(
+            live.ResourceFlowContributors.Where(value => value.SpeciesId.HasValue),
+            value => Assert.Equal(controlled, value.SpeciesId));
         var sourceOrganism = source.Organisms[0];
         var projectedOrganism = live.Organisms.Single(value =>
             value.OrganismId == sourceOrganism.OrganismId);

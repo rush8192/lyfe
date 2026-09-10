@@ -17,7 +17,7 @@ public sealed class RuleCompilationTests
             "42030eb34544faada34c7a4603f896a3c37b0b289ceb77017342fb58f5abace7",
             compiled.Identity.MechanicsHash);
         Assert.Equal(
-            "bc940982373f88b8f315f4564c5b132ab2b207a7796fd9c9ed43367ffda9a345",
+            "567719a6dd4ebdbd88f3c1dcb36378c14d0f018c0f7df297c545401c17f2154e",
             compiled.Identity.PresentationHash);
         Assert.Equal(
             "9817cefa04b9a8ceae73e383838f8d4406dba65db9db75fc14db19bc87b786c1",
@@ -68,6 +68,13 @@ public sealed class RuleCompilationTests
             phenotype.Physiology.Behavior.ConservationEnterReserveQ);
         Assert.Equal(FoundingMetabolismKind.HydrogenAcetogenesis,
             phenotype.Physiology.OpeningMetabolism.Kind);
+        Assert.Equal(
+            [EvolutionStrategicIntent.InvestInComplexity],
+            compiled.Traits.Single(trait => trait.Id.Value == 3).StrategicIntents);
+        var conservation = compiled.Traits.Single(trait => trait.Id.Value == 4);
+        Assert.Equal(720UL, conservation.ConsequenceFollowUpHours);
+        Assert.Equal(EvolutionFollowUpEvidenceKind.ConditionAndPressure,
+            conservation.ConsequenceEvidenceKind);
         Assert.Equal(250U,
             phenotype.Physiology.OpeningMetabolism.MaximumCaptureExtentsPerHour);
 
@@ -147,6 +154,50 @@ public sealed class RuleCompilationTests
         Assert.Equal(original.Identity.RegistryManifestHash, second.Identity.RegistryManifestHash);
         Assert.Equal(original.Identity.CompiledArtifactHash, second.Identity.CompiledArtifactHash);
         Assert.NotEqual(original.Identity.PresentationHash, second.Identity.PresentationHash);
+    }
+
+    [Fact]
+    public void StrategicIntentEditChangesOnlyPresentationIdentity()
+    {
+        var source = LoadOfficialRules();
+        var regrouped = source with
+        {
+            Traits = source.Traits
+                .Select(trait => trait.NumericId == 3
+                    ? trait with
+                    {
+                        StrategicIntents = ["endure-environmental-pressure"],
+                    }
+                    : trait)
+                .ToArray(),
+        };
+
+        var original = AssertCompiled(RulePackCompiler.Compile(source));
+        var second = AssertCompiled(RulePackCompiler.Compile(regrouped));
+
+        Assert.Equal(original.Identity.MechanicsHash, second.Identity.MechanicsHash);
+        Assert.Equal(original.Identity.CompiledArtifactHash, second.Identity.CompiledArtifactHash);
+        Assert.NotEqual(original.Identity.PresentationHash, second.Identity.PresentationHash);
+    }
+
+    [Fact]
+    public void UnknownStrategicIntentFailsClosed()
+    {
+        var source = LoadOfficialRules();
+        var invalid = source with
+        {
+            Traits = source.Traits
+                .Select(trait => trait.NumericId == 3
+                    ? trait with { StrategicIntents = ["become-unbeatable"] }
+                    : trait)
+                .ToArray(),
+        };
+
+        var result = RulePackCompiler.Compile(invalid);
+
+        Assert.False(result.IsSuccess);
+        Assert.Contains(result.Diagnostics,
+            diagnostic => diagnostic.Code == "LYFE-COMPILE-TRAIT-004");
     }
 
     [Fact]

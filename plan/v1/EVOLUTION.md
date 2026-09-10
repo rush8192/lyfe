@@ -22,7 +22,7 @@ complexity, and selected occupied tiles. Commit uses keyed stable ranks and the
 specified `50/20/8/3%` per-tile founder fractions, transfers organisms without
 changing physical balances, duplicates unused post-price mutation state, interns a
 fully recompiled phenotype, and records lineage plus an immutable founder digest.
-The full continuation state is covered by save schema 12 and `WorldStateHashV9`;
+The full continuation state is covered by save schema 21 and `WorldStateHashV9`;
 controlled actor projections expose the corresponding evolution state.
 
 The executable autonomous component currently scores affordable,

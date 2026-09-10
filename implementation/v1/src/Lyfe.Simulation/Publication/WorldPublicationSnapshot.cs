@@ -92,6 +92,11 @@ public readonly record struct PublicationResourceDefinition(
     BiologicalForm BiologicalForm,
     EnvironmentalPhase EnvironmentalPhase);
 
+public readonly record struct PublicationReactionDefinition(
+    ReactionId ReactionId,
+    string StableKey,
+    string DisplayName);
+
 public enum PublicationResourceFlowKind : byte
 {
     EnvironmentalSource = 1,
@@ -106,6 +111,27 @@ public readonly record struct PublicationTileResourceFlow(
     TileId TileId,
     ResourceId ResourceId,
     PublicationResourceFlowKind Kind,
+    long AmountQ);
+
+public enum PublicationResourceFlowProcessKind : byte
+{
+    ExternalEnergyCapture = 1,
+    ParticulateDigestion = 2,
+    EnvironmentalGasSource = 3,
+    EnvironmentalGasSink = 4,
+    EnvironmentalGasExchange = 5,
+    MandatoryMaintenance = 6,
+    BiomassAssembly = 7,
+    MicronutrientUptake = 8,
+}
+
+public readonly record struct PublicationTileResourceFlowContributor(
+    TileId TileId,
+    ResourceId ResourceId,
+    PublicationResourceFlowKind Kind,
+    PublicationResourceFlowProcessKind Process,
+    ReactionId? ReactionId,
+    SpeciesId? SpeciesId,
     long AmountQ);
 
 public sealed record PublicationResourceFlowHistoryInterval(
@@ -235,4 +261,9 @@ public sealed record WorldPublicationSnapshot(
     ImmutableArray<PublicationResourceDefinition> ResourceDefinitions = default,
     ImmutableArray<PublicationTileResourceFlow> ResourceFlows = default,
     uint ResourceFlowPeriodHours = 0,
-    ImmutableArray<PublicationResourceFlowHistoryInterval> ResourceFlowHistory = default);
+    ImmutableArray<PublicationResourceFlowHistoryInterval> ResourceFlowHistory = default,
+    ImmutableArray<PublicationReactionDefinition> ReactionDefinitions = default,
+    ImmutableArray<PublicationTileResourceFlowContributor> ResourceFlowContributors = default,
+    ImmutableArray<LineageReviewLandmark> LineageReviewLandmarks = default,
+    ImmutableArray<NotableEvent> NotableEvents = default,
+    ImmutableArray<AttentionAlert> AttentionAlerts = default);

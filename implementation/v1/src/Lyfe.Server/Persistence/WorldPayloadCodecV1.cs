@@ -1,6 +1,7 @@
 using System.Buffers;
 using System.Buffers.Binary;
 using System.Collections.Immutable;
+using System.Globalization;
 using System.Text;
 using Lyfe.Simulation.Publication;
 
@@ -27,7 +28,7 @@ public sealed class WorldPayloadException : IOException
 
 public static class WorldPayloadCodec
 {
-    public const uint SchemaVersion = 12;
+    public const uint SchemaVersion = 21;
     public const int MaximumTileResourceCount = 4_000_000;
     public const int MaximumGenomeCount = 1_000_000;
     public const int MaximumSpeciesCount = 1_000_000;
@@ -36,6 +37,12 @@ public static class WorldPayloadCodec
     public const int MaximumRemnantCount = 1_000_000;
     public const int MaximumJourneyEventCount = 10_000_000;
     public const int MaximumRoutineActivitySummaryCount = 10_000_000;
+    public const int MaximumLineageReviewCount = 1_000_000;
+    public const int MaximumNotableEventCount = 10_000_000;
+    public const int MaximumAttentionAlertCount = 10_000_000;
+    public const int MaximumAlertEvidenceCount = 256;
+    public const int MaximumPopulationAttentionSamples = 25;
+    public const int MaximumLineageReviewEvidenceReferences = 4_096;
     public const int MaximumResourceFlowHistoryIntervalCount = 168;
     public const int MaximumResourceFlowsPerInterval = 4_000_000;
     public const int MaximumResourceFlowHistoryTotalFlows = 10_000_000;
@@ -67,6 +74,12 @@ public static class WorldPayloadCodec
         WriteCount(writer, state.Organisms.Length);
         WriteCount(writer, state.Remnants.Length);
         WriteCount(writer, state.JourneyEvents.Length);
+        WriteCount(writer, state.LineageReviewSchedules.Length);
+        WriteCount(writer, state.LineageReviewLandmarks.Length);
+        WriteCount(writer, state.NotableEvents.Length);
+        WriteCount(writer, state.AttentionAlerts.Length);
+        WriteCount(writer, state.PopulationAttentionStates.Length);
+        WriteCount(writer, state.AttentionWindowStates.Length);
         WriteCount(writer, state.RoutineActivitySummaries.Length);
         WriteCount(writer, state.ResourceFlowHistory.Length);
         WriteCount(writer, state.LastCompletedTransactions.Length);
@@ -250,6 +263,125 @@ public static class WorldPayloadCodec
             }
         }
 
+        foreach (var value in state.LineageReviewSchedules)
+        {
+            writer.WriteUInt64(value.SpeciationEventId);
+            writer.WriteUInt64(value.AppliedTick);
+            writer.WriteUInt64(value.AppliedSimulatedHours);
+            writer.WriteUInt64(value.AncestorSpeciesId);
+            writer.WriteUInt64(value.DescendantSpeciesId);
+            writer.WriteUInt64(value.PerspectiveSpeciesId);
+            WriteUInt32Array(writer, value.TraitDelta);
+            writer.WriteUInt64(value.CooldownBoundaryTick);
+            writer.WriteUInt64(value.FollowUpBoundaryTick);
+            writer.WriteUInt64(value.FollowUpHours);
+            writer.WriteByte(value.FollowUpEvidenceKind);
+            WriteLineageReviewObservation(writer, value.PerspectiveBaseline);
+            WriteLineageReviewObservation(writer, value.ComparisonBaseline);
+            WriteLineageReviewActivationEvidence(
+                writer,
+                value.CapabilityActivations,
+                value.ReactionActivations);
+        }
+
+        foreach (var value in state.LineageReviewLandmarks)
+        {
+            writer.WriteUInt64(value.EventId);
+            writer.WriteByte(value.Kind);
+            writer.WriteUInt64(value.CompletedTick);
+            writer.WriteUInt64(value.SimulatedHours);
+            writer.WriteUInt64(value.WindowHours);
+            writer.WriteUInt64(value.SpeciationEventId);
+            writer.WriteUInt64(value.AncestorSpeciesId);
+            writer.WriteUInt64(value.DescendantSpeciesId);
+            writer.WriteUInt64(value.PerspectiveSpeciesId);
+            WriteUInt32Array(writer, value.TraitDelta);
+            writer.WriteByte(value.EvidenceKind);
+            WriteLineageReviewObservation(writer, value.PerspectiveBaseline);
+            WriteLineageReviewObservation(writer, value.ComparisonBaseline);
+            WriteLineageReviewObservation(writer, value.PerspectiveCurrent);
+            WriteLineageReviewObservation(writer, value.ComparisonCurrent);
+            WriteLineageReviewActivationEvidence(
+                writer,
+                value.CapabilityActivations,
+                value.ReactionActivations);
+            WriteCount(writer, value.EvidenceReferences.Length);
+            foreach (var reference in value.EvidenceReferences)
+            {
+                writer.WriteByte(reference.Kind);
+                writer.WriteUInt64(reference.SpeciesId);
+                writer.WriteByte(reference.TileId.HasValue ? (byte)1 : (byte)0);
+                if (reference.TileId.HasValue)
+                {
+                    writer.WriteUInt32(reference.TileId.Value);
+                }
+                writer.WriteUInt64(reference.FromExclusiveTick);
+                writer.WriteUInt64(reference.ThroughCompletedTick);
+            }
+        }
+
+        foreach (var value in state.NotableEvents)
+        {
+            writer.WriteUInt64(value.EventId);
+            writer.WriteByte(value.Family);
+            writer.WriteByte(value.Significance);
+            writer.WriteUInt32(value.SignificanceRuleVersion);
+            writer.WriteUInt64(value.CompletedTick);
+            writer.WriteUInt64(value.SimulatedHours);
+            writer.WriteUInt64(value.SpeciesId);
+            writer.WriteUInt64(value.RelatedSpeciesId);
+            writer.WriteByte(value.TileId.HasValue ? (byte)1 : (byte)0);
+            if (value.TileId.HasValue) writer.WriteUInt32(value.TileId.Value);
+            writer.WriteUInt32(value.ReactionId);
+            writer.WriteUInt64(value.SourceEventId);
+            writer.WriteUInt64(value.MilestoneValue);
+            writer.WriteUInt64(value.BaselineValue);
+            writer.WriteString(value.DeduplicationKey);
+        }
+
+        foreach (var value in state.AttentionAlerts)
+        {
+            writer.WriteUInt64(value.AlertId);
+            writer.WriteByte(value.AlertClass);
+            writer.WriteByte(value.Kind);
+            writer.WriteByte(value.EventFamily);
+            writer.WriteUInt64(value.CompletedTick);
+            writer.WriteUInt64(value.SimulatedHours);
+            writer.WriteUInt64(value.SpeciesId);
+            WriteCount(writer, value.ChronicleEventIds.Length);
+            foreach (var eventId in value.ChronicleEventIds) writer.WriteUInt64(eventId);
+            writer.WriteString(value.DeduplicationKey);
+        }
+
+        foreach (var value in state.PopulationAttentionStates)
+        {
+            writer.WriteUInt64(value.SpeciesId);
+            writer.WriteByte(value.HasExceededDangerThreshold ? (byte)1 : (byte)0);
+            writer.WriteByte(value.LowPopulationArmed ? (byte)1 : (byte)0);
+            writer.WriteUInt32(value.LowPopulationEpisodeOrdinal);
+        }
+
+        foreach (var value in state.AttentionWindowStates)
+        {
+            writer.WriteUInt64(value.SpeciesId);
+            writer.WriteByte(value.PopulationDeclineArmed ? (byte)1 : (byte)0);
+            writer.WriteUInt32(value.PopulationDeclineEpisodeOrdinal);
+            writer.WriteUInt32(value.LowHealthConsecutiveHours);
+            writer.WriteByte(value.LowHealthArmed ? (byte)1 : (byte)0);
+            writer.WriteUInt32(value.HealthyRecoveryConsecutiveHours);
+            writer.WriteUInt32(value.LowHealthEpisodeOrdinal);
+            writer.WriteUInt32(value.ResourcePressureConsecutiveHours);
+            writer.WriteByte(value.ResourcePressureArmed ? (byte)1 : (byte)0);
+            writer.WriteUInt32(value.ResourcePressureRecoveryConsecutiveHours);
+            writer.WriteUInt32(value.ResourcePressureEpisodeOrdinal);
+            WriteCount(writer, value.PopulationSamples.Length);
+            foreach (var sample in value.PopulationSamples)
+            {
+                writer.WriteUInt64(sample.SimulatedHours);
+                writer.WriteUInt64(sample.Population);
+            }
+        }
+
         foreach (var value in state.RoutineActivitySummaries)
         {
             writer.WriteUInt64(value.BucketStartHour);
@@ -351,6 +483,14 @@ public static class WorldPayloadCodec
         var organismCount = ReadCount(reader.ReadUInt32(), MaximumOrganismCount);
         var remnantCount = ReadCount(reader.ReadUInt32(), MaximumRemnantCount);
         var journeyEventCount = ReadCount(reader.ReadUInt32(), MaximumJourneyEventCount);
+        var lineageReviewScheduleCount = ReadCount(
+            reader.ReadUInt32(), MaximumLineageReviewCount);
+        var lineageReviewLandmarkCount = ReadCount(
+            reader.ReadUInt32(), MaximumLineageReviewCount);
+        var notableEventCount = ReadCount(reader.ReadUInt32(), MaximumNotableEventCount);
+        var attentionAlertCount = ReadCount(reader.ReadUInt32(), MaximumAttentionAlertCount);
+        var populationAttentionStateCount = ReadCount(reader.ReadUInt32(), MaximumSpeciesCount);
+        var attentionWindowStateCount = ReadCount(reader.ReadUInt32(), MaximumSpeciesCount);
         var routineSummaryCount = ReadCount(
             reader.ReadUInt32(),
             MaximumRoutineActivitySummaryCount);
@@ -578,6 +718,145 @@ public static class WorldPayloadCodec
                 causes.MoveToImmutable()));
         }
 
+        var lineageReviewSchedules =
+            ImmutableArray.CreateBuilder<PersistenceLineageReviewSchedule>(
+                lineageReviewScheduleCount);
+        for (var index = 0; index < lineageReviewScheduleCount; index++)
+        {
+            lineageReviewSchedules.Add(new PersistenceLineageReviewSchedule(
+                reader.ReadUInt64(),
+                reader.ReadUInt64(),
+                reader.ReadUInt64(),
+                reader.ReadUInt64(),
+                reader.ReadUInt64(),
+                reader.ReadUInt64(),
+                ReadUInt32Array(ref reader),
+                reader.ReadUInt64(),
+                reader.ReadUInt64(),
+                reader.ReadUInt64(),
+                reader.ReadByte(),
+                ReadLineageReviewObservation(ref reader),
+                ReadLineageReviewObservation(ref reader),
+                ReadLineageReviewCapabilityActivations(ref reader),
+                ReadLineageReviewReactionActivations(ref reader)));
+        }
+
+        var lineageReviewLandmarks =
+            ImmutableArray.CreateBuilder<PersistenceLineageReviewLandmark>(
+                lineageReviewLandmarkCount);
+        for (var index = 0; index < lineageReviewLandmarkCount; index++)
+        {
+            lineageReviewLandmarks.Add(new PersistenceLineageReviewLandmark(
+                reader.ReadUInt64(),
+                reader.ReadByte(),
+                reader.ReadUInt64(),
+                reader.ReadUInt64(),
+                reader.ReadUInt64(),
+                reader.ReadUInt64(),
+                reader.ReadUInt64(),
+                reader.ReadUInt64(),
+                reader.ReadUInt64(),
+                ReadUInt32Array(ref reader),
+                reader.ReadByte(),
+                ReadLineageReviewObservation(ref reader),
+                ReadLineageReviewObservation(ref reader),
+                ReadLineageReviewObservation(ref reader),
+                ReadLineageReviewObservation(ref reader),
+                ReadLineageReviewCapabilityActivations(ref reader),
+                ReadLineageReviewReactionActivations(ref reader),
+                ReadLineageReviewEvidenceReferences(ref reader)));
+        }
+
+        var notableEvents = ImmutableArray.CreateBuilder<PersistenceNotableEvent>(
+            notableEventCount);
+        for (var index = 0; index < notableEventCount; index++)
+        {
+            notableEvents.Add(new PersistenceNotableEvent(
+                reader.ReadUInt64(),
+                reader.ReadByte(),
+                reader.ReadByte(),
+                reader.ReadUInt32(),
+                reader.ReadUInt64(),
+                reader.ReadUInt64(),
+                reader.ReadUInt64(),
+                reader.ReadUInt64(),
+                reader.ReadByte() == 0 ? null : reader.ReadUInt32(),
+                reader.ReadUInt32(),
+                reader.ReadUInt64(),
+                reader.ReadUInt64(),
+                reader.ReadUInt64(),
+                reader.ReadString()));
+        }
+
+        var attentionAlerts = ImmutableArray.CreateBuilder<PersistenceAttentionAlert>(
+            attentionAlertCount);
+        for (var index = 0; index < attentionAlertCount; index++)
+        {
+            attentionAlerts.Add(new PersistenceAttentionAlert(
+                reader.ReadUInt64(),
+                reader.ReadByte(),
+                reader.ReadByte(),
+                reader.ReadByte(),
+                reader.ReadUInt64(),
+                reader.ReadUInt64(),
+                reader.ReadUInt64(),
+                ReadUInt64Array(ref reader, MaximumAlertEvidenceCount),
+                reader.ReadString()));
+        }
+
+        var populationAttentionStates =
+            ImmutableArray.CreateBuilder<PersistencePopulationAttentionState>(
+                populationAttentionStateCount);
+        for (var index = 0; index < populationAttentionStateCount; index++)
+        {
+            populationAttentionStates.Add(new PersistencePopulationAttentionState(
+                reader.ReadUInt64(),
+                reader.ReadByte() != 0,
+                reader.ReadByte() != 0,
+                reader.ReadUInt32()));
+        }
+
+        var attentionWindowStates =
+            ImmutableArray.CreateBuilder<PersistenceAttentionWindowState>(
+                attentionWindowStateCount);
+        for (var index = 0; index < attentionWindowStateCount; index++)
+        {
+            var speciesId = reader.ReadUInt64();
+            var declineArmed = reader.ReadByte() != 0;
+            var declineEpisode = reader.ReadUInt32();
+            var lowHealthHours = reader.ReadUInt32();
+            var lowHealthArmed = reader.ReadByte() != 0;
+            var recoveryHours = reader.ReadUInt32();
+            var lowHealthEpisode = reader.ReadUInt32();
+            var pressureHours = reader.ReadUInt32();
+            var pressureArmed = reader.ReadByte() != 0;
+            var pressureRecoveryHours = reader.ReadUInt32();
+            var pressureEpisode = reader.ReadUInt32();
+            var sampleCount = ReadCount(
+                reader.ReadUInt32(), MaximumPopulationAttentionSamples);
+            var samples = ImmutableArray.CreateBuilder<PersistencePopulationAttentionSample>(
+                sampleCount);
+            for (var sampleIndex = 0; sampleIndex < sampleCount; sampleIndex++)
+            {
+                samples.Add(new PersistencePopulationAttentionSample(
+                    reader.ReadUInt64(),
+                    reader.ReadUInt64()));
+            }
+            attentionWindowStates.Add(new PersistenceAttentionWindowState(
+                speciesId,
+                declineArmed,
+                declineEpisode,
+                lowHealthHours,
+                lowHealthArmed,
+                recoveryHours,
+                lowHealthEpisode,
+                pressureHours,
+                pressureArmed,
+                pressureRecoveryHours,
+                pressureEpisode,
+                samples.MoveToImmutable()));
+        }
+
         var routineSummaries =
             ImmutableArray.CreateBuilder<PersistenceOrganismRoutineActivitySummary>(
                 routineSummaryCount);
@@ -717,7 +996,13 @@ public static class WorldPayloadCodec
             routineSummaries.MoveToImmutable(),
             resourceFlowHistory.MoveToImmutable(),
             transactions.MoveToImmutable(),
-            gameplay);
+            gameplay,
+            lineageReviewSchedules.MoveToImmutable(),
+            lineageReviewLandmarks.MoveToImmutable(),
+            notableEvents.MoveToImmutable(),
+            attentionAlerts.MoveToImmutable(),
+            populationAttentionStates.MoveToImmutable(),
+            attentionWindowStates.MoveToImmutable());
         ValidateDecodedStateValues(result);
         ValidateCanonicalOrder(result);
         return result;
@@ -731,6 +1016,10 @@ public static class WorldPayloadCodec
             state.GasEdgeRemainders.IsDefault || state.Genomes.IsDefault || state.Species.IsDefault ||
             state.SpeciationEvents.IsDefault ||
             state.Organisms.IsDefault || state.Remnants.IsDefault || state.JourneyEvents.IsDefault ||
+            state.LineageReviewSchedules.IsDefault || state.LineageReviewLandmarks.IsDefault ||
+            state.NotableEvents.IsDefault ||
+            state.AttentionAlerts.IsDefault || state.PopulationAttentionStates.IsDefault ||
+            state.AttentionWindowStates.IsDefault ||
             state.RoutineActivitySummaries.IsDefault ||
             state.ResourceFlowHistory.IsDefault ||
             state.LastCompletedTransactions.IsDefault || state.Gameplay is null ||
@@ -757,6 +1046,18 @@ public static class WorldPayloadCodec
         RequireCount(state.Organisms.Length, MaximumOrganismCount, nameof(state.Organisms));
         RequireCount(state.Remnants.Length, MaximumRemnantCount, nameof(state.Remnants));
         RequireCount(state.JourneyEvents.Length, MaximumJourneyEventCount, nameof(state.JourneyEvents));
+        RequireCount(state.LineageReviewSchedules.Length, MaximumLineageReviewCount,
+            nameof(state.LineageReviewSchedules));
+        RequireCount(state.LineageReviewLandmarks.Length, MaximumLineageReviewCount,
+            nameof(state.LineageReviewLandmarks));
+        RequireCount(state.NotableEvents.Length, MaximumNotableEventCount,
+            nameof(state.NotableEvents));
+        RequireCount(state.AttentionAlerts.Length, MaximumAttentionAlertCount,
+            nameof(state.AttentionAlerts));
+        RequireCount(state.PopulationAttentionStates.Length, MaximumSpeciesCount,
+            nameof(state.PopulationAttentionStates));
+        RequireCount(state.AttentionWindowStates.Length, MaximumSpeciesCount,
+            nameof(state.AttentionWindowStates));
         RequireCount(
             state.RoutineActivitySummaries.Length,
             MaximumRoutineActivitySummaryCount,
@@ -825,6 +1126,24 @@ public static class WorldPayloadCodec
             {
                 throw new ArgumentException("A journey event has invalid persisted state.", nameof(state));
             }
+        }
+        if (state.LineageReviewSchedules.Any(HasInvalidLineageReviewSchedule) ||
+            state.LineageReviewLandmarks.Any(HasInvalidLineageReviewLandmark))
+        {
+            throw new ArgumentException("A lineage-review record has invalid persisted state.",
+                nameof(state));
+        }
+        if (state.NotableEvents.Any(HasInvalidNotableEvent))
+        {
+            throw new ArgumentException("A notable event has invalid persisted state.",
+                nameof(state));
+        }
+        if (state.AttentionAlerts.Any(HasInvalidAttentionAlert) ||
+            HasInvalidAttentionReferences(state) ||
+            HasInvalidPopulationAttentionStates(state) ||
+            HasInvalidAttentionWindowStates(state))
+        {
+            throw new ArgumentException("Attention state is invalid.", nameof(state));
         }
         foreach (var value in state.RoutineActivitySummaries)
         {
@@ -904,6 +1223,23 @@ public static class WorldPayloadCodec
         {
             throw Failure(WorldPayloadFailureCode.InvalidValue, "A journey event is invalid.");
         }
+        if (state.LineageReviewSchedules.Any(HasInvalidLineageReviewSchedule) ||
+            state.LineageReviewLandmarks.Any(HasInvalidLineageReviewLandmark))
+        {
+            throw Failure(WorldPayloadFailureCode.InvalidValue,
+                "A lineage-review record is invalid.");
+        }
+        if (state.NotableEvents.Any(HasInvalidNotableEvent))
+        {
+            throw Failure(WorldPayloadFailureCode.InvalidValue, "A notable event is invalid.");
+        }
+        if (state.AttentionAlerts.Any(HasInvalidAttentionAlert) ||
+            HasInvalidAttentionReferences(state) ||
+            HasInvalidPopulationAttentionStates(state) ||
+            HasInvalidAttentionWindowStates(state))
+        {
+            throw Failure(WorldPayloadFailureCode.InvalidValue, "Attention state is invalid.");
+        }
         if (state.RoutineActivitySummaries.Any(HasInvalidRoutineActivitySummary))
         {
             throw Failure(
@@ -973,6 +1309,351 @@ public static class WorldPayloadCodec
         value.DeathCauses.Any(cause => cause.Cause == 0 || cause.ProbabilityQ > 1_000_000) ||
         (value.Family == 6 && value.RelatedRemnantId == 0) ||
         (value.Family != 6 && !value.DeathCauses.IsEmpty);
+
+    private static bool HasInvalidLineageReviewObservation(
+        PersistenceLineageReviewObservation value) =>
+        value.SpeciesId == 0 ||
+        value.Scope is < 1 or > 2 ||
+        value.AverageHealthQ > 1_000_000 ||
+        value.AverageReserveQ > 1_000_000 ||
+        value.AverageAcquisitionCoverageQ > 2_000_000 ||
+        value.AverageResourcePressureQ > 1_000_000 ||
+        value.BehaviorCounts.IsDefault ||
+        value.BehaviorCounts.Length > 5 ||
+        value.BehaviorCounts.Where((count, index) =>
+            count.BehaviorId is < 1 or > 5 || count.Count == 0 ||
+            (index > 0 && count.BehaviorId <=
+                value.BehaviorCounts[index - 1].BehaviorId)).Any() ||
+        value.BehaviorCounts.Aggregate(
+            (UInt128)0,
+            (sum, count) => sum + count.Count) != value.Population ||
+        (!value.ActivityCountsAvailable &&
+            (value.BirthCount != 0 || value.DeathCount != 0 || value.MigrationCount != 0));
+
+    private static bool HasInvalidLineageReviewSchedule(
+        PersistenceLineageReviewSchedule value) =>
+        value.SpeciationEventId == 0 ||
+        value.AncestorSpeciesId == 0 ||
+        value.DescendantSpeciesId == 0 ||
+        (value.PerspectiveSpeciesId != value.AncestorSpeciesId &&
+            value.PerspectiveSpeciesId != value.DescendantSpeciesId) ||
+        value.TraitDelta.IsDefault ||
+        value.CooldownBoundaryTick <= value.AppliedTick ||
+        (value.FollowUpHours == 0) != (value.FollowUpBoundaryTick == 0) ||
+        (value.FollowUpHours != 0 && value.FollowUpBoundaryTick <= value.CooldownBoundaryTick) ||
+        value.FollowUpEvidenceKind is < 1 or > 5 ||
+        value.PerspectiveBaseline.SpeciesId != value.PerspectiveSpeciesId ||
+        value.PerspectiveBaseline.Scope != 1 ||
+        value.PerspectiveBaseline.ActivityCountsAvailable ||
+        value.ComparisonBaseline.SpeciesId != (value.PerspectiveSpeciesId ==
+            value.AncestorSpeciesId ? value.DescendantSpeciesId : value.AncestorSpeciesId) ||
+        value.ComparisonBaseline.Scope != 2 ||
+        value.ComparisonBaseline.ActivityCountsAvailable ||
+        HasInvalidLineageReviewActivationEvidence(
+            value.CapabilityActivations,
+            value.ReactionActivations) ||
+        HasInvalidLineageReviewObservation(value.PerspectiveBaseline) ||
+        HasInvalidLineageReviewObservation(value.ComparisonBaseline);
+
+    private static bool HasInvalidLineageReviewLandmark(
+        PersistenceLineageReviewLandmark value) =>
+        value.EventId == 0 ||
+        value.Kind is < 1 or > 2 ||
+        value.CompletedTick == 0 ||
+        value.WindowHours == 0 ||
+        value.SpeciationEventId == 0 ||
+        value.AncestorSpeciesId == 0 ||
+        value.DescendantSpeciesId == 0 ||
+        (value.PerspectiveSpeciesId != value.AncestorSpeciesId &&
+            value.PerspectiveSpeciesId != value.DescendantSpeciesId) ||
+        value.TraitDelta.IsDefault ||
+        value.EvidenceKind is < 1 or > 5 ||
+        (value.Kind == 1 && (value.WindowHours != 168 || value.EvidenceKind != 1)) ||
+        (value.Kind == 2 && value.WindowHours <= 168) ||
+        value.PerspectiveBaseline.SpeciesId != value.PerspectiveSpeciesId ||
+        value.PerspectiveCurrent.SpeciesId != value.PerspectiveSpeciesId ||
+        value.PerspectiveBaseline.Scope != 1 ||
+        value.PerspectiveCurrent.Scope != 1 ||
+        value.PerspectiveBaseline.ActivityCountsAvailable ||
+        !value.PerspectiveCurrent.ActivityCountsAvailable ||
+        value.ComparisonBaseline.SpeciesId != (value.PerspectiveSpeciesId ==
+            value.AncestorSpeciesId ? value.DescendantSpeciesId : value.AncestorSpeciesId) ||
+        value.ComparisonCurrent.SpeciesId != value.ComparisonBaseline.SpeciesId ||
+        value.ComparisonBaseline.Scope != 2 ||
+        value.ComparisonCurrent.Scope != 2 ||
+        value.ComparisonBaseline.ActivityCountsAvailable ||
+        value.ComparisonCurrent.ActivityCountsAvailable ||
+        HasInvalidLineageReviewActivationEvidence(
+            value.CapabilityActivations,
+            value.ReactionActivations) ||
+        HasInvalidLineageReviewEvidenceReferences(value) ||
+        HasInvalidLineageReviewObservation(value.PerspectiveBaseline) ||
+        HasInvalidLineageReviewObservation(value.ComparisonBaseline) ||
+        HasInvalidLineageReviewObservation(value.PerspectiveCurrent) ||
+        HasInvalidLineageReviewObservation(value.ComparisonCurrent);
+
+    private static bool HasInvalidNotableEvent(PersistenceNotableEvent value)
+    {
+        if (value.EventId == 0 || value.Family is < 1 or > 11 ||
+            value.SignificanceRuleVersion != 1 || value.SpeciesId == 0 ||
+            (value.Family is not (8 or 9 or 11) && value.BaselineValue != 0) ||
+            string.IsNullOrWhiteSpace(value.DeduplicationKey) ||
+            Encoding.UTF8.GetByteCount(value.DeduplicationKey) > 128)
+        {
+            return true;
+        }
+        var expectedSignificance = value.Family switch
+        {
+            1 or 4 or 5 or 11 => (byte)2,
+            2 or 3 => (byte)1,
+            6 or 7 or 8 or 9 or 10 => (byte)3,
+            _ => (byte)0,
+        };
+        var expectedKey = value.Family switch
+        {
+            1 when value.SourceEventId > 0 && value.RelatedSpeciesId > 0 &&
+                !value.TileId.HasValue && value.ReactionId == 0 && value.MilestoneValue > 0 =>
+                $"speciation:{value.SourceEventId}",
+            2 when value.SourceEventId > 0 && value.RelatedSpeciesId == 0 &&
+                value.TileId.HasValue && value.ReactionId == 0 && value.MilestoneValue == 1 =>
+                $"first-reproduction:species:{value.SpeciesId}",
+            3 when value.SourceEventId == 0 && value.RelatedSpeciesId == 0 &&
+                !value.TileId.HasValue && value.ReactionId == 0 &&
+                value.MilestoneValue is 100 or 250 or 500 or 1_000 or 2_500 or 5_000 or 10_000 =>
+                $"population:species:{value.SpeciesId}:threshold:{value.MilestoneValue}",
+            4 when value.SourceEventId > 0 && value.RelatedSpeciesId == 0 &&
+                value.TileId.HasValue && value.ReactionId == 0 && value.MilestoneValue > 0 =>
+                $"first-occupation:species:{value.SpeciesId}:tile:{value.TileId.Value}",
+            5 when value.SourceEventId == 0 && value.RelatedSpeciesId == 0 &&
+                value.TileId.HasValue && value.ReactionId > 0 && value.MilestoneValue == 1 =>
+                $"first-reaction:species:{value.SpeciesId}:reaction:{value.ReactionId}",
+            6 when value.SourceEventId == 0 && value.RelatedSpeciesId == 0 &&
+                !value.TileId.HasValue && value.ReactionId == 0 && value.MilestoneValue > 0 =>
+                $"extinction:species:{value.SpeciesId}",
+            7 when value.SourceEventId == 0 && value.RelatedSpeciesId == 0 &&
+                !value.TileId.HasValue && value.ReactionId == 0 &&
+                value.MilestoneValue <= 10 && value.BaselineValue == 0 &&
+                IsCanonicalEpisodeKey(value, "population-danger") =>
+                value.DeduplicationKey,
+            8 when value.SourceEventId == 0 && value.RelatedSpeciesId == 0 &&
+                !value.TileId.HasValue && value.ReactionId == 0 &&
+                value.BaselineValue > value.MilestoneValue &&
+                ((UInt128)(value.BaselineValue - value.MilestoneValue) * 1_000_000) /
+                    value.BaselineValue >= 250_000 &&
+                IsCanonicalEpisodeKey(value, "population-decline") =>
+                value.DeduplicationKey,
+            9 when value.SourceEventId == 0 && value.RelatedSpeciesId == 0 &&
+                !value.TileId.HasValue && value.ReactionId == 0 &&
+                value.MilestoneValue < 250_000 && value.BaselineValue >= 6 &&
+                IsCanonicalEpisodeKey(value, "low-health") =>
+                value.DeduplicationKey,
+            10 when value.SourceEventId > 0 && value.RelatedSpeciesId == 0 &&
+                value.TileId.HasValue && value.ReactionId == 0 &&
+                value.MilestoneValue is >= 1 and <= 7 && value.BaselineValue == 0 =>
+                $"death-mechanism:species:{value.SpeciesId}:cause:{value.MilestoneValue}",
+            11 when value.SourceEventId == 0 && value.RelatedSpeciesId == 0 &&
+                !value.TileId.HasValue && value.ReactionId == 0 &&
+                value.MilestoneValue >= 750_000 && value.BaselineValue >= 6 &&
+                IsCanonicalEpisodeKey(value, "resource-pressure") =>
+                value.DeduplicationKey,
+            _ => string.Empty,
+        };
+        return value.Significance != expectedSignificance ||
+            value.DeduplicationKey != expectedKey;
+    }
+
+    private static bool IsCanonicalEpisodeKey(
+        PersistenceNotableEvent value,
+        string family)
+    {
+        var prefix = $"{family}:species:{value.SpeciesId}:episode:";
+        return value.DeduplicationKey.StartsWith(prefix, StringComparison.Ordinal) &&
+            uint.TryParse(
+                value.DeduplicationKey.AsSpan(prefix.Length),
+                NumberStyles.None,
+                CultureInfo.InvariantCulture,
+                out var ordinal) && ordinal > 0;
+    }
+
+    private static bool HasInvalidAttentionAlert(PersistenceAttentionAlert value) =>
+        value.AlertId == 0 || value.AlertClass is < 1 or > 3 || value.Kind is < 1 or > 2 ||
+        (value.Kind == 1) != (value.EventFamily is >= 1 and <= 11) ||
+        value.SpeciesId == 0 || value.ChronicleEventIds.IsDefaultOrEmpty ||
+        value.ChronicleEventIds.Length > MaximumAlertEvidenceCount ||
+        string.IsNullOrWhiteSpace(value.DeduplicationKey) ||
+        Encoding.UTF8.GetByteCount(value.DeduplicationKey) > 128;
+
+    private static bool HasInvalidAttentionReferences(WorldPersistenceState state)
+    {
+        foreach (var alert in state.AttentionAlerts)
+        {
+            if (alert.Kind == 1)
+            {
+                var expected = state.NotableEvents.Where(value =>
+                        value.Family == alert.EventFamily &&
+                        value.SpeciesId == alert.SpeciesId &&
+                        value.CompletedTick == alert.CompletedTick)
+                    .OrderBy(value => value.EventId)
+                    .ToImmutableArray();
+                var expectedClass = alert.EventFamily switch
+                {
+                    2 or 3 => (byte)1,
+                    1 or 4 or 5 or 11 => (byte)2,
+                    6 or 7 or 8 or 9 or 10 => (byte)3,
+                    _ => (byte)0,
+                };
+                if (expected.IsEmpty || alert.AlertClass != expectedClass ||
+                    alert.SimulatedHours != expected[0].SimulatedHours ||
+                    !alert.ChronicleEventIds.SequenceEqual(expected.Select(value => value.EventId)) ||
+                    alert.DeduplicationKey !=
+                        $"notable:{alert.EventFamily}:species:{alert.SpeciesId}:tick:{alert.CompletedTick}")
+                {
+                    return true;
+                }
+            }
+            else
+            {
+                if (alert.EventFamily != 0 || alert.AlertClass != 2 ||
+                    alert.ChronicleEventIds.Length != 1)
+                {
+                    return true;
+                }
+                var landmark = state.LineageReviewLandmarks.SingleOrDefault(value =>
+                    value.EventId == alert.ChronicleEventIds[0]);
+                if (landmark is null || landmark.PerspectiveSpeciesId != alert.SpeciesId ||
+                    landmark.CompletedTick != alert.CompletedTick ||
+                    landmark.SimulatedHours != alert.SimulatedHours ||
+                    alert.DeduplicationKey !=
+                        $"lineage-review:event:{alert.ChronicleEventIds[0]}")
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private static bool HasInvalidPopulationAttentionStates(WorldPersistenceState state)
+    {
+        if (state.PopulationAttentionStates.Length != state.Species.Length ||
+            !state.PopulationAttentionStates.Select(value => value.SpeciesId)
+                .SequenceEqual(state.Species.Select(value => value.SpeciesId)))
+        {
+            return true;
+        }
+        var populations = state.Species.ToDictionary(value => value.SpeciesId,
+            value => value.Population);
+        return state.PopulationAttentionStates.Any(value =>
+            value.SpeciesId == 0 ||
+            (!value.HasExceededDangerThreshold &&
+                (value.LowPopulationArmed || value.LowPopulationEpisodeOrdinal != 0 ||
+                    populations[value.SpeciesId] > 10)) ||
+            (value.LowPopulationEpisodeOrdinal > 0 &&
+                !value.HasExceededDangerThreshold) ||
+            (populations[value.SpeciesId] > 15 && !value.LowPopulationArmed) ||
+            (populations[value.SpeciesId] <= 10 && value.HasExceededDangerThreshold &&
+                value.LowPopulationArmed));
+    }
+
+    private static bool HasInvalidAttentionWindowStates(WorldPersistenceState state)
+    {
+        if (state.AttentionWindowStates.Length != state.Species.Length ||
+            !state.AttentionWindowStates.Select(value => value.SpeciesId)
+                .SequenceEqual(state.Species.Select(value => value.SpeciesId)))
+        {
+            return true;
+        }
+        var populations = state.Species.ToDictionary(value => value.SpeciesId,
+            value => value.Population);
+        return state.AttentionWindowStates.Any(value =>
+            value.SpeciesId == 0 || value.PopulationSamples.IsDefaultOrEmpty ||
+            value.PopulationSamples.Length > MaximumPopulationAttentionSamples ||
+            (!value.PopulationDeclineArmed && value.PopulationDeclineEpisodeOrdinal == 0) ||
+            (!value.LowHealthArmed && value.LowHealthEpisodeOrdinal == 0) ||
+            (value.LowHealthArmed && value.HealthyRecoveryConsecutiveHours != 0) ||
+            (!value.ResourcePressureArmed &&
+                value.ResourcePressureEpisodeOrdinal == 0) ||
+            (value.ResourcePressureArmed &&
+                value.ResourcePressureRecoveryConsecutiveHours != 0) ||
+            value.PopulationSamples[^1].Population != populations[value.SpeciesId] ||
+            value.PopulationSamples[^1].SimulatedHours -
+                value.PopulationSamples[0].SimulatedHours > 24 ||
+            value.PopulationSamples.Where((sample, index) =>
+                index > 0 && sample.SimulatedHours <=
+                    value.PopulationSamples[index - 1].SimulatedHours).Any());
+    }
+
+    private static bool HasInvalidLineageReviewActivationEvidence(
+        ImmutableArray<PersistenceLineageReviewCapabilityActivation> capabilities,
+        ImmutableArray<PersistenceLineageReviewReactionActivation> reactions) =>
+        capabilities.IsDefault ||
+        capabilities.Length > 16 ||
+        capabilities.Where((value, index) =>
+            value.Kind != 1 ||
+            value.SourceTraitId == 0 ||
+            (!value.Installed &&
+                (value.IntroducedByProposal || value.ActivationCount != 0)) ||
+            (index > 0 && value.Kind <= capabilities[index - 1].Kind)).Any() ||
+        reactions.IsDefault ||
+        reactions.Length > 256 ||
+        reactions.Where((value, index) =>
+            value.ReactionId == 0 ||
+            (!value.Installed &&
+                (value.IntroducedByProposal || value.ActivationCount != 0)) ||
+            (index > 0 && value.ReactionId <= reactions[index - 1].ReactionId)).Any();
+
+    private static bool HasInvalidLineageReviewEvidenceReferences(
+        PersistenceLineageReviewLandmark value)
+    {
+        var references = value.EvidenceReferences;
+        var comparisonSpeciesId = value.PerspectiveSpeciesId == value.AncestorSpeciesId
+            ? value.DescendantSpeciesId
+            : value.AncestorSpeciesId;
+        if (references.IsDefaultOrEmpty ||
+            references.Length < 4 ||
+            references.Length > MaximumLineageReviewEvidenceReferences ||
+            references[0].Kind != 1 || references[1].Kind != 2 ||
+            references[2].Kind != 3 || references[3].Kind != 4 ||
+            references.Skip(4).Any(reference => reference.Kind != 5) ||
+            references.Any(reference =>
+                reference.FromExclusiveTick != references[0].FromExclusiveTick ||
+                reference.FromExclusiveTick >= reference.ThroughCompletedTick ||
+                reference.ThroughCompletedTick != value.CompletedTick))
+        {
+            return true;
+        }
+        if (references.Count(reference => reference.Kind == 1 &&
+                reference.SpeciesId == 0 && !reference.TileId.HasValue) != 1 ||
+            references.Count(reference => reference.Kind == 2 &&
+                reference.SpeciesId == value.PerspectiveSpeciesId &&
+                !reference.TileId.HasValue) != 1 ||
+            references.Count(reference => reference.Kind == 3 &&
+                reference.SpeciesId == comparisonSpeciesId &&
+                !reference.TileId.HasValue) != 1 ||
+            references.Count(reference => reference.Kind == 4 &&
+                reference.SpeciesId == value.PerspectiveSpeciesId &&
+                !reference.TileId.HasValue) != 1)
+        {
+            return true;
+        }
+        var tiles = references.Where(reference => reference.Kind == 5).ToImmutableArray();
+        return references.Any(reference => reference.Kind is < 1 or > 5) ||
+            references.Any(reference => reference.Kind switch
+            {
+                1 => reference.SpeciesId != 0 || reference.TileId.HasValue,
+                2 => reference.SpeciesId != value.PerspectiveSpeciesId ||
+                    reference.TileId.HasValue,
+                3 => reference.SpeciesId != comparisonSpeciesId || reference.TileId.HasValue,
+                4 => reference.SpeciesId != value.PerspectiveSpeciesId ||
+                    reference.TileId.HasValue,
+                5 => reference.SpeciesId != value.PerspectiveSpeciesId ||
+                    !reference.TileId.HasValue,
+                _ => true,
+            }) ||
+            tiles.Select(reference => reference.TileId!.Value).Distinct().Count() != tiles.Length ||
+            !tiles.Select(reference => reference.TileId!.Value)
+                .SequenceEqual(tiles.Select(reference => reference.TileId!.Value).Order());
+    }
 
     private static bool HasInvalidRoutineActivitySummary(
         PersistenceOrganismRoutineActivitySummary value) =>
@@ -1054,6 +1735,28 @@ public static class WorldPayloadCodec
         RequireAscending(state.Organisms.Select(value => value.OrganismId), "organisms");
         RequireAscending(state.Remnants.Select(value => value.RemnantId), "remnants");
         RequireAscending(state.JourneyEvents.Select(value => value.EventId), "journey events");
+        RequireAscending(state.LineageReviewSchedules.Select(value => value.SpeciationEventId),
+            "lineage review schedules");
+        RequireAscending(state.LineageReviewLandmarks.Select(value => value.EventId),
+            "lineage review landmarks");
+        RequireAscending(state.NotableEvents.Select(value => value.EventId), "notable events");
+        RequireAscending(state.AttentionAlerts.Select(value => value.AlertId), "attention alerts");
+        RequireAscending(state.PopulationAttentionStates.Select(value => value.SpeciesId),
+            "population attention states");
+        RequireAscending(state.AttentionWindowStates.Select(value => value.SpeciesId),
+            "attention window states");
+        var chronicleEventIds = state.LineageReviewLandmarks.Select(value => value.EventId)
+            .Concat(state.NotableEvents.Select(value => value.EventId))
+            .ToArray();
+        if (chronicleEventIds.Distinct().Count() != chronicleEventIds.Length ||
+            state.NotableEvents.Select(value => value.DeduplicationKey).Distinct().Count() !=
+                state.NotableEvents.Length ||
+            state.AttentionAlerts.Select(value => value.DeduplicationKey).Distinct().Count() !=
+                state.AttentionAlerts.Length)
+        {
+            throw Failure(WorldPayloadFailureCode.InvalidOrdering,
+                "Chronicle event identities and deduplication keys must be unique.");
+        }
         if (state.JourneyEvents.Length > 0 &&
             state.NextJourneyEventId <= state.JourneyEvents[^1].EventId)
         {
@@ -1202,6 +1905,149 @@ public static class WorldPayloadCodec
         foreach (var value in values) writer.WriteInt64(value);
     }
 
+    private static void WriteLineageReviewObservation(
+        PayloadWriter writer,
+        PersistenceLineageReviewObservation value)
+    {
+        writer.WriteUInt64(value.SpeciesId);
+        writer.WriteByte(value.Scope);
+        writer.WriteUInt64(value.Population);
+        writer.WriteUInt32(value.AverageHealthQ);
+        writer.WriteUInt32(value.AverageReserveQ);
+        writer.WriteUInt32(value.AverageAcquisitionCoverageQ);
+        writer.WriteUInt32(value.AverageResourcePressureQ);
+        writer.WriteUInt32(value.OccupiedTileCount);
+        WriteCount(writer, value.BehaviorCounts.Length);
+        foreach (var count in value.BehaviorCounts)
+        {
+            writer.WriteByte(count.BehaviorId);
+            writer.WriteUInt64(count.Count);
+        }
+        writer.WriteByte(value.ActivityCountsAvailable ? (byte)1 : (byte)0);
+        writer.WriteUInt64(value.BirthCount);
+        writer.WriteUInt64(value.DeathCount);
+        writer.WriteUInt64(value.MigrationCount);
+    }
+
+    private static void WriteLineageReviewActivationEvidence(
+        PayloadWriter writer,
+        ImmutableArray<PersistenceLineageReviewCapabilityActivation> capabilities,
+        ImmutableArray<PersistenceLineageReviewReactionActivation> reactions)
+    {
+        WriteCount(writer, capabilities.Length);
+        foreach (var capability in capabilities)
+        {
+            writer.WriteByte(capability.Kind);
+            writer.WriteUInt32(capability.SourceTraitId);
+            writer.WriteByte(capability.IntroducedByProposal ? (byte)1 : (byte)0);
+            writer.WriteByte(capability.Installed ? (byte)1 : (byte)0);
+            writer.WriteUInt64(capability.ActivationCount);
+        }
+        WriteCount(writer, reactions.Length);
+        foreach (var reaction in reactions)
+        {
+            writer.WriteUInt32(reaction.ReactionId);
+            writer.WriteByte(reaction.IntroducedByProposal ? (byte)1 : (byte)0);
+            writer.WriteByte(reaction.Installed ? (byte)1 : (byte)0);
+            writer.WriteUInt64(reaction.ActivationCount);
+        }
+    }
+
+    private static PersistenceLineageReviewObservation ReadLineageReviewObservation(
+        ref PayloadReader reader) => new(
+            reader.ReadUInt64(),
+            reader.ReadByte(),
+            reader.ReadUInt64(),
+            reader.ReadUInt32(),
+            reader.ReadUInt32(),
+            reader.ReadUInt32(),
+            reader.ReadUInt32(),
+            reader.ReadUInt32(),
+            ReadLineageReviewBehaviorCounts(ref reader),
+            reader.ReadByte() != 0,
+            reader.ReadUInt64(),
+            reader.ReadUInt64(),
+            reader.ReadUInt64());
+
+    private static ImmutableArray<PersistenceLineageReviewBehaviorCount>
+        ReadLineageReviewBehaviorCounts(ref PayloadReader reader)
+    {
+        var count = ReadCount(reader.ReadUInt32(), 5);
+        var values = ImmutableArray.CreateBuilder<PersistenceLineageReviewBehaviorCount>(count);
+        for (var index = 0; index < count; index++)
+        {
+            values.Add(new PersistenceLineageReviewBehaviorCount(
+                reader.ReadByte(),
+                reader.ReadUInt64()));
+        }
+        return values.MoveToImmutable();
+    }
+
+    private static ImmutableArray<PersistenceLineageReviewCapabilityActivation>
+        ReadLineageReviewCapabilityActivations(ref PayloadReader reader)
+    {
+        var count = ReadCount(reader.ReadUInt32(), 16);
+        var values =
+            ImmutableArray.CreateBuilder<PersistenceLineageReviewCapabilityActivation>(count);
+        for (var index = 0; index < count; index++)
+        {
+            values.Add(new PersistenceLineageReviewCapabilityActivation(
+                reader.ReadByte(),
+                reader.ReadUInt32(),
+                reader.ReadByte() != 0,
+                reader.ReadByte() != 0,
+                reader.ReadUInt64()));
+        }
+        return values.MoveToImmutable();
+    }
+
+    private static ImmutableArray<PersistenceLineageReviewReactionActivation>
+        ReadLineageReviewReactionActivations(ref PayloadReader reader)
+    {
+        var count = ReadCount(reader.ReadUInt32(), 256);
+        var values =
+            ImmutableArray.CreateBuilder<PersistenceLineageReviewReactionActivation>(count);
+        for (var index = 0; index < count; index++)
+        {
+            values.Add(new PersistenceLineageReviewReactionActivation(
+                reader.ReadUInt32(),
+                reader.ReadByte() != 0,
+                reader.ReadByte() != 0,
+                reader.ReadUInt64()));
+        }
+        return values.MoveToImmutable();
+    }
+
+    private static ImmutableArray<PersistenceLineageReviewEvidenceReference>
+        ReadLineageReviewEvidenceReferences(ref PayloadReader reader)
+    {
+        var count = ReadCount(
+            reader.ReadUInt32(),
+            MaximumLineageReviewEvidenceReferences);
+        var references = ImmutableArray.CreateBuilder<PersistenceLineageReviewEvidenceReference>(
+            count);
+        for (var index = 0; index < count; index++)
+        {
+            var kind = reader.ReadByte();
+            var speciesId = reader.ReadUInt64();
+            var hasTileId = reader.ReadByte();
+            if (hasTileId > 1)
+            {
+                throw Failure(
+                    WorldPayloadFailureCode.InvalidValue,
+                    "A lineage-review evidence reference has an invalid optional tile marker.");
+            }
+            var tileId = hasTileId == 0 ? (uint?)null : reader.ReadUInt32();
+            references.Add(new PersistenceLineageReviewEvidenceReference(
+                kind,
+                speciesId,
+                tileId,
+                reader.ReadUInt64(),
+                reader.ReadUInt64()));
+        }
+        return references.MoveToImmutable();
+    }
+
     private static ImmutableArray<long> ReadMicronutrients(ref PayloadReader reader)
     {
         var values = ImmutableArray.CreateBuilder<long>(14);
@@ -1214,6 +2060,16 @@ public static class WorldPayloadCodec
         var count = ReadCount(reader.ReadUInt32(), MaximumTraitsPerGenome);
         var values = ImmutableArray.CreateBuilder<uint>(count);
         for (var index = 0; index < count; index++) values.Add(reader.ReadUInt32());
+        return values.MoveToImmutable();
+    }
+
+    private static ImmutableArray<ulong> ReadUInt64Array(
+        ref PayloadReader reader,
+        int maximum)
+    {
+        var count = ReadCount(reader.ReadUInt32(), maximum);
+        var values = ImmutableArray.CreateBuilder<ulong>(count);
+        for (var index = 0; index < count; index++) values.Add(reader.ReadUInt64());
         return values.MoveToImmutable();
     }
 

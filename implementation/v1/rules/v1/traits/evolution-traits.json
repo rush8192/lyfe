@@ -13,6 +13,9 @@
       "incompatibleTraitKeys": [],
       "baseEvolutionWeightQ": 1000000,
       "pressureTags": [],
+      "strategicIntents": [],
+      "consequenceFollowUpHours": null,
+      "consequenceEvidenceKind": null,
       "enablesResourceConservation": false,
       "mutationIncomeMultiplierQ": 1000000,
       "maximumChangeComplexity": null
@@ -29,6 +32,9 @@
       "incompatibleTraitKeys": [],
       "baseEvolutionWeightQ": 1000000,
       "pressureTags": [],
+      "strategicIntents": [],
+      "consequenceFollowUpHours": null,
+      "consequenceEvidenceKind": null,
       "enablesResourceConservation": false,
       "mutationIncomeMultiplierQ": 1000000,
       "maximumChangeComplexity": 3
@@ -45,6 +51,9 @@
       "incompatibleTraitKeys": [],
       "baseEvolutionWeightQ": 1000000,
       "pressureTags": ["energy-shortage"],
+      "strategicIntents": ["invest-in-complexity"],
+      "consequenceFollowUpHours": null,
+      "consequenceEvidenceKind": null,
       "enablesResourceConservation": false,
       "mutationIncomeMultiplierQ": 1000000,
       "maximumChangeComplexity": null
@@ -61,6 +70,9 @@
       "incompatibleTraitKeys": [],
       "baseEvolutionWeightQ": 1000000,
       "pressureTags": ["energy-shortage", "starvation"],
+      "strategicIntents": ["endure-environmental-pressure"],
+      "consequenceFollowUpHours": 720,
+      "consequenceEvidenceKind": "condition-and-pressure",
       "enablesResourceConservation": true,
       "mutationIncomeMultiplierQ": 1000000,
       "maximumChangeComplexity": null
@@ -77,6 +89,9 @@
       "incompatibleTraitKeys": [],
       "baseEvolutionWeightQ": 1000000,
       "pressureTags": [],
+      "strategicIntents": [],
+      "consequenceFollowUpHours": null,
+      "consequenceEvidenceKind": null,
       "enablesResourceConservation": false,
       "mutationIncomeMultiplierQ": 1000000,
       "maximumChangeComplexity": null
@@ -93,6 +108,9 @@
       "incompatibleTraitKeys": [],
       "baseEvolutionWeightQ": 1000000,
       "pressureTags": [],
+      "strategicIntents": [],
+      "consequenceFollowUpHours": null,
+      "consequenceEvidenceKind": null,
       "enablesResourceConservation": false,
       "mutationIncomeMultiplierQ": 1000000,
       "maximumChangeComplexity": null
@@ -109,6 +127,9 @@
       "incompatibleTraitKeys": [],
       "baseEvolutionWeightQ": 800000,
       "pressureTags": ["starvation"],
+      "strategicIntents": ["diversify-resource-energy-access"],
+      "consequenceFollowUpHours": null,
+      "consequenceEvidenceKind": null,
       "enablesResourceConservation": false,
       "mutationIncomeMultiplierQ": 1000000,
       "maximumChangeComplexity": null
@@ -125,6 +146,9 @@
       "incompatibleTraitKeys": [],
       "baseEvolutionWeightQ": 800000,
       "pressureTags": ["energy-shortage"],
+      "strategicIntents": ["invest-in-complexity"],
+      "consequenceFollowUpHours": null,
+      "consequenceEvidenceKind": null,
       "enablesResourceConservation": false,
       "mutationIncomeMultiplierQ": 1000000,
       "maximumChangeComplexity": null

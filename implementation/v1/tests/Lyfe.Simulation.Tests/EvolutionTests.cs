@@ -198,6 +198,309 @@ public sealed class EvolutionTests
     }
 
     [Fact]
+    public void PlayerSpeciationCreatesSavedCooldownAndAuthoredFollowUpLandmarks()
+    {
+        var runner = CreateRunner();
+        var applied = Speciate(runner);
+
+        Assert.True(applied.Preview.Accepted);
+        var initialNotableEvents = runner.CapturePublicationSnapshot().NotableEvents;
+        var speciationEvent = Assert.Single(initialNotableEvents.Where(value =>
+            value.Family == NotableEventFamily.Speciation));
+        Assert.Equal(applied.EventId, speciationEvent.SourceEventId);
+        Assert.Equal(NotableEventSignificance.Strategic, speciationEvent.Significance);
+        Assert.Equal(50UL, speciationEvent.MilestoneValue);
+        Assert.Contains(initialNotableEvents, value =>
+            value.Family == NotableEventFamily.FirstTileOccupation &&
+            value.SpeciesId == applied.DescendantSpeciesId &&
+            value.TileId == TileId.FromRowMajorIndex(0));
+        Assert.Equal(initialNotableEvents.Length,
+            initialNotableEvents.Select(value => value.DeduplicationKey).Distinct().Count());
+        var initialAlerts = runner.CapturePublicationSnapshot().AttentionAlerts;
+        Assert.Equal(2, initialAlerts.Length);
+        Assert.All(initialAlerts, alert =>
+            Assert.Equal(AttentionAlertClass.Strategic, alert.AlertClass));
+        Assert.All(initialAlerts, alert => Assert.All(
+            alert.ChronicleEventIds,
+            eventId => Assert.Contains(initialNotableEvents, value => value.EventId == eventId)));
+        var schedule = Assert.Single(runner.CapturePersistenceSnapshot().State.LineageReviewSchedules);
+        Assert.Equal(168UL, schedule.CooldownBoundaryTick);
+        Assert.Equal(720UL, schedule.FollowUpBoundaryTick);
+        Assert.Equal((byte)LineageReviewEvidenceKind.ConditionAndPressure,
+            schedule.FollowUpEvidenceKind);
+        var scheduledCapability = Assert.Single(schedule.CapabilityActivations);
+        Assert.Equal((byte)LineageReviewCapabilityKind.ResourceConservation,
+            scheduledCapability.Kind);
+        Assert.True(scheduledCapability.IntroducedByProposal);
+        Assert.True(scheduledCapability.Installed);
+        Assert.Equal(0UL, scheduledCapability.ActivationCount);
+        Assert.Equal(3, schedule.ReactionActivations.Length);
+        Assert.All(schedule.ReactionActivations, scheduledReaction =>
+        {
+            Assert.False(scheduledReaction.IntroducedByProposal);
+            Assert.True(scheduledReaction.Installed);
+            Assert.Equal(0UL, scheduledReaction.ActivationCount);
+        });
+
+        for (var tick = 0; tick < 168; tick++) runner.AdvanceOneTick();
+
+        var cooldownSnapshot = runner.CapturePublicationSnapshot();
+        var cooldown = Assert.Single(cooldownSnapshot.LineageReviewLandmarks);
+        Assert.True(cooldown.EventId > initialNotableEvents.Max(value => value.EventId));
+        Assert.Equal(LineageReviewLandmarkKind.CooldownBoundary, cooldown.Kind);
+        Assert.Equal(168UL, cooldown.WindowHours);
+        Assert.Equal(LineageReviewObservationScope.WorldExact,
+            cooldown.PerspectiveCurrent.Scope);
+        var reviewedOrganisms = cooldownSnapshot.Organisms
+            .Where(organism => organism.SpeciesId == cooldown.PerspectiveSpeciesId)
+            .ToArray();
+        var expectedAcquisitionCoverageQ = checked((uint)(reviewedOrganisms.Aggregate(
+            0UL,
+            (sum, organism) => checked(sum + organism.RecentAcquisitionCoverageQ)) /
+            (ulong)reviewedOrganisms.Length));
+        Assert.Equal(expectedAcquisitionCoverageQ,
+            cooldown.PerspectiveCurrent.AverageAcquisitionCoverageQ);
+        Assert.Equal(
+            reviewedOrganisms
+                .GroupBy(organism => organism.BehaviorId)
+                .OrderBy(group => group.Key)
+                .Select(group => (Behavior: group.Key, Count: (ulong)group.LongCount())),
+            cooldown.PerspectiveCurrent.BehaviorCounts
+                .Select(count => (Behavior: count.BehaviorId, count.Count)));
+        Assert.True(cooldown.PerspectiveCurrent.ActivityCountsAvailable);
+        Assert.Equal(LineageReviewObservationScope.LiveTilesObserved,
+            cooldown.ComparisonCurrent.Scope);
+        Assert.False(cooldown.ComparisonCurrent.ActivityCountsAvailable);
+        var capability = Assert.Single(cooldown.CapabilityActivations);
+        Assert.Equal(LineageReviewCapabilityKind.ResourceConservation, capability.Kind);
+        Assert.Equal(TraitId.From(4), capability.SourceTraitId);
+        Assert.True(capability.IntroducedByProposal);
+        Assert.True(capability.Installed);
+        Assert.Equal(3, cooldown.ReactionActivations.Length);
+        Assert.All(cooldown.ReactionActivations, reaction =>
+        {
+            Assert.False(reaction.IntroducedByProposal);
+            Assert.True(reaction.Installed);
+        });
+        var cooldownReactionActivationCount = cooldown.ReactionActivations.Aggregate(
+            0UL,
+            (sum, reaction) => checked(sum + reaction.ActivationCount));
+        Assert.True(cooldownReactionActivationCount > 0);
+        Assert.True(cooldown.ReactionActivations.Single(reaction =>
+            reaction.ReactionId == ReactionId.From(4)).ActivationCount > 0);
+        Assert.Contains(cooldownSnapshot.NotableEvents, value =>
+            value.Family == NotableEventFamily.FirstReactionExecution &&
+            value.ReactionId == ReactionId.From(4));
+        Assert.Equal(cooldownSnapshot.NotableEvents.Length,
+            cooldownSnapshot.NotableEvents.Select(value => value.DeduplicationKey)
+                .Distinct().Count());
+        Assert.Contains(cooldownSnapshot.AttentionAlerts, alert =>
+            alert.Kind == AttentionAlertKind.LineageReviewBoundary &&
+            alert.ChronicleEventIds.SequenceEqual([cooldown.EventId]));
+        Assert.Contains(cooldownSnapshot.AttentionAlerts, alert =>
+            alert.Kind == AttentionAlertKind.NotableEventGroup &&
+            alert.EventFamily == NotableEventFamily.FirstReactionExecution);
+        Assert.Collection(
+            cooldown.EvidenceReferences,
+            reference => Assert.Equal(
+                LineageReviewEvidenceReferenceKind.SpeciationDecision, reference.Kind),
+            reference => Assert.Equal(
+                LineageReviewEvidenceReferenceKind.ReviewedSpeciesSummary, reference.Kind),
+            reference => Assert.Equal(
+                LineageReviewEvidenceReferenceKind.ComparisonSpeciesSummary, reference.Kind),
+            reference => Assert.Equal(
+                LineageReviewEvidenceReferenceKind.ReviewedJourneyWindow, reference.Kind),
+            reference =>
+            {
+                Assert.Equal(LineageReviewEvidenceReferenceKind.LiveTileResourceWindow,
+                    reference.Kind);
+                Assert.Equal(TileId.FromRowMajorIndex(0), reference.TileId);
+            });
+
+        var persisted = runner.CapturePersistenceSnapshot();
+        var restored = WorldRunner.Restore(CompileWorld(), persisted);
+        var restoredCooldown = Assert.Single(
+            restored.CapturePublicationSnapshot().LineageReviewLandmarks);
+        Assert.Equal(cooldown.EventId, restoredCooldown.EventId);
+        Assert.Equal(cooldown.Kind, restoredCooldown.Kind);
+        AssertLineageReviewObservationEqual(
+            cooldown.PerspectiveBaseline,
+            restoredCooldown.PerspectiveBaseline);
+        AssertLineageReviewObservationEqual(
+            cooldown.PerspectiveCurrent,
+            restoredCooldown.PerspectiveCurrent);
+        Assert.Equal(cooldown.EvidenceReferences, restoredCooldown.EvidenceReferences);
+        Assert.Equal(
+            cooldown.CapabilityActivations.ToArray(),
+            restoredCooldown.CapabilityActivations.ToArray());
+        Assert.Equal(
+            cooldown.ReactionActivations.ToArray(),
+            restoredCooldown.ReactionActivations.ToArray());
+        Assert.Equal(cooldown.TraitDelta.Select(id => id.Value),
+            restoredCooldown.TraitDelta.Select(id => id.Value));
+        Assert.Equal(
+            cooldownSnapshot.NotableEvents,
+            restored.CapturePublicationSnapshot().NotableEvents);
+        Assert.Equal(
+            cooldownSnapshot.AttentionAlerts,
+            restored.CapturePublicationSnapshot().AttentionAlerts);
+        for (var tick = 168; tick < 720; tick++) restored.AdvanceOneTick();
+
+        var landmarks = restored.CapturePublicationSnapshot().LineageReviewLandmarks;
+        Assert.Equal(2, landmarks.Length);
+        var followUp = landmarks[1];
+        Assert.Equal(LineageReviewLandmarkKind.ProposalFollowUp, followUp.Kind);
+        Assert.Equal(720UL, followUp.WindowHours);
+        Assert.Equal(LineageReviewEvidenceKind.ConditionAndPressure, followUp.EvidenceKind);
+        Assert.True(followUp.ReactionActivations.Aggregate(
+            0UL,
+            (sum, reaction) => checked(sum + reaction.ActivationCount)) >
+            cooldownReactionActivationCount);
+    }
+
+    [Fact]
+    public void LowPopulationAttentionUsesEntryAndRecoveryHysteresis()
+    {
+        var speciesId = SpeciesId.FromAllocatedValue(1);
+        var state = new PopulationAttentionState(speciesId, true, true, 0);
+
+        var first = PopulationAttentionRules.Evaluate(state, 11, 10);
+        Assert.True(first.EnteredLowPopulationBand);
+        Assert.False(first.State.LowPopulationArmed);
+        Assert.Equal(1U, first.State.LowPopulationEpisodeOrdinal);
+
+        var sustained = PopulationAttentionRules.Evaluate(first.State, 10, 8);
+        Assert.False(sustained.EnteredLowPopulationBand);
+        var partialRecovery = PopulationAttentionRules.Evaluate(sustained.State, 8, 15);
+        Assert.False(partialRecovery.State.LowPopulationArmed);
+        var recovered = PopulationAttentionRules.Evaluate(partialRecovery.State, 15, 16);
+        Assert.True(recovered.State.LowPopulationArmed);
+
+        var second = PopulationAttentionRules.Evaluate(recovered.State, 16, 10);
+        Assert.True(second.EnteredLowPopulationBand);
+        Assert.Equal(2U, second.State.LowPopulationEpisodeOrdinal);
+    }
+
+    [Fact]
+    public void WindowAttentionUsesSavedDurationsAndRecoveryHysteresis()
+    {
+        var speciesId = SpeciesId.FromAllocatedValue(1);
+        var populationState = new AttentionWindowState(
+            speciesId,
+            true,
+            0,
+            0,
+            true,
+            0,
+            0,
+            0,
+            true,
+            0,
+            0,
+            [new PopulationAttentionSample(0, 100)]);
+
+        AttentionWindowEvaluation population = default!;
+        for (ulong hour = 1; hour < 24; hour++)
+        {
+            population = AttentionWindowRules.Evaluate(
+                populationState, hour, 1, 100, 500_000, 0);
+            populationState = population.State;
+            Assert.False(population.EnteredPopulationDecline);
+        }
+        population = AttentionWindowRules.Evaluate(
+            populationState, 24, 1, 75, 500_000, 0);
+        Assert.True(population.EnteredPopulationDecline);
+        Assert.Equal(100UL, population.PopulationBaseline);
+        Assert.Equal(250_000U, population.PopulationDeclineQ);
+        Assert.Equal(1U, population.State.PopulationDeclineEpisodeOrdinal);
+
+        population = AttentionWindowRules.Evaluate(
+            population.State, 25, 1, 100, 500_000, 0);
+        Assert.True(population.State.PopulationDeclineArmed);
+        for (ulong hour = 26; hour <= 48; hour++)
+        {
+            population = AttentionWindowRules.Evaluate(
+                population.State, hour, 1, 100, 500_000, 0);
+        }
+        population = AttentionWindowRules.Evaluate(
+            population.State, 49, 1, 75, 500_000, 0);
+        Assert.True(population.EnteredPopulationDecline);
+        Assert.Equal(2U, population.State.PopulationDeclineEpisodeOrdinal);
+        Assert.True(population.State.PopulationSamples.Length <= 25);
+        Assert.True(population.State.PopulationSamples[^1].SimulatedHours -
+            population.State.PopulationSamples[0].SimulatedHours <= 24);
+
+        var healthState = new AttentionWindowState(
+            speciesId,
+            true,
+            0,
+            0,
+            true,
+            0,
+            0,
+            0,
+            true,
+            0,
+            0,
+            [new PopulationAttentionSample(0, 100)]);
+        AttentionWindowEvaluation health = default!;
+        for (ulong hour = 1; hour <= 5; hour++)
+        {
+            health = AttentionWindowRules.Evaluate(
+                healthState, hour, 1, 100, 200_000, 0);
+            healthState = health.State;
+            Assert.False(health.EnteredSustainedLowHealth);
+        }
+        health = AttentionWindowRules.Evaluate(healthState, 6, 1, 100, 200_000, 0);
+        Assert.True(health.EnteredSustainedLowHealth);
+        Assert.Equal(6U, health.State.LowHealthConsecutiveHours);
+        Assert.Equal(1U, health.State.LowHealthEpisodeOrdinal);
+
+        for (ulong hour = 7; hour <= 12; hour++)
+        {
+            health = AttentionWindowRules.Evaluate(
+                health.State, hour, 1, 100, 360_000, 0);
+        }
+        Assert.True(health.State.LowHealthArmed);
+        for (ulong hour = 13; hour <= 18; hour++)
+        {
+            health = AttentionWindowRules.Evaluate(
+                health.State, hour, 1, 100, 200_000, 0);
+        }
+        Assert.True(health.EnteredSustainedLowHealth);
+        Assert.Equal(2U, health.State.LowHealthEpisodeOrdinal);
+
+        var extinct = AttentionWindowRules.Evaluate(
+            healthState with { LowHealthConsecutiveHours = 5 }, 6, 1, 0, 0, 0);
+        Assert.False(extinct.EnteredSustainedLowHealth);
+        Assert.Equal(0U, extinct.State.LowHealthConsecutiveHours);
+
+        var pressureState = healthState;
+        AttentionWindowEvaluation pressure = default!;
+        for (ulong hour = 1; hour <= 6; hour++)
+        {
+            pressure = AttentionWindowRules.Evaluate(
+                pressureState, hour, 1, 100, 500_000, 750_000);
+            pressureState = pressure.State;
+        }
+        Assert.True(pressure.EnteredSustainedResourcePressure);
+        Assert.Equal(1U, pressure.State.ResourcePressureEpisodeOrdinal);
+        for (ulong hour = 7; hour <= 12; hour++)
+        {
+            pressure = AttentionWindowRules.Evaluate(
+                pressure.State, hour, 1, 100, 500_000, 549_999);
+        }
+        Assert.True(pressure.State.ResourcePressureArmed);
+        for (ulong hour = 13; hour <= 18; hour++)
+        {
+            pressure = AttentionWindowRules.Evaluate(
+                pressure.State, hour, 1, 100, 500_000, 800_000);
+        }
+        Assert.True(pressure.EnteredSustainedResourcePressure);
+        Assert.Equal(2U, pressure.State.ResourcePressureEpisodeOrdinal);
+    }
+
+    [Fact]
     public void InsufficientBalancePreviewRetainsACompletePlanningResult()
     {
         var runner = CreateRunner();
@@ -284,6 +587,14 @@ public sealed class EvolutionTests
 
     private static WorldRunner CreateRunner(int tileCount = 1) => WorldRunner.CreateFoundation(
         WorldId.From(1), CompileWorld(tileCount), Seed);
+
+    private static void AssertLineageReviewObservationEqual(
+        LineageReviewObservation expected,
+        LineageReviewObservation actual)
+    {
+        Assert.Equal(expected with { BehaviorCounts = actual.BehaviorCounts }, actual);
+        Assert.Equal(expected.BehaviorCounts.ToArray(), actual.BehaviorCounts.ToArray());
+    }
 
     private static WorldRunner CreateRunnerWithAllocation(FounderAllocationId allocation) =>
         WorldRunner.CreateGame(

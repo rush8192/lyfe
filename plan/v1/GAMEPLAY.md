@@ -54,7 +54,7 @@ Plan the state machine for:
 7. For survival, resolve and preview that an autonomous founder using the other metabolism will occupy its reserved edge-sharing eligible tile; do not expose its hidden post-start state.
 8. Confirm final date and any permitted world options.
 9. Present the abiogenesis introduction.
-10. Finalize the selected world's local-dawn offset and moisture prehistory, atomically create one sandbox founder or both survival founders, and begin the simulation at tick zero.
+10. Finalize the selected world's local-dawn offset, moisture prehistory, and deterministic bounded founder cohort age/readiness spread; atomically create one sandbox founder or both survival founders, and begin the simulation at tick zero.
 
 Define cancellation, regeneration, invalid setup, and deterministic setup-command recording.
 

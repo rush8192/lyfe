@@ -161,6 +161,14 @@ ScheduleReproductionCooldown(organism, completedTick, compiledProfile):
 
 The primitive first rule uses a `24 h` base cooldown and an inclusive `0..3 h` jitter at the one-hour tick. The base is therefore a hard minimum; the jitter adds at most `12.5%` and has a mean of `1.5 h`. Both values are rule-pack data. A newly created organism receives the same schedule with ordinal zero; after a successful reproduction, the continuing parent increments its count and schedules from the new ordinal. Only committed birth or reproduction schedules a draw. Failed eligibility and rejected transactions neither reroll nor extend the cooldown.
 
+“Newly created” here governs ordinary newborns, which remain age zero. Root founders are created by
+the scenario setup transaction and use the deterministic bounded cohort-age/readiness distribution
+defined in [FOUNDING_METABOLISMS.md](FOUNDING_METABOLISMS.md). Their initial schedule uses a separate
+setup random domain and is never obtained by rerolling the ordinary reproduction-cooldown draw.
+Cooldown spread alone is insufficient if every founder reaches another readiness gate on the same
+tick, so the playable opening must validate the complete initialized cohort rather than only its
+`reproduction_not_before_tick` values.
+
 The absolute `reproduction_not_before_tick` is authoritative and persists through save/load and speciation. DNA changes do not retroactively shorten, lengthen, or reroll an already scheduled cooldown; their compiled timing values apply the next time that organism receives a schedule. The UI can therefore explain both a failed biological gate and an exact remaining cooldown. Given the same seed and decisions the jitter remains deterministic on replay.
 
 # Reproduction decisions

@@ -57,13 +57,28 @@ public sealed record SpeciationCommand(
 
 public sealed record FounderCount(TileId TileId, uint Count);
 
+public sealed record EvolutionPhenotypeSnapshot(
+    uint MutationIncomeModifierQ,
+    uint MaximumChangeComplexity,
+    bool ResourceConservation,
+    uint MaximumCaptureExtentsPerHour,
+    uint FavorableCaptureEfficiencyQ,
+    uint GeneratedLightCaptureExtentsPerUnitHour,
+    long MaintenanceCostQPerHour,
+    long ChargedReserveCapacityQ,
+    uint MinimumReproductionHealthQ,
+    bool RequiresLight,
+    ImmutableArray<ReactionId> ActiveReactionIds);
+
 public sealed record SpeciationPreview(
     bool Accepted,
     SpeciationFailure Failure,
     long MutationPriceQ,
     uint ChangeComplexity,
     ImmutableArray<FounderCount> FounderCounts,
-    string ProposedGenomeHash);
+    string ProposedGenomeHash,
+    EvolutionPhenotypeSnapshot? CurrentPhenotype = null,
+    EvolutionPhenotypeSnapshot? ProposedPhenotype = null);
 
 public sealed record SpeciationResult(
     SpeciationPreview Preview,

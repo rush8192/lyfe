@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using Lyfe.Simulation.Gameplay;
 using Lyfe.Simulation.Physiology;
 using Lyfe.Simulation.Publication;
 using Lyfe.Simulation.Rules.Identity;
@@ -41,16 +42,21 @@ public static class DirectWorldProjector
                     .OrderBy(flow => flow.ResourceId.Value)
                     .ThenBy(flow => flow.Kind)
                     .ToImmutableArray());
+        var contributorsByTile = source.ResourceFlowContributors
+            .GroupBy(value => value.TileId)
+            .ToDictionary(group => group.Key, group => group.ToImmutableArray());
         var tiles = source.Tiles
             .OrderBy(tile => tile.TileId.Value)
             .Select(tile => ProjectTile(
                 tile,
                 source.CompletedTick,
+                knowledge.ControlledSpeciesId,
                 liveTileIds,
                 discovered,
                 organismsByTile,
                 remnantsByTile,
                 flowsByTile,
+                contributorsByTile,
                 source.ResourceFlowPeriodHours,
                 source.ResourceFlowHistory))
             .ToImmutableArray();
@@ -129,17 +135,132 @@ public static class DirectWorldProjector
                     resource.DisplayName,
                     resource.BiologicalForm,
                     resource.EnvironmentalPhase))
+                .ToImmutableArray(),
+            source.ReactionDefinitions
+                .OrderBy(reaction => reaction.ReactionId.Value)
+                .Select(reaction => new ReactionDefinitionProjection(
+                    reaction.ReactionId,
+                    reaction.StableKey,
+                    reaction.DisplayName))
+                .ToImmutableArray(),
+            (source.LineageReviewLandmarks.IsDefault
+                ? []
+                : source.LineageReviewLandmarks)
+                .OrderBy(value => value.EventId)
+                .Select(ToProjection)
+                .ToImmutableArray(),
+            (source.NotableEvents.IsDefault ? [] : source.NotableEvents)
+                .Where(value => value.SpeciesId == knowledge.ControlledSpeciesId ||
+                    value.RelatedSpeciesId == knowledge.ControlledSpeciesId)
+                .OrderBy(value => value.EventId)
+                .Select(ToProjection)
+                .ToImmutableArray(),
+            (source.AttentionAlerts.IsDefault ? [] : source.AttentionAlerts)
+                .Where(value => value.SpeciesId == knowledge.ControlledSpeciesId)
+                .OrderBy(value => value.AlertId)
+                .Select(ToProjection)
                 .ToImmutableArray());
     }
+
+    private static NotableEventProjection ToProjection(NotableEvent value) => new(
+        value.EventId,
+        value.Family,
+        value.Significance,
+        value.SignificanceRuleVersion,
+        value.CompletedTick,
+        value.SimulatedHours,
+        value.SpeciesId,
+        value.RelatedSpeciesId,
+        value.TileId,
+        value.ReactionId,
+        value.SourceEventId,
+        value.MilestoneValue,
+        value.DeduplicationKey,
+        value.BaselineValue);
+
+    private static AttentionAlertProjection ToProjection(AttentionAlert value) => new(
+        value.AlertId,
+        value.AlertClass,
+        value.Kind,
+        value.EventFamily,
+        value.CompletedTick,
+        value.SimulatedHours,
+        value.SpeciesId,
+        value.ChronicleEventIds,
+        value.DeduplicationKey);
+
+    private static LineageReviewLandmarkProjection ToProjection(
+        LineageReviewLandmark value) => new(
+            value.EventId,
+            value.Kind,
+            value.CompletedTick,
+            value.SimulatedHours,
+            value.WindowHours,
+            value.SpeciationEventId,
+            value.AncestorSpeciesId,
+            value.DescendantSpeciesId,
+            value.PerspectiveSpeciesId,
+            value.TraitDelta,
+            value.EvidenceKind,
+            ToProjection(value.PerspectiveBaseline),
+            ToProjection(value.ComparisonBaseline),
+            ToProjection(value.PerspectiveCurrent),
+            ToProjection(value.ComparisonCurrent),
+            value.CapabilityActivations.Select(activation =>
+                new LineageReviewCapabilityActivationProjection(
+                    activation.Kind,
+                    activation.SourceTraitId,
+                    activation.IntroducedByProposal,
+                    activation.Installed,
+                    activation.ActivationCount)).ToImmutableArray(),
+            value.ReactionActivations.Select(activation =>
+                new LineageReviewReactionActivationProjection(
+                    activation.ReactionId,
+                    activation.IntroducedByProposal,
+                    activation.Installed,
+                    activation.ActivationCount)).ToImmutableArray(),
+            value.EvidenceReferences.Select(reference =>
+                new LineageReviewEvidenceReferenceProjection(
+                    reference.Kind,
+                    reference.SpeciesId,
+                    reference.TileId,
+                    reference.FromExclusiveTick,
+                    reference.ThroughCompletedTick)).ToImmutableArray());
+
+    private static LineageReviewObservationProjection ToProjection(
+        LineageReviewObservation value) => new(
+            value.SpeciesId,
+            value.Scope switch
+            {
+                LineageReviewObservationScope.WorldExact => SpeciesPopulationScope.WorldExact,
+                LineageReviewObservationScope.LiveTilesObserved =>
+                    SpeciesPopulationScope.LiveTilesObserved,
+                _ => throw new ArgumentOutOfRangeException(nameof(value)),
+            },
+            value.Population,
+            value.AverageHealthQ,
+            value.AverageReserveQ,
+            value.AverageAcquisitionCoverageQ,
+            value.AverageResourcePressureQ,
+            value.OccupiedTileCount,
+            value.BehaviorCounts.Select(count => new BehaviorCountProjection(
+                count.BehaviorId,
+                count.Count)).ToImmutableArray(),
+            value.ActivityCountsAvailable,
+            value.BirthCount,
+            value.DeathCount,
+            value.MigrationCount);
 
     private static TileProjection ProjectTile(
         PublicationTile tile,
         ulong completedTick,
+        SpeciesId controlledSpeciesId,
         HashSet<TileId> liveTileIds,
         Dictionary<TileId, DiscoveredTileKnowledge> discovered,
         Dictionary<TileId, ImmutableArray<PublicationOrganism>> organismsByTile,
         Dictionary<TileId, ImmutableArray<PublicationRemnant>> remnantsByTile,
         Dictionary<TileId, ImmutableArray<PublicationTileResourceFlow>> flowsByTile,
+        Dictionary<TileId, ImmutableArray<PublicationTileResourceFlowContributor>> contributorsByTile,
         uint resourceFlowPeriodHours,
         ImmutableArray<PublicationResourceFlowHistoryInterval> resourceFlowHistory)
     {
@@ -182,7 +303,11 @@ public static class DirectWorldProjector
                                 flow.Kind,
                                 flow.AmountQ))
                             .ToImmutableArray()))
-                    .ToImmutableArray());
+                    .ToImmutableArray(),
+                ProjectResourceFlowContributors(
+                    contributorsByTile.GetValueOrDefault(tile.TileId, []),
+                    organisms,
+                    controlledSpeciesId));
         }
 
         if (discovered.TryGetValue(tile.TileId, out var memory))
@@ -199,6 +324,44 @@ public static class DirectWorldProjector
         }
 
         return new UnknownTileProjection(tile.TileId, tile.X, tile.Y);
+    }
+
+    private static ImmutableArray<ResourceFlowContributorProjection>
+        ProjectResourceFlowContributors(
+            ImmutableArray<PublicationTileResourceFlowContributor> contributors,
+            ImmutableArray<PublicationOrganism> visibleOrganisms,
+            SpeciesId controlledSpeciesId)
+    {
+        var visibleSpecies = visibleOrganisms
+            .Select(organism => organism.SpeciesId)
+            .Append(controlledSpeciesId)
+            .ToHashSet();
+        return contributors
+            .Select(value => value with
+            {
+                SpeciesId = value.SpeciesId is { } speciesId && visibleSpecies.Contains(speciesId)
+                    ? speciesId
+                    : null,
+            })
+            .GroupBy(value => (
+                value.ResourceId,
+                value.Kind,
+                value.Process,
+                value.ReactionId,
+                value.SpeciesId))
+            .OrderBy(group => group.Key.ResourceId.Value)
+            .ThenBy(group => group.Key.Kind)
+            .ThenBy(group => group.Key.Process)
+            .ThenBy(group => group.Key.ReactionId?.Value ?? 0)
+            .ThenBy(group => group.Key.SpeciesId?.Value ?? 0)
+            .Select(group => new ResourceFlowContributorProjection(
+                group.Key.ResourceId,
+                group.Key.Kind,
+                group.Key.Process,
+                group.Key.ReactionId,
+                group.Key.SpeciesId,
+                group.Sum(value => value.AmountQ)))
+            .ToImmutableArray();
     }
 
     private static ImmutableArray<SpeciesProjection> ProjectSpecies(
@@ -382,6 +545,8 @@ public static class DirectWorldProjector
             source.ResourceDefinitions.IsDefault ||
             source.ResourceFlows.IsDefault ||
             source.ResourceFlowHistory.IsDefault ||
+            source.ReactionDefinitions.IsDefault ||
+            source.ResourceFlowContributors.IsDefault ||
             source.ResourceFlowPeriodHours == 0 ||
             source.Gameplay is null ||
             !Enum.IsDefined(source.Gameplay.Mode) ||
@@ -459,6 +624,20 @@ public static class DirectWorldProjector
                 nameof(source));
         }
 
+        var reactionIds = new HashSet<ReactionId>();
+        foreach (var definition in source.ReactionDefinitions)
+        {
+            if (definition.ReactionId == default ||
+                string.IsNullOrWhiteSpace(definition.StableKey) ||
+                string.IsNullOrWhiteSpace(definition.DisplayName) ||
+                !reactionIds.Add(definition.ReactionId))
+            {
+                throw new ArgumentException(
+                    "The publication source has an invalid reaction definition.",
+                    nameof(source));
+            }
+        }
+
         var flowKeys = new HashSet<(TileId, ResourceId, PublicationResourceFlowKind)>();
         foreach (var flow in source.ResourceFlows)
         {
@@ -472,6 +651,58 @@ public static class DirectWorldProjector
                     "The publication source has an invalid or duplicate resource flow.",
                     nameof(source));
             }
+        }
+        var contributorKeys = new HashSet<(
+            TileId,
+            ResourceId,
+            PublicationResourceFlowKind,
+            PublicationResourceFlowProcessKind,
+            ReactionId?,
+            SpeciesId?)>();
+        foreach (var contributor in source.ResourceFlowContributors)
+        {
+            var usesReaction = contributor.Process is
+                PublicationResourceFlowProcessKind.ExternalEnergyCapture or
+                PublicationResourceFlowProcessKind.ParticulateDigestion or
+                PublicationResourceFlowProcessKind.MandatoryMaintenance or
+                PublicationResourceFlowProcessKind.BiomassAssembly;
+            var biological = usesReaction ||
+                contributor.Process == PublicationResourceFlowProcessKind.MicronutrientUptake;
+            if (!tiles.ContainsKey(contributor.TileId) ||
+                !resourceIds.Contains(contributor.ResourceId) ||
+                !Enum.IsDefined(contributor.Kind) ||
+                !Enum.IsDefined(contributor.Process) ||
+                contributor.AmountQ <= 0 ||
+                usesReaction != contributor.ReactionId.HasValue ||
+                (contributor.ReactionId is { } reactionId && !reactionIds.Contains(reactionId)) ||
+                biological != contributor.SpeciesId.HasValue ||
+                (contributor.SpeciesId is { } speciesId && !species.ContainsKey(speciesId)) ||
+                !IsValidContributorFlowKind(contributor.Process, contributor.Kind) ||
+                !contributorKeys.Add((
+                    contributor.TileId,
+                    contributor.ResourceId,
+                    contributor.Kind,
+                    contributor.Process,
+                    contributor.ReactionId,
+                    contributor.SpeciesId)))
+            {
+                throw new ArgumentException(
+                    "The publication source has an invalid resource-flow contributor.",
+                    nameof(source));
+            }
+        }
+        var contributorTotals = source.ResourceFlowContributors
+            .GroupBy(value => (value.TileId, value.ResourceId, value.Kind))
+            .ToDictionary(group => group.Key, group => group.Sum(value => value.AmountQ));
+        if (source.ResourceFlows.Any(flow =>
+                !contributorTotals.TryGetValue(
+                    (flow.TileId, flow.ResourceId, flow.Kind), out var total) ||
+                total != flow.AmountQ) ||
+            contributorTotals.Count != source.ResourceFlows.Length)
+        {
+            throw new ArgumentException(
+                "Resource-flow contributors do not reconcile to published flow totals.",
+                nameof(source));
         }
 
         ValidateResourceFlowHistory(source, tiles, resourceIds);
@@ -621,6 +852,116 @@ public static class DirectWorldProjector
         {
             ValidateJourneyEvent(value, source, tiles, species);
         }
+        ulong priorLineageReviewEventId = 0;
+        foreach (var landmark in source.LineageReviewLandmarks)
+        {
+            var comparisonSpeciesId = landmark.PerspectiveSpeciesId == landmark.AncestorSpeciesId
+                ? landmark.DescendantSpeciesId
+                : landmark.AncestorSpeciesId;
+            if (landmark.EventId <= priorLineageReviewEventId ||
+                landmark.CompletedTick > source.CompletedTick ||
+                landmark.EvidenceReferences.IsDefaultOrEmpty ||
+                landmark.EvidenceReferences.Length < 4 ||
+                landmark.EvidenceReferences.Length > 4_096 ||
+                landmark.EvidenceReferences[0].Kind !=
+                    LineageReviewEvidenceReferenceKind.SpeciationDecision ||
+                landmark.EvidenceReferences[1].Kind !=
+                    LineageReviewEvidenceReferenceKind.ReviewedSpeciesSummary ||
+                landmark.EvidenceReferences[2].Kind !=
+                    LineageReviewEvidenceReferenceKind.ComparisonSpeciesSummary ||
+                landmark.EvidenceReferences[3].Kind !=
+                    LineageReviewEvidenceReferenceKind.ReviewedJourneyWindow ||
+                landmark.EvidenceReferences.Skip(4).Any(reference =>
+                    reference.Kind !=
+                        LineageReviewEvidenceReferenceKind.LiveTileResourceWindow) ||
+                landmark.EvidenceReferences.Any(reference =>
+                    reference.FromExclusiveTick !=
+                        landmark.EvidenceReferences[0].FromExclusiveTick) ||
+                landmark.EvidenceReferences.Skip(4)
+                    .Select(reference => reference.TileId)
+                    .Distinct().Count() != landmark.EvidenceReferences.Length - 4 ||
+                !landmark.EvidenceReferences.Skip(4)
+                    .Select(reference => reference.TileId?.Value ?? uint.MaxValue)
+                    .SequenceEqual(landmark.EvidenceReferences.Skip(4)
+                        .Select(reference => reference.TileId?.Value ?? uint.MaxValue).Order()) ||
+                landmark.EvidenceReferences.Count(reference =>
+                    reference.Kind == LineageReviewEvidenceReferenceKind.SpeciationDecision) != 1 ||
+                landmark.EvidenceReferences.Count(reference =>
+                    reference.Kind == LineageReviewEvidenceReferenceKind.ReviewedSpeciesSummary) != 1 ||
+                landmark.EvidenceReferences.Count(reference =>
+                    reference.Kind == LineageReviewEvidenceReferenceKind.ComparisonSpeciesSummary) != 1 ||
+                landmark.EvidenceReferences.Count(reference =>
+                    reference.Kind == LineageReviewEvidenceReferenceKind.ReviewedJourneyWindow) != 1 ||
+                landmark.EvidenceReferences.Any(reference =>
+                    !ValidLineageReviewEvidenceReference(
+                        reference,
+                        landmark,
+                        comparisonSpeciesId,
+                        tiles,
+                        species)))
+            {
+                throw new ArgumentException(
+                    "A lineage-review landmark has invalid or unauthorized evidence references.",
+                    nameof(source));
+            }
+            priorLineageReviewEventId = landmark.EventId;
+        }
+        ulong priorNotableEventId = 0;
+        foreach (var notable in source.NotableEvents)
+        {
+            if (notable.EventId <= priorNotableEventId ||
+                notable.CompletedTick > source.CompletedTick ||
+                !Enum.IsDefined(notable.Family) ||
+                !Enum.IsDefined(notable.Significance) ||
+                notable.SignificanceRuleVersion != 1 ||
+                !species.ContainsKey(notable.SpeciesId) ||
+                (notable.RelatedSpeciesId.HasValue &&
+                    !species.ContainsKey(notable.RelatedSpeciesId.Value)) ||
+                (notable.TileId.HasValue && !tiles.ContainsKey(notable.TileId.Value)) ||
+                (notable.ReactionId.HasValue &&
+                    !reactionIds.Contains(notable.ReactionId.Value)) ||
+                string.IsNullOrWhiteSpace(notable.DeduplicationKey))
+            {
+                throw new ArgumentException(
+                    $"A notable event has invalid state or a dangling reference: {notable}.",
+                    nameof(source));
+            }
+            priorNotableEventId = notable.EventId;
+        }
+        var chronicleIds = source.LineageReviewLandmarks.Select(value => value.EventId)
+            .Concat(source.NotableEvents.Select(value => value.EventId))
+            .ToArray();
+        if (chronicleIds.Distinct().Count() != chronicleIds.Length ||
+            source.NotableEvents.Select(value => value.DeduplicationKey).Distinct().Count() !=
+                source.NotableEvents.Length)
+        {
+            throw new ArgumentException(
+                "Chronicle event identities and deduplication keys must be unique.",
+                nameof(source));
+        }
+        var chronicleIdSet = chronicleIds.ToHashSet();
+        ulong priorAlertId = 0;
+        var alertKeys = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var alert in source.AttentionAlerts)
+        {
+            if (alert.AlertId <= priorAlertId || !Enum.IsDefined(alert.AlertClass) ||
+                !Enum.IsDefined(alert.Kind) ||
+                (alert.Kind == AttentionAlertKind.NotableEventGroup) !=
+                    alert.EventFamily.HasValue ||
+                (alert.EventFamily.HasValue && !Enum.IsDefined(alert.EventFamily.Value)) ||
+                alert.CompletedTick > source.CompletedTick ||
+                !species.ContainsKey(alert.SpeciesId) ||
+                alert.ChronicleEventIds.IsDefaultOrEmpty ||
+                alert.ChronicleEventIds.Length > 256 ||
+                alert.ChronicleEventIds.Any(value => !chronicleIdSet.Contains(value)) ||
+                !alertKeys.Add(alert.DeduplicationKey))
+            {
+                throw new ArgumentException(
+                    "An attention alert has invalid state or a dangling evidence reference.",
+                    nameof(source));
+            }
+            priorAlertId = alert.AlertId;
+        }
         foreach (var value in source.RoutineActivitySummaries)
         {
             if (value.PeriodHours == 0 ||
@@ -639,6 +980,53 @@ public static class DirectWorldProjector
 
         return new SourceIndex(tiles, species, resourceIds);
     }
+
+    private static bool ValidLineageReviewEvidenceReference(
+        LineageReviewEvidenceReference reference,
+        LineageReviewLandmark landmark,
+        SpeciesId comparisonSpeciesId,
+        Dictionary<TileId, PublicationTile> tiles,
+        Dictionary<SpeciesId, PublicationSpecies> species)
+    {
+        if (reference.FromExclusiveTick >= reference.ThroughCompletedTick ||
+            reference.ThroughCompletedTick != landmark.CompletedTick)
+        {
+            return false;
+        }
+        return reference.Kind switch
+        {
+            LineageReviewEvidenceReferenceKind.SpeciationDecision =>
+                !reference.SpeciesId.HasValue && !reference.TileId.HasValue,
+            LineageReviewEvidenceReferenceKind.ReviewedSpeciesSummary or
+                LineageReviewEvidenceReferenceKind.ReviewedJourneyWindow =>
+                reference.SpeciesId == landmark.PerspectiveSpeciesId &&
+                species.ContainsKey(landmark.PerspectiveSpeciesId) &&
+                !reference.TileId.HasValue,
+            LineageReviewEvidenceReferenceKind.ComparisonSpeciesSummary =>
+                reference.SpeciesId == comparisonSpeciesId &&
+                species.ContainsKey(comparisonSpeciesId) &&
+                !reference.TileId.HasValue,
+            LineageReviewEvidenceReferenceKind.LiveTileResourceWindow =>
+                reference.SpeciesId == landmark.PerspectiveSpeciesId &&
+                reference.TileId.HasValue && tiles.ContainsKey(reference.TileId.Value),
+            _ => false,
+        };
+    }
+
+    private static bool IsValidContributorFlowKind(
+        PublicationResourceFlowProcessKind process,
+        PublicationResourceFlowKind kind) => process switch
+        {
+            PublicationResourceFlowProcessKind.EnvironmentalGasSource =>
+                kind == PublicationResourceFlowKind.EnvironmentalSource,
+            PublicationResourceFlowProcessKind.EnvironmentalGasSink =>
+                kind == PublicationResourceFlowKind.EnvironmentalSink,
+            PublicationResourceFlowProcessKind.EnvironmentalGasExchange =>
+                kind is PublicationResourceFlowKind.NeighborExchangeIn or
+                    PublicationResourceFlowKind.NeighborExchangeOut,
+            _ => kind is PublicationResourceFlowKind.OrganismUptake or
+                PublicationResourceFlowKind.OrganismRelease,
+        };
 
     private static void ValidateResourceFlowHistory(
         WorldPublicationSnapshot source,

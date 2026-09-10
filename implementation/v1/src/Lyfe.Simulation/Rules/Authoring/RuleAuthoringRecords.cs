@@ -159,6 +159,12 @@ public sealed record TraitDefinition
 
     public required string[] PressureTags { get; init; }
 
+    public required string[] StrategicIntents { get; init; }
+
+    public ulong? ConsequenceFollowUpHours { get; init; }
+
+    public string? ConsequenceEvidenceKind { get; init; }
+
     public required bool EnablesResourceConservation { get; init; }
 
     public required uint MutationIncomeMultiplierQ { get; init; }

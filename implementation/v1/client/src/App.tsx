@@ -11,7 +11,22 @@ import {
 } from "./api/server";
 import { WorldCanvas } from "./rendering/WorldCanvas";
 import { EvolutionPanel } from "./components/EvolutionPanel";
+import { ConsequenceReviewPanel } from "./components/ConsequenceReviewPanel";
 import { ResourcePressurePanel } from "./components/ResourcePressurePanel";
+import { ChroniclePanel } from "./components/ChroniclePanel";
+import { AttentionInbox } from "./components/AttentionInbox";
+import {
+  createConsequenceReview,
+  readPinnedConsequenceReview,
+  writeConsequenceReview,
+  type ConsequenceReview,
+  type ConsequenceReviewStorage,
+} from "./state/consequenceReview";
+import {
+  readWorldChronicleNotes,
+  writeChronicleNote,
+  type ChronicleNoteStorage,
+} from "./state/chronicleNotes";
 
 export function App() {
   const [connection, setConnection] = useState<ServerConnection>({
@@ -21,7 +36,12 @@ export function App() {
     ReadonlySet<OrganismJourneyEventFamily>
   >(() => new Set(DEFAULT_ACTIVITY_FAMILIES));
   const [selectedOrganismId, setSelectedOrganismId] = useState<bigint | null>(null);
+  const [selectedEvidenceTileId, setSelectedEvidenceTileId] = useState<number | null>(null);
   const [reloadRevision, setReloadRevision] = useState(0);
+  const [consequenceReview, setConsequenceReview] = useState<ConsequenceReview | null>(null);
+  const [chronicleNotes, setChronicleNotes] = useState<ReadonlyMap<bigint, string>>(
+    () => new Map(),
+  );
 
   useEffect(() => {
     const controller = new AbortController();
@@ -41,6 +61,28 @@ export function App() {
   }, [reloadRevision]);
 
   const world = connection.status === "online" ? connection.cache.world : null;
+  const visibleConsequenceReview = world !== null && consequenceReview !== null &&
+    consequenceReview.worldId === world.worldId &&
+    consequenceReview.descendantSpeciesId === world.controlledSpeciesId &&
+    world.simulatedHours >= consequenceReview.applicationHour &&
+    world.simulatedHours <= consequenceReview.cooldownEndHour
+    ? consequenceReview
+    : null;
+
+  useEffect(() => {
+    if (world === null) return;
+    const storage = browserConsequenceReviewStorage();
+    setConsequenceReview(storage === null
+      ? null
+      : readPinnedConsequenceReview(storage, world));
+  }, [world]);
+  useEffect(() => {
+    if (world === null) return;
+    const storage = browserChronicleNoteStorage();
+    setChronicleNotes(storage === null
+      ? new Map()
+      : readWorldChronicleNotes(storage, world.worldId));
+  }, [world?.worldId]);
   const visibleOrganisms = useMemo(
     () => world === null ? [] : controlledOrganisms(world),
     [world],
@@ -172,16 +214,83 @@ export function App() {
         <ResourcePressurePanel
           world={world}
           selectedOrganismId={activeOrganismId}
+          selectedTileId={selectedEvidenceTileId}
+        />
+      ) : null}
+      {connection.status === "online" && visibleConsequenceReview !== null ? (
+        <ConsequenceReviewPanel
+          review={visibleConsequenceReview}
+          world={connection.cache.world}
+          evolution={connection.evolution}
+        />
+      ) : null}
+      {connection.status === "online" ? (
+        <AttentionInbox world={connection.cache.world} />
+      ) : null}
+      {connection.status === "online" ? (
+        <ChroniclePanel
+          world={connection.cache.world}
+          evolution={connection.evolution}
+          notes={chronicleNotes}
+          onNoteChange={(eventId, text) => {
+            setChronicleNotes((current) => {
+              const next = new Map(current);
+              if (text.trim().length === 0) next.delete(eventId);
+              else next.set(eventId, text.normalize("NFC"));
+              return next;
+            });
+            const storage = browserChronicleNoteStorage();
+            if (storage !== null) {
+              try {
+                writeChronicleNote(storage, connection.cache.world.worldId, eventId, text);
+              } catch {
+                // Local annotation failure cannot alter the authoritative chronicle.
+              }
+            }
+          }}
+          onNavigateResourceTile={(tileId) => setSelectedEvidenceTileId(tileId)}
         />
       ) : null}
       {connection.status === "online" ? (
         <EvolutionPanel
           surface={connection.evolution}
-          onApplied={() => setReloadRevision((value) => value + 1)}
+          onApplied={(response, request) => {
+            try {
+              const review = createConsequenceReview(
+                connection.cache.world,
+                response,
+                request,
+              );
+              setConsequenceReview(review);
+              const storage = browserConsequenceReviewStorage();
+              if (storage !== null) {
+                writeConsequenceReview(storage, review);
+              }
+            } catch {
+              // A failed local review cannot change the accepted authoritative branch.
+            }
+            setReloadRevision((value) => value + 1);
+          }}
         />
       ) : null}
     </main>
   );
+}
+
+function browserConsequenceReviewStorage(): ConsequenceReviewStorage | null {
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
+
+function browserChronicleNoteStorage(): ChronicleNoteStorage | null {
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
 }
 
 const ACTIVITY_FAMILIES = [

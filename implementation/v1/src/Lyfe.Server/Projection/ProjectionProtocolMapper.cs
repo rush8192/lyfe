@@ -47,6 +47,10 @@ public static class ProjectionProtocolMapper
         result.RoutineActivitySummaries.Add(
             source.RoutineActivitySummaries.Select(ToProtocol));
         result.ActivityPulseEvents.Add(source.ActivityPulseEvents.Select(ToProtocol));
+        result.LineageReviewLandmarkAppends.Add(
+            source.LineageReviewLandmarkAppends.Select(ToProtocol));
+        result.NotableEventAppends.Add(source.NotableEventAppends.Select(ToProtocol));
+        result.AttentionAlertAppends.Add(source.AttentionAlertAppends.Select(ToProtocol));
         return result;
     }
 
@@ -111,6 +115,226 @@ public static class ProjectionProtocolMapper
             source.RoutineActivitySummaries.Select(ToProtocol));
         result.ActivityPulseEvents.Add(source.ActivityPulseEvents.Select(ToProtocol));
         result.ResourceDefinitions.Add(source.ResourceDefinitions.Select(ToProtocol));
+        result.ReactionDefinitions.Add(source.ReactionDefinitions.Select(value =>
+            new Proto.ReactionDefinition
+            {
+                ReactionId = value.ReactionId.Value,
+                StableKey = value.StableKey,
+                DisplayName = value.DisplayName,
+            }));
+        result.LineageReviewLandmarks.Add(source.LineageReviewLandmarks.Select(ToProtocol));
+        result.NotableEvents.Add(source.NotableEvents.Select(ToProtocol));
+        result.AttentionAlerts.Add(source.AttentionAlerts.Select(ToProtocol));
+        return result;
+    }
+
+    private static Proto.AttentionAlert ToProtocol(Domain.AttentionAlertProjection source)
+    {
+        var result = new Proto.AttentionAlert
+        {
+            AlertId = source.AlertId,
+            AlertClass = source.AlertClass switch
+            {
+                Simulation.Gameplay.AttentionAlertClass.Informational => Proto.AttentionAlertClass.Informational,
+                Simulation.Gameplay.AttentionAlertClass.Strategic => Proto.AttentionAlertClass.Strategic,
+                Simulation.Gameplay.AttentionAlertClass.Critical => Proto.AttentionAlertClass.Critical,
+                _ => throw new ArgumentOutOfRangeException(nameof(source)),
+            },
+            Kind = source.Kind switch
+            {
+                Simulation.Gameplay.AttentionAlertKind.NotableEventGroup => Proto.AttentionAlertKind.NotableEventGroup,
+                Simulation.Gameplay.AttentionAlertKind.LineageReviewBoundary => Proto.AttentionAlertKind.LineageReviewBoundary,
+                _ => throw new ArgumentOutOfRangeException(nameof(source)),
+            },
+            CompletedTick = source.CompletedTick,
+            SimulatedHours = source.SimulatedHours,
+            SpeciesId = source.SpeciesId.Value,
+            DeduplicationKey = source.DeduplicationKey,
+        };
+        if (source.EventFamily.HasValue)
+        {
+            result.EventFamily = ToProtocol(source.EventFamily.Value);
+        }
+        result.ChronicleEventIds.Add(source.ChronicleEventIds);
+        return result;
+    }
+
+    private static Proto.NotableEventFamily ToProtocol(
+        Simulation.Gameplay.NotableEventFamily value) => value switch
+        {
+            Simulation.Gameplay.NotableEventFamily.Speciation => Proto.NotableEventFamily.Speciation,
+            Simulation.Gameplay.NotableEventFamily.FirstReproduction => Proto.NotableEventFamily.FirstReproduction,
+            Simulation.Gameplay.NotableEventFamily.PopulationMilestone => Proto.NotableEventFamily.PopulationMilestone,
+            Simulation.Gameplay.NotableEventFamily.FirstTileOccupation => Proto.NotableEventFamily.FirstTileOccupation,
+            Simulation.Gameplay.NotableEventFamily.FirstReactionExecution => Proto.NotableEventFamily.FirstReactionExecution,
+            Simulation.Gameplay.NotableEventFamily.SpeciesExtinction => Proto.NotableEventFamily.SpeciesExtinction,
+            Simulation.Gameplay.NotableEventFamily.PopulationDangerThreshold => Proto.NotableEventFamily.PopulationDangerThreshold,
+            Simulation.Gameplay.NotableEventFamily.PopulationDeclineThreshold => Proto.NotableEventFamily.PopulationDeclineThreshold,
+            Simulation.Gameplay.NotableEventFamily.SustainedLowHealth => Proto.NotableEventFamily.SustainedLowHealth,
+            Simulation.Gameplay.NotableEventFamily.RealizedDeathMechanism => Proto.NotableEventFamily.RealizedDeathMechanism,
+            Simulation.Gameplay.NotableEventFamily.SustainedResourcePressure => Proto.NotableEventFamily.SustainedResourcePressure,
+            _ => throw new ArgumentOutOfRangeException(nameof(value)),
+        };
+
+    private static Proto.NotableEvent ToProtocol(Domain.NotableEventProjection source)
+    {
+        var result = new Proto.NotableEvent
+        {
+            EventId = source.EventId,
+            Family = ToProtocol(source.Family),
+            Significance = source.Significance switch
+            {
+                Simulation.Gameplay.NotableEventSignificance.Informational => Proto.NotableEventSignificance.Informational,
+                Simulation.Gameplay.NotableEventSignificance.Strategic => Proto.NotableEventSignificance.Strategic,
+                Simulation.Gameplay.NotableEventSignificance.Critical => Proto.NotableEventSignificance.Critical,
+                _ => throw new ArgumentOutOfRangeException(nameof(source)),
+            },
+            SignificanceRuleVersion = source.SignificanceRuleVersion,
+            CompletedTick = source.CompletedTick,
+            SimulatedHours = source.SimulatedHours,
+            SpeciesId = source.SpeciesId.Value,
+            SourceEventId = source.SourceEventId,
+            MilestoneValue = source.MilestoneValue,
+            DeduplicationKey = source.DeduplicationKey,
+            BaselineValue = source.BaselineValue,
+        };
+        if (source.RelatedSpeciesId.HasValue)
+            result.RelatedSpeciesId = source.RelatedSpeciesId.Value.Value;
+        if (source.TileId.HasValue) result.TileId = source.TileId.Value.Value;
+        if (source.ReactionId.HasValue) result.ReactionId = source.ReactionId.Value.Value;
+        return result;
+    }
+
+    private static Proto.LineageReviewLandmark ToProtocol(
+        Domain.LineageReviewLandmarkProjection source)
+    {
+        var result = new Proto.LineageReviewLandmark
+        {
+            EventId = source.EventId,
+            Kind = source.Kind switch
+            {
+                Simulation.Gameplay.LineageReviewLandmarkKind.CooldownBoundary =>
+                    Proto.LineageReviewLandmarkKind.CooldownBoundary,
+                Simulation.Gameplay.LineageReviewLandmarkKind.ProposalFollowUp =>
+                    Proto.LineageReviewLandmarkKind.ProposalFollowUp,
+                _ => throw new ArgumentOutOfRangeException(nameof(source)),
+            },
+            CompletedTick = source.CompletedTick,
+            SimulatedHours = source.SimulatedHours,
+            WindowHours = source.WindowHours,
+            SpeciationEventId = source.SpeciationEventId,
+            AncestorSpeciesId = source.AncestorSpeciesId.Value,
+            DescendantSpeciesId = source.DescendantSpeciesId.Value,
+            PerspectiveSpeciesId = source.PerspectiveSpeciesId.Value,
+            EvidenceKind = source.EvidenceKind switch
+            {
+                Simulation.Gameplay.LineageReviewEvidenceKind.GeneralOutcomes =>
+                    Proto.LineageReviewEvidenceKind.GeneralOutcomes,
+                Simulation.Gameplay.LineageReviewEvidenceKind.CapabilityActivation =>
+                    Proto.LineageReviewEvidenceKind.CapabilityActivation,
+                Simulation.Gameplay.LineageReviewEvidenceKind.ConditionAndPressure =>
+                    Proto.LineageReviewEvidenceKind.ConditionAndPressure,
+                Simulation.Gameplay.LineageReviewEvidenceKind.GeographicSpread =>
+                    Proto.LineageReviewEvidenceKind.GeographicSpread,
+                Simulation.Gameplay.LineageReviewEvidenceKind.ReserveStorage =>
+                    Proto.LineageReviewEvidenceKind.ReserveStorage,
+                _ => throw new ArgumentOutOfRangeException(nameof(source)),
+            },
+            PerspectiveBaseline = ToProtocol(source.PerspectiveBaseline),
+            ComparisonBaseline = ToProtocol(source.ComparisonBaseline),
+            PerspectiveCurrent = ToProtocol(source.PerspectiveCurrent),
+            ComparisonCurrent = ToProtocol(source.ComparisonCurrent),
+        };
+        result.TraitIds.Add(source.TraitDelta.Select(id => id.Value));
+        result.CapabilityActivations.Add(source.CapabilityActivations.Select(ToProtocol));
+        result.ReactionActivations.Add(source.ReactionActivations.Select(ToProtocol));
+        result.EvidenceReferences.Add(source.EvidenceReferences.Select(ToProtocol));
+        return result;
+    }
+
+    private static Proto.LineageReviewCapabilityActivation ToProtocol(
+        Domain.LineageReviewCapabilityActivationProjection source) => new()
+        {
+            Kind = source.Kind switch
+            {
+                Simulation.Gameplay.LineageReviewCapabilityKind.ResourceConservation =>
+                    Proto.LineageReviewCapabilityKind.ResourceConservation,
+                _ => throw new ArgumentOutOfRangeException(nameof(source)),
+            },
+            SourceTraitId = source.SourceTraitId.Value,
+            IntroducedByProposal = source.IntroducedByProposal,
+            Installed = source.Installed,
+            ActivationCount = source.ActivationCount,
+        };
+
+    private static Proto.LineageReviewReactionActivation ToProtocol(
+        Domain.LineageReviewReactionActivationProjection source) => new()
+        {
+            ReactionId = source.ReactionId.Value,
+            IntroducedByProposal = source.IntroducedByProposal,
+            Installed = source.Installed,
+            ActivationCount = source.ActivationCount,
+        };
+
+    private static Proto.LineageReviewEvidenceReference ToProtocol(
+        Domain.LineageReviewEvidenceReferenceProjection source)
+    {
+        var result = new Proto.LineageReviewEvidenceReference
+        {
+            Kind = source.Kind switch
+            {
+                Simulation.Gameplay.LineageReviewEvidenceReferenceKind.SpeciationDecision =>
+                    Proto.LineageReviewEvidenceReferenceKind.SpeciationDecision,
+                Simulation.Gameplay.LineageReviewEvidenceReferenceKind.ReviewedSpeciesSummary =>
+                    Proto.LineageReviewEvidenceReferenceKind.ReviewedSpeciesSummary,
+                Simulation.Gameplay.LineageReviewEvidenceReferenceKind.ComparisonSpeciesSummary =>
+                    Proto.LineageReviewEvidenceReferenceKind.ComparisonSpeciesSummary,
+                Simulation.Gameplay.LineageReviewEvidenceReferenceKind.ReviewedJourneyWindow =>
+                    Proto.LineageReviewEvidenceReferenceKind.ReviewedJourneyWindow,
+                Simulation.Gameplay.LineageReviewEvidenceReferenceKind.LiveTileResourceWindow =>
+                    Proto.LineageReviewEvidenceReferenceKind.LiveTileResourceWindow,
+                _ => throw new ArgumentOutOfRangeException(nameof(source)),
+            },
+            FromExclusiveTick = source.FromExclusiveTick,
+            ThroughCompletedTick = source.ThroughCompletedTick,
+        };
+        if (source.SpeciesId.HasValue)
+        {
+            result.SpeciesId = source.SpeciesId.Value.Value;
+        }
+        if (source.TileId.HasValue)
+        {
+            result.TileId = source.TileId.Value.Value;
+        }
+        return result;
+    }
+
+    private static Proto.LineageReviewObservation ToProtocol(
+        Domain.LineageReviewObservationProjection source)
+    {
+        var result = new Proto.LineageReviewObservation
+        {
+            SpeciesId = source.SpeciesId.Value,
+            PopulationScope = source.PopulationScope switch
+            {
+                Domain.SpeciesPopulationScope.WorldExact =>
+                    Proto.SpeciesPopulationScope.WorldExact,
+                Domain.SpeciesPopulationScope.LiveTilesObserved =>
+                    Proto.SpeciesPopulationScope.LiveTilesObserved,
+                _ => throw new ArgumentOutOfRangeException(nameof(source)),
+            },
+            Population = source.Population,
+            AverageHealthQ = source.AverageHealthQ,
+            AverageReserveQ = source.AverageReserveQ,
+            AverageAcquisitionCoverageQ = source.AverageAcquisitionCoverageQ,
+            AverageResourcePressureQ = source.AverageResourcePressureQ,
+            OccupiedTileCount = source.OccupiedTileCount,
+            ActivityCountsAvailable = source.ActivityCountsAvailable,
+            BirthCount = source.BirthCount,
+            DeathCount = source.DeathCount,
+            MigrationCount = source.MigrationCount,
+        };
+        result.BehaviorCounts.Add(source.BehaviorCounts.Select(ToProtocol));
         return result;
     }
 
@@ -304,6 +528,17 @@ public static class ProjectionProtocolMapper
                         }));
                     return encoded;
                 }));
+                result.Live.ResourceFlowContributors.Add(
+                    live.ResourceFlowContributors.Select(value =>
+                        new Proto.ResourceFlowContributor
+                        {
+                            ResourceId = value.ResourceId.Value,
+                            Kind = ToProtocol(value.Kind),
+                            Process = ToProtocol(value.Process),
+                            ReactionId = value.ReactionId?.Value ?? 0,
+                            SpeciesId = value.SpeciesId?.Value ?? 0,
+                            AmountQ = value.AmountQ,
+                        }));
                 break;
             default:
                 throw new ArgumentOutOfRangeException(nameof(source), "Unsupported tile projection.");
@@ -495,6 +730,28 @@ public static class ProjectionProtocolMapper
             Simulation.Publication.PublicationResourceFlowKind.OrganismRelease =>
                 Proto.ResourceFlowKind.OrganismRelease,
             _ => throw new ArgumentOutOfRangeException(nameof(kind)),
+        };
+
+    private static Proto.ResourceFlowProcess ToProtocol(
+        Simulation.Publication.PublicationResourceFlowProcessKind process) => process switch
+        {
+            Simulation.Publication.PublicationResourceFlowProcessKind.ExternalEnergyCapture =>
+                Proto.ResourceFlowProcess.ExternalEnergyCapture,
+            Simulation.Publication.PublicationResourceFlowProcessKind.ParticulateDigestion =>
+                Proto.ResourceFlowProcess.ParticulateDigestion,
+            Simulation.Publication.PublicationResourceFlowProcessKind.EnvironmentalGasSource =>
+                Proto.ResourceFlowProcess.EnvironmentalGasSource,
+            Simulation.Publication.PublicationResourceFlowProcessKind.EnvironmentalGasSink =>
+                Proto.ResourceFlowProcess.EnvironmentalGasSink,
+            Simulation.Publication.PublicationResourceFlowProcessKind.EnvironmentalGasExchange =>
+                Proto.ResourceFlowProcess.EnvironmentalGasExchange,
+            Simulation.Publication.PublicationResourceFlowProcessKind.MandatoryMaintenance =>
+                Proto.ResourceFlowProcess.MandatoryMaintenance,
+            Simulation.Publication.PublicationResourceFlowProcessKind.BiomassAssembly =>
+                Proto.ResourceFlowProcess.BiomassAssembly,
+            Simulation.Publication.PublicationResourceFlowProcessKind.MicronutrientUptake =>
+                Proto.ResourceFlowProcess.MicronutrientUptake,
+            _ => throw new ArgumentOutOfRangeException(nameof(process)),
         };
 
     private static Proto.SpeciesProjection ToProtocol(Domain.SpeciesProjection source)

@@ -39,6 +39,8 @@ public readonly record struct CompiledResourceTerm(
 
 public sealed record CompiledReaction(
     ReactionId Id,
+    string StableKey,
+    string DisplayName,
     ProcessKind ProcessKind,
     ImmutableArray<CompiledResourceTerm> Inputs,
     ImmutableArray<CompiledResourceTerm> Outputs,
@@ -142,6 +144,24 @@ public enum EvolutionPressureTag : byte
     Starvation = 2,
 }
 
+public enum EvolutionStrategicIntent : byte
+{
+    ExploitCurrentNiche = 1,
+    EndureEnvironmentalPressure = 2,
+    AlterDispersal = 3,
+    DiversifyResourceEnergyAccess = 4,
+    BiologicalInteraction = 5,
+    InvestInComplexity = 6,
+}
+
+public enum EvolutionFollowUpEvidenceKind : byte
+{
+    CapabilityActivation = 1,
+    ConditionAndPressure = 2,
+    GeographicSpread = 3,
+    ReserveStorage = 4,
+}
+
 public sealed record CompiledTrait(
     TraitId Id,
     string StableKey,
@@ -154,6 +174,9 @@ public sealed record CompiledTrait(
     ImmutableArray<TraitId> Incompatibilities,
     uint BaseEvolutionWeightQ,
     ImmutableArray<EvolutionPressureTag> PressureTags,
+    ImmutableArray<EvolutionStrategicIntent> StrategicIntents,
+    ulong? ConsequenceFollowUpHours,
+    EvolutionFollowUpEvidenceKind? ConsequenceEvidenceKind,
     bool EnablesResourceConservation,
     uint MutationIncomeMultiplierQ,
     uint? MaximumChangeComplexity);

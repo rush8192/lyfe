@@ -164,6 +164,18 @@ public sealed class LifecycleAndRecyclingTests
         Assert.Equal(
             death.NonzeroCauseProbabilities.Select(value => value.ProbabilityQ),
             journeyDeath.DeathCauseProbabilities.Select(value => value.ProbabilityQ));
+        var publication = runner.CapturePublicationSnapshot();
+        var deathMechanism = Assert.Single(publication.NotableEvents.Where(value =>
+            value.Family == NotableEventFamily.RealizedDeathMechanism));
+        Assert.Equal(journeyDeath.EventId, deathMechanism.SourceEventId);
+        Assert.Equal(journeyDeath.SubjectSpeciesId, deathMechanism.SpeciesId);
+        Assert.Equal(journeyDeath.TileId, deathMechanism.TileId);
+        Assert.Equal((ulong)IntrinsicDeathCause.ReserveExhaustion,
+            deathMechanism.MilestoneValue);
+        Assert.Contains(publication.AttentionAlerts, alert =>
+            alert.AlertClass == AttentionAlertClass.Critical &&
+            alert.EventFamily == NotableEventFamily.RealizedDeathMechanism &&
+            alert.ChronicleEventIds.SequenceEqual([deathMechanism.EventId]));
 
         var persisted = runner.CapturePersistenceSnapshot();
         var restored = WorldRunner.Restore(runner.Rules, persisted);
@@ -178,6 +190,8 @@ public sealed class LifecycleAndRecyclingTests
         }, restoredDeath);
         Assert.Equal(journeyDeath.DeathCauseProbabilities,
             restoredDeath.DeathCauseProbabilities);
+        Assert.Equal(publication.NotableEvents, restoredPublication.NotableEvents);
+        Assert.Equal(publication.AttentionAlerts, restoredPublication.AttentionAlerts);
     }
 
     [Fact]

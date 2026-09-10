@@ -35,7 +35,14 @@ The initial trait graph provides the two non-selectable metabolic identities, th
 `StateGatedActivity -> ResourceConservation` branch, and the first distinct escape-path
 nodes. Traits have permanent IDs,
 explicit costs/change complexity, prerequisites, pressure tags, and typed compiled
-effects. A missing non-selectable prerequisite cannot be synthesized by autonomous
+effects. Selectable traits also carry one or more closed-vocabulary strategic intents used only to
+group and explain player proposals. They affect the presentation hash while leaving mechanics and
+compiled-artifact identity unchanged. A selectable trait may additionally author one consequence
+follow-up duration greater than the universal 168-hour summary and one typed evidence family. The
+first pack uses 720 hours for resource-conservation condition/pressure; later activation, spread,
+and storage nodes can use their matching typed families once their primary counters are executable.
+This metadata schedules observation only and cannot extend cooldown or alter simulation
+mechanics. A missing non-selectable prerequisite cannot be synthesized by autonomous
 prerequisite closure; eventual cross-pathway acquisition therefore requires an explicit
 priced bridge. This narrow graph proves the authoring and full-phenotype recompilation
 path; later biological milestones remain owned by their planned rule slices rather

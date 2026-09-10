@@ -164,6 +164,11 @@ public static class RulePackSourceLoader
                 trait.PrerequisiteTraitKeys is null ||
                 trait.IncompatibleTraitKeys is null ||
                 trait.PressureTags is null ||
+                trait.StrategicIntents is null ||
+                (trait.Selectable && trait.StrategicIntents.Length == 0) ||
+                (trait.ConsequenceFollowUpHours.HasValue !=
+                    !string.IsNullOrWhiteSpace(trait.ConsequenceEvidenceKind)) ||
+                trait.ConsequenceFollowUpHours is > 0 and <= 168 ||
                 (trait.Selectable && (trait.MutationPointCost == 0 || trait.ChangeComplexity == 0)) ||
                 (!trait.Selectable && (trait.MutationPointCost != 0 || trait.ChangeComplexity != 0)))
             {

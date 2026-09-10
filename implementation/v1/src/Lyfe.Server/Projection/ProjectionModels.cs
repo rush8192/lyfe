@@ -44,6 +44,11 @@ public readonly record struct ResourceDefinitionProjection(
     BiologicalForm BiologicalForm,
     EnvironmentalPhase EnvironmentalPhase);
 
+public readonly record struct ReactionDefinitionProjection(
+    ReactionId ReactionId,
+    string StableKey,
+    string DisplayName);
+
 public readonly record struct ResourceFlowProjection(
     ResourceId ResourceId,
     PublicationResourceFlowKind Kind,
@@ -54,6 +59,14 @@ public sealed record ResourceFlowHistoryIntervalProjection(
     ulong EndSimulatedHour,
     uint PeriodHours,
     ImmutableArray<ResourceFlowProjection> ResourceFlows);
+
+public readonly record struct ResourceFlowContributorProjection(
+    ResourceId ResourceId,
+    PublicationResourceFlowKind Kind,
+    PublicationResourceFlowProcessKind Process,
+    ReactionId? ReactionId,
+    SpeciesId? SpeciesId,
+    long AmountQ);
 
 public readonly record struct ResourceAcquisitionEvidenceProjection(
     ResourceId ResourceId,
@@ -173,6 +186,88 @@ public sealed record OrganismRoutineActivitySummaryProjection(
     TileId TileId,
     ImmutableArray<RoutineResourceAcquisitionProjection> ResourceAcquisitions);
 
+public sealed record LineageReviewObservationProjection(
+    SpeciesId SpeciesId,
+    SpeciesPopulationScope PopulationScope,
+    ulong Population,
+    uint AverageHealthQ,
+    uint AverageReserveQ,
+    uint AverageAcquisitionCoverageQ,
+    uint AverageResourcePressureQ,
+    uint OccupiedTileCount,
+    ImmutableArray<BehaviorCountProjection> BehaviorCounts,
+    bool ActivityCountsAvailable,
+    ulong BirthCount,
+    ulong DeathCount,
+    ulong MigrationCount);
+
+public sealed record LineageReviewEvidenceReferenceProjection(
+    LineageReviewEvidenceReferenceKind Kind,
+    SpeciesId? SpeciesId,
+    TileId? TileId,
+    ulong FromExclusiveTick,
+    ulong ThroughCompletedTick);
+
+public readonly record struct LineageReviewCapabilityActivationProjection(
+    LineageReviewCapabilityKind Kind,
+    TraitId SourceTraitId,
+    bool IntroducedByProposal,
+    bool Installed,
+    ulong ActivationCount);
+
+public readonly record struct LineageReviewReactionActivationProjection(
+    ReactionId ReactionId,
+    bool IntroducedByProposal,
+    bool Installed,
+    ulong ActivationCount);
+
+public sealed record LineageReviewLandmarkProjection(
+    ulong EventId,
+    LineageReviewLandmarkKind Kind,
+    ulong CompletedTick,
+    ulong SimulatedHours,
+    ulong WindowHours,
+    ulong SpeciationEventId,
+    SpeciesId AncestorSpeciesId,
+    SpeciesId DescendantSpeciesId,
+    SpeciesId PerspectiveSpeciesId,
+    ImmutableArray<TraitId> TraitDelta,
+    LineageReviewEvidenceKind EvidenceKind,
+    LineageReviewObservationProjection PerspectiveBaseline,
+    LineageReviewObservationProjection ComparisonBaseline,
+    LineageReviewObservationProjection PerspectiveCurrent,
+    LineageReviewObservationProjection ComparisonCurrent,
+    ImmutableArray<LineageReviewCapabilityActivationProjection> CapabilityActivations,
+    ImmutableArray<LineageReviewReactionActivationProjection> ReactionActivations,
+    ImmutableArray<LineageReviewEvidenceReferenceProjection> EvidenceReferences);
+
+public sealed record NotableEventProjection(
+    ulong EventId,
+    NotableEventFamily Family,
+    NotableEventSignificance Significance,
+    uint SignificanceRuleVersion,
+    ulong CompletedTick,
+    ulong SimulatedHours,
+    SpeciesId SpeciesId,
+    SpeciesId? RelatedSpeciesId,
+    TileId? TileId,
+    ReactionId? ReactionId,
+    ulong SourceEventId,
+    ulong MilestoneValue,
+    string DeduplicationKey,
+    ulong BaselineValue);
+
+public sealed record AttentionAlertProjection(
+    ulong AlertId,
+    AttentionAlertClass AlertClass,
+    AttentionAlertKind Kind,
+    NotableEventFamily? EventFamily,
+    ulong CompletedTick,
+    ulong SimulatedHours,
+    SpeciesId SpeciesId,
+    ImmutableArray<ulong> ChronicleEventIds,
+    string DeduplicationKey);
+
 public abstract record TileProjection(
     TileId TileId,
     int X,
@@ -205,7 +300,8 @@ public sealed record LiveTileProjection(
     ImmutableArray<BehaviorDistributionProjection> BehaviorDistributions,
     uint ResourceFlowPeriodHours = 0,
     ImmutableArray<ResourceFlowProjection> ResourceFlows = default,
-    ImmutableArray<ResourceFlowHistoryIntervalProjection> ResourceFlowHistory = default) :
+    ImmutableArray<ResourceFlowHistoryIntervalProjection> ResourceFlowHistory = default,
+    ImmutableArray<ResourceFlowContributorProjection> ResourceFlowContributors = default) :
     TileProjection(TileId, X, Y, TileVisibility.Live);
 
 public sealed record SpeciesProjection(
@@ -268,4 +364,8 @@ public sealed record ActorWorldProjection(
     ImmutableArray<OrganismJourneyEventProjection> JourneyEvents,
     ImmutableArray<OrganismRoutineActivitySummaryProjection> RoutineActivitySummaries,
     ImmutableArray<OrganismJourneyEventProjection> ActivityPulseEvents,
-    ImmutableArray<ResourceDefinitionProjection> ResourceDefinitions = default);
+    ImmutableArray<ResourceDefinitionProjection> ResourceDefinitions = default,
+    ImmutableArray<ReactionDefinitionProjection> ReactionDefinitions = default,
+    ImmutableArray<LineageReviewLandmarkProjection> LineageReviewLandmarks = default,
+    ImmutableArray<NotableEventProjection> NotableEvents = default,
+    ImmutableArray<AttentionAlertProjection> AttentionAlerts = default);
