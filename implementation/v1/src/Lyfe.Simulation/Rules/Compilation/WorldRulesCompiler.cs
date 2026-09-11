@@ -174,6 +174,7 @@ public static class WorldRulesCompiler
                 ? null
                 : new CompiledWorldProfile(
                     source.StableKey,
+                    source.DisplayName,
                     source.Width,
                     source.Height,
                     source.WrapX,
@@ -255,6 +256,7 @@ public static class WorldRulesCompiler
 
         return new CompiledWorldProfile(
             source.StableKey,
+            source.DisplayName,
             source.Width,
             source.Height,
             source.WrapX,

@@ -117,6 +117,8 @@ public static class RandomDomains
 {
     public static RandomDomainId FounderPositionX { get; } = new(0x0101);
     public static RandomDomainId FounderPositionY { get; } = new(0x0102);
+    public static RandomDomainId FounderBiologicalAge { get; } = new(0x0103);
+    public static RandomDomainId FounderReproductionReadiness { get; } = new(0x0104);
     public static RandomDomainId WorldGenerationFieldSample { get; } = new(0x0201);
     public static RandomDomainId WeatherEvent { get; } = new(0x0301);
     public static RandomDomainId IntrinsicExposureDeath { get; } = new(0x0401);
@@ -149,6 +151,8 @@ public static class RandomDomainRegistry
     [
         Define(RandomDomains.FounderPositionX, "founder-position-x", "setup ordinal", "organism ID", "tile ID", RandomOperationKind.UniformBelow),
         Define(RandomDomains.FounderPositionY, "founder-position-y", "setup ordinal", "organism ID", "tile ID", RandomOperationKind.UniformBelow),
+        Define(RandomDomains.FounderBiologicalAge, "founder-biological-age", "organism ID", "species ID", "tile ID", RandomOperationKind.UniformBelow, introducedRngSchemaVersion: 2),
+        Define(RandomDomains.FounderReproductionReadiness, "founder-reproduction-readiness", "organism ID", "species ID", "tile ID", RandomOperationKind.UniformBelow, introducedRngSchemaVersion: 2),
         Define(RandomDomains.WorldGenerationFieldSample, "world-generation-field-sample", "tile ID", "field octave/layer", "generation attempt", RandomOperationKind.UniformBelow),
         Define(RandomDomains.WeatherEvent, "weather-event", "tick", "tile ID", "weather event ordinal/type", RandomOperationKind.Bernoulli),
         Define(RandomDomains.IntrinsicExposureDeath, "intrinsic-exposure-death", "tick", "organism ID", "exposure ID", RandomOperationKind.Bernoulli),
@@ -214,7 +218,7 @@ public static class RandomDomainRegistry
         throw new ArgumentOutOfRangeException(
             nameof(id),
             id,
-            "The random domain is not registered in RNG schema version 1.");
+            $"The random domain is not registered in RNG schema version {RandomCompatibility.RngSchemaVersion}.");
     }
 
     internal static void RequireOperation(RandomDomainId id, RandomOperationKind operation)
@@ -233,7 +237,8 @@ public static class RandomDomainRegistry
         string coordinate0Meaning,
         string coordinate1Meaning,
         string coordinate2Meaning,
-        RandomOperationKind operation) =>
+        RandomOperationKind operation,
+        uint introducedRngSchemaVersion = 1) =>
         new(
             id,
             stableName,
@@ -241,7 +246,7 @@ public static class RandomDomainRegistry
             coordinate1Meaning,
             coordinate2Meaning,
             operation,
-            RandomCompatibility.RngSchemaVersion);
+            introducedRngSchemaVersion);
 
     private static string ComputeManifestHash()
     {
@@ -269,7 +274,7 @@ public static class RandomDomainRegistry
 public static class RandomCompatibility
 {
     public const string AlgorithmId = "philox4x64-10-random123-v1";
-    public const uint RngSchemaVersion = 1;
+    public const uint RngSchemaVersion = 2;
 
     public static RandomCompatibilityState ForSeed(RootRandomSeed seed) =>
         new(seed, AlgorithmId, RngSchemaVersion, RandomDomainRegistry.ManifestHash);

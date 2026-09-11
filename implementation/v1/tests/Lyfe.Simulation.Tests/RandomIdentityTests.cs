@@ -52,11 +52,15 @@ public sealed class RandomIdentityTests
         Assert.Equal(
             declaredDomainIds,
             definitions.Select(definition => definition.Id).ToArray());
-        Assert.All(
-            definitions,
-            definition => Assert.Equal(
-                RandomCompatibility.RngSchemaVersion,
-                definition.IntroducedRngSchemaVersion));
+        Assert.All(definitions, definition => Assert.InRange(
+            definition.IntroducedRngSchemaVersion,
+            1U,
+            RandomCompatibility.RngSchemaVersion));
+        Assert.Equal(
+            [RandomDomains.FounderBiologicalAge, RandomDomains.FounderReproductionReadiness],
+            definitions
+                .Where(definition => definition.IntroducedRngSchemaVersion == 2)
+                .Select(definition => definition.Id));
     }
 
     [Fact]
@@ -77,9 +81,9 @@ public sealed class RandomIdentityTests
 
         Assert.Equal(seed, state.RootSeed);
         Assert.Equal("philox4x64-10-random123-v1", state.AlgorithmId);
-        Assert.Equal(1U, state.RngSchemaVersion);
+        Assert.Equal(2U, state.RngSchemaVersion);
         Assert.Equal(
-            "155524eb22f8b14f654473cba28c501a18b374398c469a704102367f4d018916",
+            "f14df02ab340673f7bc3fb5e0968371ff519c9ad5289743f38cd4510448ec2e0",
             state.RngDomainManifestHash);
         Assert.Equal(RandomDomainRegistry.ManifestHash, state.RngDomainManifestHash);
     }

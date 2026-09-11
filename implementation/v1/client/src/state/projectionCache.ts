@@ -23,6 +23,7 @@ import {
   ResourceFlowKind,
   ResourceFlowProcess,
   SpeciesPopulationScope,
+  WorldLifecycle,
   type AcquisitionGateEvidence,
   type OrganismActionGateEvidence,
   type ActorWorldProjection,
@@ -245,6 +246,8 @@ function validateWorld(world: ActorWorldProjection) {
     world.width === 0 ||
     world.height === 0 ||
     world.worldRulesHash.length === 0 ||
+    (world.lifecycle !== WorldLifecycle.PAUSED_READY &&
+      world.lifecycle !== WorldLifecycle.RUNNING) ||
     world.controlledSpeciesId === 0n ||
     gameplay === undefined ||
     (gameplay.mode !== GameMode.FREE_SANDBOX && gameplay.mode !== GameMode.SURVIVAL) ||

@@ -19,10 +19,10 @@ deterministic-fission gates and cooldown jitter, and remnant decay/scavenging
 parameters. It also compiles the five-state behavior interface and conservation
 thresholds, while leaving `resourceConservation` disabled for the founder so the
 evolved trait is not granted at abiogenesis. These values compile into the immutable phenotype and participate in
-mechanics and compiled-artifact hashes. Pack `0.9.0` uses rule-compiler and mechanics-hash
-schema `7`; allocation identity, multipliers, scenario permissions, micronutrient quotas,
-uptake, and the Balanced
-competitor default are part of those identities.
+mechanics and compiled-artifact hashes. Pack `0.10.0` uses rule-compiler and mechanics-hash
+schema `8`; allocation identity, multipliers, scenario permissions, micronutrient quotas,
+uptake, the Balanced competitor default, and the scenario's inclusive `0..168`-hour founder-age
+and `240..360`-hour initial-reproduction-readiness ranges are part of those identities.
 
 Founder biomass inputs use a needs-only transient internal-store boundary: the exact
 NH₃/phosphorus/H₂S bundle is admitted under the compiled `512`-load capacity and consumed

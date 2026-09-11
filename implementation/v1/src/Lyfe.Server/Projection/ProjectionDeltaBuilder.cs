@@ -179,6 +179,7 @@ public static class ProjectionDeltaBuilder
                 a.X == b.X &&
                 a.Y == b.Y &&
                 a.ElevationMeters == b.ElevationMeters &&
+                a.BaselineVolcanismQ == b.BaselineVolcanismQ &&
                 a.ObservedAtTick == b.ObservedAtTick &&
                 a.ResourceStocks.SequenceEqual(b.ResourceStocks) &&
                 a.ResourceFlowPeriodHours == b.ResourceFlowPeriodHours &&

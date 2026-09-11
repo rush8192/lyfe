@@ -10,6 +10,7 @@
   <ItemGroup>
     <Protobuf Include="../../protocol/**/*.proto"
               Link="Schemas/%(RecursiveDir)%(Filename)%(Extension)"
+              ProtoRoot="../../protocol"
               GrpcServices="None" />
   </ItemGroup>
 </Project>

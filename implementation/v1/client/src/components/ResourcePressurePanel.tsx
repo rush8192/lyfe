@@ -584,7 +584,7 @@ function flowProcessLabel(process: ResourceFlowProcess): string {
   }
 }
 
-function selectLiveTile(
+export function selectLiveTile(
   world: ActorWorldProjection,
   selectedOrganismId: bigint | null,
   selectedTileId: number | null,
@@ -595,8 +595,9 @@ function selectLiveTile(
       liveTiles.push({ tileId: projected.tileId, tile: projected.detail.value });
     }
   }
-  const requestedTile = liveTiles.find((candidate) => candidate.tileId === selectedTileId);
-  if (requestedTile !== undefined) {
+  if (selectedTileId !== null) {
+    const requestedTile = liveTiles.find((candidate) => candidate.tileId === selectedTileId);
+    if (requestedTile === undefined) return null;
     return {
       tileId: requestedTile.tileId,
       tile: requestedTile.tile,

@@ -1,8 +1,9 @@
 # Browser Client
 
-Status: Stage-A generated snapshot transport, normalized cache, absolute batch applier, and truthful PixiJS organism view implemented; playable controls and explanatory surfaces remain
+Status: UI-205 pre-alpha camera and local-view contract implemented; representative full-system
+performance is the remaining Stage-B gate, followed by structured internal alpha before copy/UI polish
 
-Sources: [INTERFACE vision](../../vision/INTERFACE.md), [GAMEPLAY vision](../../vision/GAMEPLAY.md), [player loop and narrative](PLAYER_LOOP_AND_NARRATIVE.md), [behavior and resource pressure](BEHAVIOR_AND_RESOURCE_PRESSURE.md), [state change and client synchronization](STATE_CHANGE_AND_CLIENT_SYNC.md), [moddability](MODDABILITY.md), and [technology decisions](TECHNOLOGY.md).
+Sources: [INTERFACE vision](../../vision/INTERFACE.md), [GAMEPLAY vision](../../vision/GAMEPLAY.md), [player loop and narrative](PLAYER_LOOP_AND_NARRATIVE.md), [primary-surface wireframes](UI_WIREFRAMES.md), [behavior and resource pressure](BEHAVIOR_AND_RESOURCE_PRESSURE.md), [state change and client synchronization](STATE_CHANGE_AND_CLIENT_SYNC.md), [moddability](MODDABILITY.md), and [technology decisions](TECHNOLOGY.md).
 
 # Purpose
 
@@ -80,12 +81,72 @@ Survival setup presents the two choices defined in [FOUNDING_METABOLISMS.md](FOU
 
 - Unknown tiles use a clearly unavailable treatment and expose no environmental tooltips or layers.
 - Reduced tiles show fixed geography, baselines, coarse composition, and timestamped last-known observations. They never animate current weather, organisms, remains, or resources.
-- Live tiles show exact current state and truthful organism/remnant entities.
+- Live tiles show exact current state and truthful organism/remnant entities. Their authorized
+  baseline volcanism renders as one to sixteen deterministic static wireframe vents behind those entities; vent
+  count increases with the normalized activity value. No vent layer is inferred for unknown tiles,
+  and reduced-tile presentation waits for the persistent knowledge contract.
 - A live-to-reduced transition evicts organisms, remains, exact current values, and hidden chart points from the client cache.
 - Previously observed charts show explicit gaps for hidden intervals and label the last observation tick/date.
 - Sandbox control transfer retains discovered-map presentation; the authoritative knowledge owner updates the live-tile set from the new controlled species, and the client derives styling and subscriptions only from that projected set.
 
 Client layers must distinguish `current`, `last known`, `coarse`, and `unknown` values visually and textually. Rendering interpolation stops when a tile ceases to be live.
+
+The executable presentation-only camera focuses the controlled species' starting tile on first
+entry unless that saved world has a valid browser-local camera preference. Its explicit Fit control
+shows the authorized rectangular projection; horizontal travel wraps continuously, vertical travel
+is bounded, zoom anchors around the pointer or pinch midpoint, and buttons and keyboard commands
+offer equivalent camera movement. It maintains one scene object per authorized
+entity by moving 32 column containers to their nearest periodic position rather than cloning the
+world at the seam. A direct pointer activation on a visible organism is the only route into organism
+inspection; keyboard center-selection selects the tile instead. Single activation otherwise selects
+a tile; double activation,
+Enter, the focus control, and chronicle resource evidence can center a selected tile. All hit testing
+uses the same wrapped world-to-screen transform as rendering: integer tile coordinates map to
+`100 × 100` logical units after subtracting the projected grid's minimum signed x/y origin, while
+labels retain the authoritative signed coordinates. Authoritative fixed-point within-tile positions
+map inside that normalized square.
+Screen-size markers remain legible without fabricating additional organisms, and selection detail
+continues to distinguish live, last-observed reduced, and unknown projection shapes.
+The Pixi application and its canvas persist for the lifetime of the map surface. Each completed
+authoritative projection is prepared as a replacement scene and installed before the prior scene is
+retired, so polling never exposes an empty canvas between boundaries. Scene-scoped ticker callbacks
+are removed with their retired scene. Activity-pulse start time is keyed by authoritative world and
+event identity, allowing selection, camera, and filter redraws to preserve elapsed animation time;
+only a newly published event identity starts a new symbol animation.
+
+The pre-alpha camera contract is:
+
+- X-wrapped worlds permit seamless camera travel across the visual seam. Y remains bounded.
+- The active play surface uses responsive near-edge gutters instead of a narrow fixed-width shell.
+  On wide screens the camera owns the flexible main column beside a bounded `320–430 CSS px`
+  evidence rail, with a responsive `560–820 CSS px` camera height. At `1050 CSS px` and below the
+  evidence rail moves beneath the camera so it cannot compress the usable world viewport.
+- The rail begins with the current simulation hour, one Pause/Resume control that carries the only
+  player-facing running/paused state cue, Step, Speed, and the live/last-known/unknown map key. These
+  remain visible without scrolling at the default desktop presentation. Decorative scenario copy
+  does not displace them. Raw lifecycle, cadence, tick duration, visible-projection count, and
+  control revision are opt-in development diagnostics, never default player-facing facts.
+- In its default state the rail reports the controlled species' exact living population, average
+  health, and occupied-tile count. Directly selecting one of its visible organisms replaces that
+  default with high-level individual state and retained journey evidence; a clear Back action
+  restores the default rail. Controlled organisms are green.
+- Other visible species are red. Directly selecting one exposes only a species-level observed count,
+  observed average health, and observed occupied-tile count. It never opens individual detail, labels
+  hidden population and locations unknown, and disappears when the species no longer shares a live
+  tile with the controlled species. Organism selection and follow state are deliberately transient;
+  only camera and tile selection persist in browser-local preferences.
+- Organism follow is an explicit player toggle. Manual pan or tile focus releases follow; zoom alone
+  does not. Loss of live authorization releases follow and leaves a truthful last-known selection.
+- Camera and selection are versioned browser-local presentation preferences keyed by world ID. They do
+  not enter authoritative saves, protocol state, hashes, replay, or simulation decisions.
+- Wheel and trackpad input follows platform direction. Sensitivity, keyboard step, minimum fit, and
+  maximum zoom receive accessibility and playtest calibration rather than rule-pack authority.
+- Exact visible markers remain the correctness baseline. `PERF-200` measurements set the final
+  display-only density aggregation thresholds; aggregates must be visually distinct and must yield
+  to exact authorized entities when the player zooms in or inspects a location.
+
+The executable keeps exact visible markers as its current correctness baseline. `PERF-200` remains
+responsible for choosing the measured aggregate switch before the Stage-B representative-scale gate.
 
 # Rendering truthfulness
 
@@ -356,14 +417,64 @@ rejects contributor batches whose grouped totals do not equal the corresponding
 live-tile aggregate flows, so explanatory detail cannot silently disagree with the
 chart or stock reconstruction.
 
+The first recovery surface distinguishes four client states. Initial connection shows no world
+facts until a complete cross-surface boundary validates. Current means projection, evolution, and
+clock agree at one boundary. Recovering preserves the last verified boundary, labels its exact tick
+and hour as held, and locks every authoritative clock, persistence, and evolution command. Resyncing
+requests a fresh complete boundary plus catalogue and replaces the held view only after the existing
+identity/revision checks pass. An initial failure with no verified boundary shows an offline recovery
+surface rather than a blank or apparently current world.
+
+Transport failures, malformed/inconsistent responses, and server rejections remain distinct. A
+rejection may safely show its server explanation and refresh the current boundary. A transport or
+protocol failure leaves command delivery explicitly unconfirmed and requires resynchronization
+before retry, so the client never infers whether the server applied a command. Running worlds retry
+automatically after a provisional two-second recovery delay; every request has a provisional
+eight-second client deadline so a stalled proxy cannot hold the UI indefinitely. Manual retry is
+always available. Final reconnect cadence, jitter, backoff, and publication/retention limits remain
+`NET-400`/release calibration rather than simulation rules.
+
+# Accessibility and input baseline
+
+Every primary surface uses native headings, sections, fieldsets, labels, buttons, and status or
+alert regions before adding visual treatment. A first-focus skip link reaches the focusable main
+content boundary. Busy setup, clock, archive, and evolution operations expose their state to
+assistive technology, while connection changes, command errors, and map selection changes are
+announced in literal text. Consequential facts remain written out; glyphs and color are redundant
+decoration rather than the sole carrier of status, map knowledge, or event meaning.
+
+All primary controls are reachable in document order, have a visible non-color-only focus outline,
+and use a minimum `44 CSS px` block target; checkboxes and radios retain a `20 CSS px` visible
+control inside their larger labeled targets. The map supplies equivalent camera buttons and a
+keyboard command set: arrows pan, `+`/`-` zoom, `Space` selects the tile under a visible center
+marker, `Enter` focuses the selected tile, and `0` fits the world. Pointer activation returns focus
+to the map so keyboard operation can continue without restarting navigation.
+
+The global reduced-motion mode collapses CSS animation and transition duration. Activity pulses
+retain their existing static hold/fade semantics without drift, and loading remains legible without
+rotation. Forced-colors mode preserves borders for map-state keys, activity symbols, and the keyboard
+reticle. Full screen-reader/browser matrices, magnification and contrast calibration, remappable
+shortcuts, localization, and a player-facing accessibility preferences surface remain release work;
+they do not weaken this executable keyboard and semantic baseline.
+
 # Required decisions and artifacts
 
 - [x] Stage-A Vite/TypeScript/Vitest tooling and package versions pinned; release/CI upgrade policy remains.
 - [x] Stage-A normalized immutable projection-cache API; richer selectors, subscriptions, and renderer notifications grow with the playable UI.
 - [x] Initial React shell/PixiJS dense-world ownership boundary.
-- [ ] Camera, zoom, tile, and within-tile coordinate mapping.
+- [x] First generated-world setup flow: official profile identity, canonical seed preview, Sandbox
+  or Survival, compiled founder metabolism and allocation choices, bounded candidate-region facts,
+  and authoritative creation. Survival discloses the paired autonomous root without exposing its
+  organisms or exact resources. The hosted catalogue now offers exact-boundary save/load/unload,
+  durable ID reservation, active saved/unsaved state, and confirmed unsaved replacement. Save naming,
+  deletion, autosave policy, broader setup options, and richer replacement UX remain.
+- [x] Pre-alpha camera: seamless x-wrap with bounded y, pointer-anchored wheel/pinch zoom, explicit
+  organism follow with release rules, tile selection/focus, shared within-tile hit mapping, and
+  versioned browser-local per-world camera/selection preferences. The responsive shell gives the
+  camera the flexible wide-screen column and moves evidence beneath it before that column becomes
+  cramped. Exact markers remain until `PERF-200` selects the measured density threshold.
 - [x] Logical and generated snapshot/delta application, atomicity, replacement merge, duplicate/gap recovery, and Stage-A cache API. See [STATE_CHANGE_AND_CLIENT_SYNC.md](STATE_CHANGE_AND_CLIENT_SYNC.md).
-- [ ] Complete exploration-state visual language and stale-data UX; Stage-A unknown/reduced/live shapes and live-to-reduced cache eviction are implemented.
+- [x] Exploration-state visual language and stale-data UX: persistent legend and distinct map marks, strict live/last-known/unknown tile inspection, simulated observation age, live-to-reduced exact-data eviction, and no fallback from a selected stale tile to unrelated live evidence.
 - [x] Activity-pulse families, valence/color semantics, filtering, animation, accessibility,
   clutter handling, journey contents, visibility, and first retention tiers are defined;
   first rendering/protocol slices are implemented while aggregate clutter handling and
@@ -398,10 +509,27 @@ chart or stock reconstruction.
 - [x] First resource chart uses dependency-free SVG over exact `bigint` reconstruction; choose a
   chart library only if later interaction/downsampling needs justify it. The lineage graph library
   remains undecided.
-- [ ] Loading, disconnect, resync, and command-error UX.
+- [x] Initial loading/offline recovery, held-last-boundary disconnect state, bounded automatic and manual full-snapshot resynchronization, command locking, and rejected-versus-unconfirmed command error UX; production backoff and transport retention remain `NET-400` work.
+- [x] First authoritative clock control: optimistic pause, resume, completed-boundary single-step,
+  and slow/normal/fast wall-cadence commands. Projection, evolution, and control are refreshed as
+  one completed-boundary payload while running; evolution planning is paused-only. The first hosted
+  save/load lifecycle serializes captures, requires paused replacement, and protects unsaved changes.
+  Deadline, durable command replay, checkpoint policy, and full mailbox UX remain.
 - [x] Client balance/world-profile authority boundary, final-definition cache identity, world-profile setup consequences, and modified-world disclosure; exact metadata schemas remain part of the protocol pass. See [MODDABILITY.md](MODDABILITY.md).
-- [ ] Accessibility and input baseline.
-- [ ] Wireframes for all primary surfaces.
-- [ ] Decision-frontier, proposal-comparison, attention, consequence-review, activity-pulse,
-  organism-journey, chronicle, and loss-postmortem interaction tests.
-- [ ] Rendering benchmark with tens of thousands of visible entities and aggregates.
+- [x] Accessibility and input baseline: semantic landmarks and busy/error announcements, skip link,
+  literal non-color status text, consistent visible focus, primary 44 px targets, reduced-motion and
+  forced-colors safeguards, and pointer/button/keyboard parity for map pan, zoom, tile selection,
+  fit, and focus. Full assistive-technology matrices and configurable preferences remain release work.
+- [x] Responsive information-architecture and interaction wireframes cover setup/abiogenesis,
+  world observation, tile/organism/species inspection, resources, evolution and saved goals,
+  lineage, attention/consequence review, chronicle evidence, end-of-run summary, and all loading/
+  recovery states. See [UI_WIREFRAMES.md](UI_WIREFRAMES.md).
+- [x] Decision-frontier prerequisite closure and commit, saved proposal comparison, attention
+  evidence routing, consequence-review boundary progression, activity-pulse filtering,
+  organism-journey selection, chronicle note/live-tile navigation, and loss-postmortem evidence
+  interactions have browser-DOM coverage.
+- [x] Reproducible headless-Chrome/PixiJS rendering benchmark compares exact and visually distinct
+  tile-density presentation at 10,000 and 50,000 visible organisms, including scene construction,
+  first render, camera update, and display-object counts. It rejects text-heavy aggregation and
+  defers the real-world switch threshold to `PERF-200`. See
+  [UI_RENDERING_BENCHMARK.md](UI_RENDERING_BENCHMARK.md).

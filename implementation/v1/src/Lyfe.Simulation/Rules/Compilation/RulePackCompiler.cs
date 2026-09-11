@@ -43,6 +43,7 @@ public static class RulePackCompiler
             source.Scenarios,
             founderByKey,
             founderAllocationByKey,
+            founderPhenotypes,
             diagnostics);
         var registry = CompileRegistry(source.RegistryLock, diagnostics);
         var effectivePopulationQ = MutationIncomeMath.EffectivePopulationTable;
@@ -352,6 +353,8 @@ public static class RulePackCompiler
 
             phenotypes.Add(new CompiledPhenotype(
                 id,
+                definition.StableKey,
+                definition.DisplayName,
                 baselineFounderAllocation.Id,
                 acquiredTraits.OrderBy(trait => trait.Value).ToImmutableArray(),
                 processes,
@@ -413,6 +416,7 @@ public static class RulePackCompiler
             allocations.Add(new CompiledFounderAllocation(
                 id,
                 definition.StableKey,
+                definition.DisplayName,
                 definition.IsBaseline,
                 definition.CaptureEfficiencyMultiplierQ,
                 definition.ChemicalToleranceMultiplierQ));
@@ -952,9 +956,12 @@ public static class RulePackCompiler
         IReadOnlyList<ScenarioDefinition> definitions,
         Dictionary<string, FounderGenomeHandle> founderByKey,
         Dictionary<string, FounderAllocationHandle> founderAllocationByKey,
+        ImmutableArray<CompiledPhenotype> founderPhenotypes,
         ICollection<RuleDiagnostic> diagnostics)
     {
         var scenarios = ImmutableArray.CreateBuilder<CompiledScenario>(definitions.Count);
+        var compiledFounderById = founderPhenotypes.ToDictionary(
+            phenotype => phenotype.FounderGenomeId);
 
         foreach (var definition in definitions.OrderBy(definition => definition.NumericId))
         {
@@ -1022,12 +1029,44 @@ public static class RulePackCompiler
                 continue;
             }
 
+            var initialization = definition.FounderInitialization;
+            if (initialization is null ||
+                initialization.BiologicalAgeMaximumHours <
+                    initialization.BiologicalAgeMinimumHours ||
+                initialization.ReproductionReadinessMaximumHours <
+                    initialization.ReproductionReadinessMinimumHours)
+            {
+                AddError(
+                    "LYFE-COMPILE-SCENARIO-006",
+                    $"Scenario '{definition.StableKey}' has invalid founder initialization ranges.",
+                    diagnostics);
+                continue;
+            }
+            if (founders.Any(founder =>
+                    compiledFounderById.TryGetValue(founder.Id, out var phenotype) &&
+                    initialization.BiologicalAgeMaximumHours >=
+                    phenotype.Physiology.SenescenceOnsetHours))
+            {
+                AddError(
+                    "LYFE-COMPILE-SCENARIO-007",
+                    $"Scenario '{definition.StableKey}' can initialize a founder at or beyond senescence onset.",
+                    diagnostics);
+                continue;
+            }
+
             scenarios.Add(new CompiledScenario(
                 ScenarioId.From(definition.NumericId),
+                definition.StableKey,
+                definition.DisplayName,
                 definition.TickDurationHours,
                 founders.OrderBy(founder => founder.Id.Value).ToImmutableArray(),
                 allocations.OrderBy(allocation => allocation.Id.Value).ToImmutableArray(),
-                defaultCompetitorAllocation));
+                defaultCompetitorAllocation,
+                new CompiledFounderInitializationProfile(
+                    initialization.BiologicalAgeMinimumHours,
+                    initialization.BiologicalAgeMaximumHours,
+                    initialization.ReproductionReadinessMinimumHours,
+                    initialization.ReproductionReadinessMaximumHours)));
         }
 
         return scenarios.ToImmutable();

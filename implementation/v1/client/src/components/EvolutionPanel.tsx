@@ -20,7 +20,7 @@ import {
   type SpeciationProposal,
   type SpeciationProposalRequest,
 } from "../generated/lyfe/v1/evolution_pb";
-import { applySpeciation, previewSpeciation } from "../api/server";
+import { applySpeciation, classifyServerFailure, previewSpeciation } from "../api/server";
 import {
   createProposalRequest,
   createEvolutionGoal,
@@ -41,10 +41,12 @@ import {
 
 interface EvolutionPanelProps {
   readonly surface: EvolutionDecisionSurface;
+  readonly disabled?: boolean;
   readonly onApplied: (
     response: ApplySpeciationResponse,
     request: SpeciationProposalRequest,
   ) => void;
+  readonly onConnectionFailure?: (message: string) => void;
 }
 
 type PreviewState =
@@ -53,7 +55,12 @@ type PreviewState =
   | { readonly status: "ready"; readonly proposal: SpeciationProposal }
   | { readonly status: "error"; readonly message: string };
 
-export function EvolutionPanel({ surface, onApplied }: EvolutionPanelProps) {
+export function EvolutionPanel({
+  surface,
+  disabled = false,
+  onApplied,
+  onConnectionFailure,
+}: EvolutionPanelProps) {
   const [selectedTraits, setSelectedTraits] = useState<ReadonlySet<number>>(new Set());
   const [selectedTiles, setSelectedTiles] = useState<ReadonlySet<number>>(
     () => new Set(surface.occupiedTiles.slice(0, 1).map((tile) => tile.tileId)),
@@ -84,6 +91,7 @@ export function EvolutionPanel({ surface, onApplied }: EvolutionPanelProps) {
   );
 
   useEffect(() => {
+    if (disabled) return;
     if (selectedTraits.size === 0 || selectedTiles.size === 0) {
       setPreview({ status: "empty" });
       return;
@@ -94,14 +102,16 @@ export function EvolutionPanel({ surface, onApplied }: EvolutionPanelProps) {
       .then((proposal) => setPreview({ status: "ready", proposal }))
       .catch((error: unknown) => {
         if (!controller.signal.aborted) {
+          const failure = classifyServerFailure(error);
           setPreview({
             status: "error",
-            message: error instanceof Error ? error.message : "Preview failed.",
+            message: failure.message,
           });
+          if (failure.kind !== "rejected") onConnectionFailure?.(failure.message);
         }
       });
     return () => controller.abort();
-  }, [request, selectedTraits.size, selectedTiles.size]);
+  }, [disabled, request, selectedTraits.size, selectedTiles.size]);
 
   const selectable = surface.traits.filter((trait) => trait.selectable && !trait.acquired);
   const intentGroups = buildStrategicIntentGroups(selectable);
@@ -133,6 +143,7 @@ export function EvolutionPanel({ surface, onApplied }: EvolutionPanelProps) {
   );
 
   useEffect(() => {
+    if (disabled) return;
     if (savedRequest === null || currentMatchesSaved) {
       setSavedPreview({ status: "empty" });
       return;
@@ -143,14 +154,16 @@ export function EvolutionPanel({ surface, onApplied }: EvolutionPanelProps) {
       .then((proposal) => setSavedPreview({ status: "ready", proposal }))
       .catch((error: unknown) => {
         if (!controller.signal.aborted) {
+          const failure = classifyServerFailure(error);
           setSavedPreview({
             status: "error",
-            message: error instanceof Error ? error.message : "Saved-goal preview failed.",
+            message: failure.message,
           });
+          if (failure.kind !== "rejected") onConnectionFailure?.(failure.message);
         }
       });
     return () => controller.abort();
-  }, [savedRequest, currentMatchesSaved]);
+  }, [disabled, savedRequest, currentMatchesSaved]);
 
   const saveGoal = () => {
     if (currentGoal === null) return;
@@ -197,7 +210,7 @@ export function EvolutionPanel({ surface, onApplied }: EvolutionPanelProps) {
   };
 
   const apply = async () => {
-    if (proposal?.accepted !== true) return;
+    if (disabled || proposal?.accepted !== true) return;
     setApplying(true);
     const controller = new AbortController();
     try {
@@ -208,17 +221,26 @@ export function EvolutionPanel({ surface, onApplied }: EvolutionPanelProps) {
       if (response.applied) onApplied(response, request);
       else setPreview({ status: "ready", proposal: response.proposal! });
     } catch (error: unknown) {
+      const failure = classifyServerFailure(error);
       setPreview({
         status: "error",
-        message: error instanceof Error ? error.message : "Mutation failed.",
+        message: failure.kind === "rejected"
+          ? `Evolution command rejected. ${failure.message}`
+          : "Evolution command delivery could not be confirmed. Resynchronize before retrying.",
       });
+      if (failure.kind !== "rejected") onConnectionFailure?.(failure.message);
     } finally {
       setApplying(false);
     }
   };
 
   return (
-    <section className="evolution-panel" aria-labelledby="evolution-title">
+    <section
+      className="evolution-panel"
+      aria-labelledby="evolution-title"
+      aria-disabled={disabled}
+      aria-busy={preview.status === "loading" || applying}
+    >
       <div className="evolution-header">
         <div>
           <p className="section-label">Species decision</p>
@@ -236,6 +258,12 @@ export function EvolutionPanel({ surface, onApplied }: EvolutionPanelProps) {
         </dl>
       </div>
 
+      {disabled ? (
+        <p className="evolution-sync-lock" role="status">
+          Evolution commands are locked until the world view resynchronizes.
+        </p>
+      ) : null}
+
       <p className="acquired-traits"><strong>Current DNA:</strong> {acquiredNames}</p>
       <SavedEvolutionGoal
         surface={surface}
@@ -246,7 +274,7 @@ export function EvolutionPanel({ surface, onApplied }: EvolutionPanelProps) {
       />
       {goalNotice === null ? null : <p className="goal-notice" role="status">{goalNotice}</p>}
       <div className="evolution-builder">
-        <fieldset className="trait-picker">
+        <fieldset className="trait-picker" disabled={disabled}>
           <legend>New traits</legend>
           {intentGroups.map((group) => (
             <section className="trait-intent-group" key={group.intent}>
@@ -284,7 +312,7 @@ export function EvolutionPanel({ surface, onApplied }: EvolutionPanelProps) {
           ))}
         </fieldset>
 
-        <fieldset className="tile-picker">
+        <fieldset className="tile-picker" disabled={disabled}>
           <legend>Founding tiles</legend>
           {surface.occupiedTiles.map((tile) => (
             <label key={tile.tileId}>
@@ -317,6 +345,7 @@ export function EvolutionPanel({ surface, onApplied }: EvolutionPanelProps) {
       ) : null}
       <div className="evolution-actions">
         <button
+          type="button"
           className="goal-save-button"
           disabled={currentGoal === null || currentMatchesSaved}
           onClick={saveGoal}
@@ -325,8 +354,9 @@ export function EvolutionPanel({ surface, onApplied }: EvolutionPanelProps) {
             currentMatchesSaved ? "Evolution goal saved" : "Update saved goal"}
         </button>
         <button
+          type="button"
           className="speciate-button"
-          disabled={proposal?.accepted !== true || applying}
+          disabled={disabled || proposal?.accepted !== true || applying}
           onClick={apply}
         >
           {applying ? "Branching…" : "Found descendant species"}
@@ -363,7 +393,7 @@ function SavedEvolutionGoal({ surface, goal, loaded, onLoad, onRemove }: {
           <h3 id="evolution-goal-title">Saved goal needs revision</h3>
         </div>
         <p>Its traits or founding tiles are no longer available to this species.</p>
-        <div className="goal-actions"><button onClick={onRemove}>Remove goal</button></div>
+        <div className="goal-actions"><button type="button" onClick={onRemove}>Remove goal</button></div>
       </section>
     );
   }
@@ -410,8 +440,8 @@ function SavedEvolutionGoal({ surface, goal, loaded, onLoad, onRemove }: {
         reserves no points, applies nothing automatically, and is not a survival forecast.
       </small>
       <div className="goal-actions">
-        <button disabled={loaded} onClick={onLoad}>{loaded ? "Loaded in builder" : "Load goal"}</button>
-        <button onClick={onRemove}>Remove goal</button>
+        <button type="button" disabled={loaded} onClick={onLoad}>{loaded ? "Loaded in builder" : "Load goal"}</button>
+        <button type="button" onClick={onRemove}>Remove goal</button>
       </div>
     </section>
   );

@@ -12,6 +12,7 @@ namespace Lyfe.Simulation.Publication;
 public enum PublicationWorldLifecycle : byte
 {
     PausedReady = 1,
+    Running = 2,
 }
 
 public enum PublicationLifecyclePhase : byte
@@ -145,6 +146,7 @@ public sealed record PublicationTile(
     int X,
     int Y,
     int ElevationMeters,
+    uint BaselineVolcanismQ,
     ImmutableArray<PublicationResourceStock> ResourceStocks);
 
 public sealed record PublicationSpecies(

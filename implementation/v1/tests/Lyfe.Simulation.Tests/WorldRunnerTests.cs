@@ -351,10 +351,10 @@ public sealed class WorldRunnerTests
         var firstTickHash = runner.AdvanceOneTick().Snapshot.StateHash;
 
         Assert.Equal(
-            "f348869182e65d1248147cd5dc7cc4c362433ba4ea5c1ea13a251701951a69bd",
+            "cb2f61f250d900f0f9874a183e7fe2fca71bb9b5907e70c86288e57aa4dbcc4e",
             creationHash);
         Assert.Equal(
-            "d988afe83a5c4091ddf75a6560376c474534fb627ee3ade498b34884ad485191",
+            "b61874fc3f9f11385e92516915dafc429d586511fd6fc34f75c2e36bc1a6f584",
             firstTickHash);
     }
 

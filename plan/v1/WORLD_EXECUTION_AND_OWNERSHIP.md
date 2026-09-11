@@ -16,6 +16,16 @@ The server process owns a `WorldRunner` with exclusive write access to one loade
 
 V1 local/server deployment loads at most one active world per process. The process may list many saved worlds, but loading another requires stopping or unloading the current one. This gives a heavy simulation an explicit CPU and memory budget and makes a whole world the natural unit for restart, migration to larger hardware, and fault containment.
 
+The first hosted setup slice starts with no active runner. A seed-specific read-only setup preview
+may compile generated candidate facts without installing mutable world state. An accepted creation
+request constructs and fully validates a runner before atomically installing it in `PausedReady`;
+no connection can observe partial generation. Replacing an existing in-memory world is permitted
+only while paused. The hosted catalogue captures a detached exact boundary, serializes and atomically
+replaces the save outside the clock lock, and fully restores a compatible, hash-verified runner before
+installation. Save/load/unload commands use optimistic active identity, and an unsaved active boundary
+cannot be discarded without explicit confirmation. World-ID reservations advance an atomically
+persisted monotonic counter before a new runner is exposed.
+
 The APIs, identifiers, configuration, and actor model remain world-scoped so a future service can supervise many world processes. Multiple players may eventually connect to the same world runner; multiplayer does not require multiple writers.
 
 # Why ownership begins at the world
@@ -208,7 +218,12 @@ Simulation time and wall time remain separate:
 
 For paced modes, the runner uses a monotonic clock. If a tick finishes late, it may begin the next tick immediately, but it does not accumulate unbounded catch-up debt. After a configurable bounded burst it resets the wall deadline and publishes `SpeedLimited` status with measured achieved rate. This affects only responsiveness, never simulated order or results.
 
-Exact presets, maximum burst, yield cadence, and response-time targets remain gameplay/performance calibration decisions.
+The first single-process implementation uses provisional paced presets of `2,000 ms` (Slow),
+`1,000 ms` (Normal), and `100 ms` (Fast) per completed tick. A host-owned service serializes these
+controls and boundary reads around the existing single writer, assigns an independent optimistic
+control revision, auto-pauses when gameplay ends, and carries no catch-up debt. This is an explicit
+bridge toward the loop below rather than the final mailbox: it has no `Unpaced` mode, bounded burst,
+durable command replay, actor envelope, deadline policy, or calibrated response-time guarantee yet.
 
 ## Runner control loop
 

@@ -1,6 +1,6 @@
 # Player Loop, Attention, and Emergent Narrative
 
-Status: first v1 contract; interaction wireframes and opening-choice calibration remain
+Status: first v1 contract and primary-surface wireframes defined; interaction-test expansion and opening-choice calibration remain
 
 Sources: [GAMEPLAY vision](../../vision/GAMEPLAY.md), [INTERFACE vision](../../vision/INTERFACE.md), [gameplay flows](GAMEPLAY.md), [evolution](EVOLUTION.md), [behavior and resource pressure](BEHAVIOR_AND_RESOURCE_PRESSURE.md), and [Survival opening validation](SURVIVAL_OPENING_VALIDATION.md).
 

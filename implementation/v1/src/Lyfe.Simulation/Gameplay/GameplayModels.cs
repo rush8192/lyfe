@@ -23,6 +23,13 @@ public enum GameLossReason : byte
     ControlledSpeciesExtinct = 2,
 }
 
+public enum FounderInitializationMode : byte
+{
+    ScenarioDefault = 0,
+    LegacyFixture = 1,
+    ZeroSpreadFixture = 2,
+}
+
 public sealed record GameSetupCommand(
     GameMode Mode,
     FounderGenomeId PlayerFounderGenomeId,
@@ -31,7 +38,8 @@ public sealed record GameSetupCommand(
     FounderGenomeId? CompetitorFounderGenomeId = null,
     TileId? CompetitorStartingTileId = null,
     FounderAllocationId? PlayerFounderAllocationId = null,
-    FounderAllocationId? CompetitorFounderAllocationId = null);
+    FounderAllocationId? CompetitorFounderAllocationId = null,
+    FounderInitializationMode FounderInitialization = FounderInitializationMode.ScenarioDefault);
 
 public readonly record struct AbiogenesisRoot(
     SpeciesId SpeciesId,

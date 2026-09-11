@@ -864,6 +864,10 @@ internal static class CanonicalRuleHashWriter
                 WriteUInt32Field(writer, 1, allocation.Id.Value);
             }
             WriteUInt32Field(writer, 5, scenario.DefaultCompetitorFounderAllocation.Id.Value);
+            WriteUInt64Field(writer, 6, scenario.FounderInitialization.BiologicalAgeMinimumHours);
+            WriteUInt64Field(writer, 7, scenario.FounderInitialization.BiologicalAgeMaximumHours);
+            WriteUInt64Field(writer, 8, scenario.FounderInitialization.ReproductionReadinessMinimumHours);
+            WriteUInt64Field(writer, 9, scenario.FounderInitialization.ReproductionReadinessMaximumHours);
         }
 
         Field(writer, 14);

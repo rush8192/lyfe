@@ -47,6 +47,7 @@ public sealed record CompiledGasEnvironment(
 
 public sealed record CompiledWorldProfile(
     string WorldProfileKey,
+    string DisplayName,
     uint Width,
     uint Height,
     bool WrapX,

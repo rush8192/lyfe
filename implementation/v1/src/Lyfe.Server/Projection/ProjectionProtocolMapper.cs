@@ -35,6 +35,8 @@ public static class ProjectionProtocolMapper
             {
                 Simulation.Publication.PublicationWorldLifecycle.PausedReady =>
                     Proto.WorldLifecycle.PausedReady,
+                Simulation.Publication.PublicationWorldLifecycle.Running =>
+                    Proto.WorldLifecycle.Running,
                 _ => throw new ArgumentOutOfRangeException(nameof(source), "Unsupported world lifecycle."),
             },
             Gameplay = ToProtocol(boundary.Gameplay),
@@ -98,6 +100,8 @@ public static class ProjectionProtocolMapper
             {
                 Simulation.Publication.PublicationWorldLifecycle.PausedReady =>
                     Proto.WorldLifecycle.PausedReady,
+                Simulation.Publication.PublicationWorldLifecycle.Running =>
+                    Proto.WorldLifecycle.Running,
                 _ => throw new ArgumentOutOfRangeException(nameof(source), "Unsupported world lifecycle."),
             },
             WorldRulesHash = source.WorldRulesHash,
@@ -478,6 +482,7 @@ public static class ProjectionProtocolMapper
                     ElevationMeters = live.ElevationMeters,
                     ObservedAtTick = live.ObservedAtTick,
                     ResourceFlowPeriodHours = live.ResourceFlowPeriodHours,
+                    BaselineVolcanismQ = live.BaselineVolcanismQ,
                 };
                 result.Live.ResourceStocks.Add(live.ResourceStocks.Select(stock =>
                     new Proto.ExactResourceStock

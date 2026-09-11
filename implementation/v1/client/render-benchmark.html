@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LYFE rendering benchmark</title>
+    <style>
+      body { margin: 0; background: #071113; color: #e3fff6; font: 14px system-ui, sans-serif; }
+      canvas { display: block; width: 1280px; height: 720px; }
+      pre { white-space: pre-wrap; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>LYFE rendering benchmark</h1>
+      <p id="benchmark-status">Running…</p>
+      <pre id="benchmark-results"></pre>
+      <div id="benchmark-canvas"></div>
+    </main>
+    <script type="module" src="/src/rendering/worldRenderingBenchmark.ts"></script>
+  </body>
+</html>

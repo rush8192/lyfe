@@ -33,6 +33,18 @@ public sealed class EvolutionProtocolService
         }
     }
 
+    public Proto.EvolutionDecisionSurface CaptureDecisionSurface(
+        WorldRunner runner,
+        WorldPublicationSnapshot publication)
+    {
+        ArgumentNullException.ThrowIfNull(runner);
+        ArgumentNullException.ThrowIfNull(publication);
+        lock (gate)
+        {
+            return CaptureDecisionSurfaceCore(runner, publication);
+        }
+    }
+
     public Proto.SpeciationProposal Preview(
         WorldRunner runner,
         Proto.SpeciationProposalRequest request)

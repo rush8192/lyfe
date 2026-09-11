@@ -4,6 +4,7 @@ import {
   AcquisitionGateEvidenceSchema,
   AcquisitionGateReason,
   AcquisitionProcess,
+  ActorWorldProjectionSchema,
   ExactResourceStockSchema,
   OrganismActionGateEvidenceSchema,
   OrganismActionGateReason,
@@ -25,10 +26,36 @@ import {
   buildResourceContributorRows,
   describeAcquisitionGate,
   describeOrganismActionGate,
+  selectLiveTile,
   selectLimitingAcquisition,
 } from "./ResourcePressurePanel";
 
 describe("resource flow rows", () => {
+  it("does not substitute another live tile for an explicitly selected stale tile", () => {
+    const world = create(ActorWorldProjectionSchema, {
+      controlledSpeciesId: 5n,
+      tiles: [
+        {
+          tileId: 1,
+          detail: {
+            case: "live",
+            value: { organisms: [{ organismId: 9n, speciesId: 5n }] },
+          },
+        },
+        {
+          tileId: 2,
+          detail: {
+            case: "reduced",
+            value: { observedAtTick: 3n },
+          },
+        },
+      ],
+    });
+
+    expect(selectLiveTile(world, 9n, 2)).toBeNull();
+    expect(selectLiveTile(world, 9n, null)?.tileId).toBe(1);
+  });
+
   it("names true reactions separately from environmental and masked biological contributors", () => {
     const rows = buildResourceContributorRows({
       resourceFlowContributors: [

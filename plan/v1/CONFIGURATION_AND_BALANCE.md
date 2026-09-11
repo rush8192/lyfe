@@ -146,6 +146,7 @@ Configuration loading should reject:
 - [x] Game-native resource scale, structural-biomass composition, and reserve-energy density; see [RESOURCE_CALIBRATION.md](RESOURCE_CALIBRATION.md).
 - [x] Founder available-store capacity groups, composition-derived load, initial values, desired inventories, and founder waste routing; see [INTERNAL_STORAGE_AND_ALLOCATION.md](INTERNAL_STORAGE_AND_ALLOCATION.md).
 - [x] Primitive micronutrient uptake at `0.5` expected quantum per organism-hour with normalized-deficit targeting and ordinary contention; advanced trait modifiers remain open.
+- [x] Default founder-cohort initialization uses scenario-authored inclusive `0..168`-hour biological-age and `240..360`-hour initial-reproduction-readiness ranges with separate keyed RNG domains; legacy and true zero-spread modes remain fixture-only controls.
 - [ ] Default final date and speed presets.
 - [x] First mutation-income formula, deterministic arithmetic, economy scales, and coupled opening cadence through the first player speciation; see [EVOLUTION.md](EVOLUTION.md) and [SURVIVAL_OPENING_VALIDATION.md](SURVIVAL_OPENING_VALIDATION.md). Longer autonomous branching and final-date population validation remain open.
 - [x] Two exact founding-metabolism identities, path asymmetry, numeric reactions, milestone prices, and coupled opening targets; see [FOUNDING_METABOLISMS.md](FOUNDING_METABOLISMS.md) and [SURVIVAL_OPENING_VALIDATION.md](SURVIVAL_OPENING_VALIDATION.md). Optional founder packages and catalogue-wide prices remain tuning work.

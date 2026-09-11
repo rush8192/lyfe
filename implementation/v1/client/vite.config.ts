@@ -4,15 +4,21 @@ import react from "@vitejs/plugin-react";
 export default defineConfig(({ mode }) => {
   const environment = loadEnv(mode, ".", "LYFE_");
   const serverOrigin = environment.LYFE_API_ORIGIN ?? "http://localhost:5080";
+  const proxy = {
+    "/api": serverOrigin,
+    "/health": serverOrigin,
+  };
   return {
     plugins: [react()],
     server: {
       port: 5173,
       strictPort: true,
-      proxy: {
-        "/api": serverOrigin,
-        "/health": serverOrigin,
-      },
+      proxy,
+    },
+    preview: {
+      port: 5173,
+      strictPort: true,
+      proxy,
     },
   };
 });

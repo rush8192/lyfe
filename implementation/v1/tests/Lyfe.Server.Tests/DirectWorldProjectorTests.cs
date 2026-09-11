@@ -53,6 +53,7 @@ public sealed class DirectWorldProjectorTests
 
         var live = Assert.IsType<LiveTileProjection>(projection.Tiles[0]);
         Assert.Equal(source.CompletedTick, live.ObservedAtTick);
+        Assert.Equal(source.Tiles[0].BaselineVolcanismQ, live.BaselineVolcanismQ);
         Assert.Equal(source.Tiles[0].ResourceStocks.Length, live.ResourceStocks.Length);
         Assert.Equal(100, live.Organisms.Length);
         Assert.Equal(source.ResourceFlowPeriodHours, live.ResourceFlowPeriodHours);

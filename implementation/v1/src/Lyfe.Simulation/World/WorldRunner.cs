@@ -317,12 +317,13 @@ public sealed class WorldRunner
         WorldId worldId,
         CompiledWorldRules rules,
         RootRandomSeed rootSeed,
-        uint founderCount = DefaultFoundationPopulation) =>
+        uint founderCount = DefaultFoundationPopulation,
+        FounderInitializationMode founderInitialization = FounderInitializationMode.LegacyFixture) =>
         new(
             worldId,
             rules,
             rootSeed,
-            DefaultSandboxSetup(rules, rootSeed, founderCount),
+            DefaultSandboxSetup(rules, rootSeed, founderCount, founderInitialization),
             NoTickFaultInjector.Instance);
 
     public static WorldRunner CreateGame(
@@ -347,7 +348,11 @@ public sealed class WorldRunner
             worldId,
             rules,
             rootSeed,
-            DefaultSandboxSetup(rules, rootSeed, founderCount),
+            DefaultSandboxSetup(
+                rules,
+                rootSeed,
+                founderCount,
+                FounderInitializationMode.LegacyFixture),
             faultInjector);
 
     public WorldSnapshot CaptureSnapshot()
@@ -387,6 +392,7 @@ public sealed class WorldRunner
                     tile.X,
                     tile.Y,
                     tile.ElevationMeters,
+                    world.Rules.WorldProfile.Tiles[checked((int)tile.Id.Value)].BaselineVolcanismQ,
                     stocks.MoveToImmutable()));
             }
 
@@ -1680,6 +1686,7 @@ public sealed class WorldRunner
             playerSpeciesId,
             setup.PlayerStartingTileId,
             setup.FounderPopulation,
+            setup.FounderInitialization,
             oracle,
             changes);
         var roots = ImmutableArray.CreateBuilder<AbiogenesisRoot>(
@@ -1704,6 +1711,7 @@ public sealed class WorldRunner
                 competitorSpeciesId,
                 competitorTile,
                 setup.FounderPopulation,
+                setup.FounderInitialization,
                 oracle,
                 changes);
             roots.Add(new AbiogenesisRoot(
@@ -1731,10 +1739,13 @@ public sealed class WorldRunner
         SpeciesId speciesId,
         TileId tileId,
         uint founderCount,
+        FounderInitializationMode initializationMode,
         SemanticRandomOracle oracle,
         PhaseChangeBuilder changes)
     {
         var phenotype = world.GetCompiledPhenotype(speciesId);
+        var initialization = Rules.RulePack.Scenarios[Rules.Scenario.DenseSlot]
+            .FounderInitialization;
         var committedMicronutrients = MicronutrientInventory.Compile(
             phenotype.Physiology.CommittedMicronutrientQuotas);
         foreach (var quota in phenotype.Physiology.CommittedMicronutrientQuotas)
@@ -1771,6 +1782,27 @@ public sealed class WorldRunner
                     committedMicronutrients,
                     MicronutrientInventory.Empty),
                 changes);
+            var biologicalAgeHours = FounderBiologicalAge(
+                organismId,
+                speciesId,
+                tileId,
+                initialization,
+                initializationMode,
+                oracle);
+            if (biologicalAgeHours > 0)
+            {
+                world.SetOrganismBiologicalAge(
+                    organismId,
+                    0,
+                    biologicalAgeHours,
+                    changes);
+                world.MaterializeOrganismCondition(
+                    organismId,
+                    0,
+                    ConditionSnapshotKind.End,
+                    world.GetOrganismEnvironment(tileId),
+                    changes);
+            }
             var positionX = checked((uint)oracle.UniformInclusive(
                 RandomAddress.Create(
                     RandomDomains.FounderPositionX,
@@ -1787,16 +1819,17 @@ public sealed class WorldRunner
                 uint.MaxValue));
             world.SetOrganismPosition(organismId, positionX, positionY, 0, 0, changes);
             var reproduction = world.GetCompiledPhenotype(speciesId).Physiology.Reproduction;
-            var jitter = oracle.UniformInclusive(
-                RandomAddress.Create(
-                    RandomDomains.ReproductionCooldownJitter,
-                    organismId.Value,
-                    0,
-                    0),
-                reproduction.CooldownJitterMaximumHours);
+            var readinessHours = FounderReproductionReadiness(
+                organismId,
+                speciesId,
+                tileId,
+                initialization,
+                reproduction,
+                initializationMode,
+                oracle);
             world.SetOrganismLifecycleSchedule(
                 organismId,
-                checked((reproduction.BaseCooldownHours + jitter +
+                checked((readinessHours +
                     Rules.TickDurationHours - 1) / Rules.TickDurationHours),
                 0,
                 0,
@@ -1804,10 +1837,81 @@ public sealed class WorldRunner
         }
     }
 
+    private static ulong FounderBiologicalAge(
+        OrganismId organismId,
+        SpeciesId speciesId,
+        TileId tileId,
+        CompiledFounderInitializationProfile profile,
+        FounderInitializationMode mode,
+        SemanticRandomOracle random) => mode == FounderInitializationMode.ScenarioDefault
+            ? UniformFounderRange(
+                profile.BiologicalAgeMinimumHours,
+                profile.BiologicalAgeMaximumHours,
+                RandomDomains.FounderBiologicalAge,
+                organismId,
+                speciesId,
+                tileId,
+                random)
+            : 0;
+
+    private static ulong FounderReproductionReadiness(
+        OrganismId organismId,
+        SpeciesId speciesId,
+        TileId tileId,
+        CompiledFounderInitializationProfile initialization,
+        CompiledReproductionProfile reproduction,
+        FounderInitializationMode mode,
+        SemanticRandomOracle random)
+    {
+        if (mode == FounderInitializationMode.ScenarioDefault)
+        {
+            return UniformFounderRange(
+                initialization.ReproductionReadinessMinimumHours,
+                initialization.ReproductionReadinessMaximumHours,
+                RandomDomains.FounderReproductionReadiness,
+                organismId,
+                speciesId,
+                tileId,
+                random);
+        }
+        if (mode == FounderInitializationMode.ZeroSpreadFixture)
+        {
+            return reproduction.BaseCooldownHours;
+        }
+        var legacyJitter = random.UniformInclusive(
+            RandomAddress.Create(
+                RandomDomains.ReproductionCooldownJitter,
+                organismId.Value,
+                0,
+                0),
+            reproduction.CooldownJitterMaximumHours);
+        return checked(reproduction.BaseCooldownHours + legacyJitter);
+    }
+
+    private static ulong UniformFounderRange(
+        ulong minimum,
+        ulong maximum,
+        RandomDomainId domain,
+        OrganismId organismId,
+        SpeciesId speciesId,
+        TileId tileId,
+        SemanticRandomOracle random)
+    {
+        if (minimum == maximum)
+        {
+            return minimum;
+        }
+        var offset = random.UniformInclusive(
+            RandomAddress.Create(domain, organismId.Value, speciesId.Value, tileId.Value),
+            maximum - minimum);
+        return checked(minimum + offset);
+    }
+
     private static GameSetupCommand DefaultSandboxSetup(
         CompiledWorldRules rules,
         RootRandomSeed rootSeed,
-        uint founderCount)
+        uint founderCount,
+        FounderInitializationMode founderInitialization)
     {
         ArgumentNullException.ThrowIfNull(rules);
         if (founderCount is 0 or > MaximumFoundationPopulation)
@@ -1834,13 +1938,15 @@ public sealed class WorldRunner
             tileId,
             founderCount,
             PlayerFounderAllocationId: rules.RulePack.FounderAllocations
-                .Single(value => value.IsBaseline).Id);
+                .Single(value => value.IsBaseline).Id,
+            FounderInitialization: founderInitialization);
     }
 
     private static void ValidateSetup(CompiledWorldRules rules, GameSetupCommand setup)
     {
         ArgumentNullException.ThrowIfNull(setup);
         if (!Enum.IsDefined(setup.Mode) ||
+            !Enum.IsDefined(setup.FounderInitialization) ||
             setup.FounderPopulation is 0 or > MaximumFoundationPopulation)
         {
             throw new ArgumentException("The gameplay mode or founder population is invalid.", nameof(setup));

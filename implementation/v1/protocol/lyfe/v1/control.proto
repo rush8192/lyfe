@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+package lyfe.v1;
+
+option csharp_namespace = "Lyfe.Protocol.V1";
+
+import "lyfe/v1/evolution.proto";
+import "lyfe/v1/projection.proto";
+
+enum SimulationSpeedPreset {
+  SIMULATION_SPEED_PRESET_UNSPECIFIED = 0;
+  SIMULATION_SPEED_PRESET_SLOW = 1;
+  SIMULATION_SPEED_PRESET_NORMAL = 2;
+  SIMULATION_SPEED_PRESET_FAST = 3;
+}
+
+enum WorldControlAction {
+  WORLD_CONTROL_ACTION_UNSPECIFIED = 0;
+  WORLD_CONTROL_ACTION_PAUSE = 1;
+  WORLD_CONTROL_ACTION_RESUME = 2;
+  WORLD_CONTROL_ACTION_STEP = 3;
+  WORLD_CONTROL_ACTION_SET_SPEED = 4;
+}
+
+message WorldControlCommand {
+  uint64 expected_control_revision = 1;
+  WorldControlAction action = 2;
+  SimulationSpeedPreset speed = 3;
+}
+
+message WorldControlState {
+  uint64 control_revision = 1;
+  WorldLifecycle lifecycle = 2;
+  SimulationSpeedPreset speed = 3;
+  uint32 target_interval_ms = 4;
+  uint64 completed_tick = 5;
+  uint64 world_revision = 6;
+  uint64 simulated_hours = 7;
+  GameRunStatus game_run_status = 8;
+}
+
+message ActiveWorldState {
+  ProjectionSnapshot projection = 1;
+  EvolutionDecisionSurface evolution = 2;
+  WorldControlState control = 3;
+}

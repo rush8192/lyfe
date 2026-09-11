@@ -14,16 +14,16 @@ public sealed class RuleCompilationTests
         var compiled = CompileOfficialRules();
 
         Assert.Equal(
-            "42030eb34544faada34c7a4603f896a3c37b0b289ceb77017342fb58f5abace7",
+            "286766d54e8a8039495c49bb04a17f7c4f27080efaf6a91f5677ed53408a785d",
             compiled.Identity.MechanicsHash);
         Assert.Equal(
-            "567719a6dd4ebdbd88f3c1dcb36378c14d0f018c0f7df297c545401c17f2154e",
+            "a9868f4c04cc7a9f4a4a9592858057d08a8251127cd78d67fbd353cc54dc62d0",
             compiled.Identity.PresentationHash);
         Assert.Equal(
             "9817cefa04b9a8ceae73e383838f8d4406dba65db9db75fc14db19bc87b786c1",
             compiled.Identity.RegistryManifestHash);
         Assert.Equal(
-            "fd5f33f42585eb540cd5d630019ef661a9d819d652d71cdd128d477d1a9b6f4e",
+            "a0a585949f8e6e2180ebdb7b32e72d7e44ab65d34c064ffe85a02f61814f9cbd",
             compiled.Identity.CompiledArtifactHash);
     }
 
@@ -91,6 +91,9 @@ public sealed class RuleCompilationTests
         Assert.Equal([1U, 2U, 3U], scenario.PermittedFounderAllocations
             .Select(allocation => allocation.Id.Value));
         Assert.Equal(1U, scenario.DefaultCompetitorFounderAllocation.Id.Value);
+        Assert.Equal(
+            new CompiledFounderInitializationProfile(0, 168, 240, 360),
+            scenario.FounderInitialization);
         Assert.Equal(
             [(1U, 1_000_000U, 1_000_000U), (2U, 1_062_500U, 800_000U), (3U, 937_500U, 1_250_000U)],
             compiled.FounderAllocations.Select(allocation => (
@@ -309,6 +312,59 @@ public sealed class RuleCompilationTests
     }
 
     [Fact]
+    public void InvalidFounderInitializationRangeFailsClosed()
+    {
+        var source = LoadOfficialRules();
+        var scenario = Assert.Single(source.Scenarios);
+        var invalid = source with
+        {
+            Scenarios =
+            [
+                scenario with
+                {
+                    FounderInitialization = scenario.FounderInitialization with
+                    {
+                        BiologicalAgeMinimumHours = 200,
+                        BiologicalAgeMaximumHours = 100,
+                    },
+                },
+            ],
+        };
+
+        var result = RulePackCompiler.Compile(invalid);
+
+        Assert.False(result.IsSuccess);
+        Assert.Contains(result.Diagnostics,
+            diagnostic => diagnostic.Code == "LYFE-COMPILE-SCENARIO-006");
+    }
+
+    [Fact]
+    public void FounderInitializationCannotBeginAtSenescence()
+    {
+        var source = LoadOfficialRules();
+        var scenario = Assert.Single(source.Scenarios);
+        var invalid = source with
+        {
+            Scenarios =
+            [
+                scenario with
+                {
+                    FounderInitialization = scenario.FounderInitialization with
+                    {
+                        BiologicalAgeMaximumHours = 720,
+                    },
+                },
+            ],
+        };
+
+        var result = RulePackCompiler.Compile(invalid);
+
+        Assert.False(result.IsSuccess);
+        Assert.Contains(result.Diagnostics,
+            diagnostic => diagnostic.Code == "LYFE-COMPILE-SCENARIO-007");
+    }
+
+    [Fact]
     public void BehaviorProfileEditChangesMechanicsAndCompiledIdentity()
     {
         var source = LoadOfficialRules();
@@ -403,7 +459,7 @@ public sealed class RuleCompilationTests
             "1b82aef52f4ca811c2ad0e237a58c546cc1c569c9fb0fa5567d37a77a2e7f77f",
             result.WorldRules.Identity.CompiledWorldProfileHash);
         Assert.Equal(
-            "763d49ed1cb3516d644f7398cd38aea864dfb12e325f3ef3819d1488636a9c78",
+            "fcbde4df5f85d12b2948567177b63b47cea3c478fc2e8eb245114ad99ffd1f5d",
             result.WorldRules.Identity.WorldRulesHash);
         Assert.Equal(1U, result.WorldRules.TickDurationHours);
 

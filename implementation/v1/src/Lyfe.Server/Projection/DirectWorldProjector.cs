@@ -272,6 +272,7 @@ public static class DirectWorldProjector
                 tile.X,
                 tile.Y,
                 tile.ElevationMeters,
+                tile.BaselineVolcanismQ,
                 completedTick,
                 tile.ResourceStocks
                     .OrderBy(stock => stock.ResourceId.Value)

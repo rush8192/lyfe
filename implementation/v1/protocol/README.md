@@ -14,7 +14,9 @@ expose their combined recyclable stock. These are absolute, canonically ordered 
 entries; clients display or replace them and never infer quota state from DNA or tile totals.
 
 The projection snapshot carries presentation-only resource definitions sourced from the
-compiled mod pack. A live tile pairs exact stocks with sparse last-completed-tick flow totals
+compiled mod pack. A live tile carries its compiled baseline volcanism so a client can present the
+known geological source without inferring it from resource flow or exposing unknown tiles. It also
+pairs exact stocks with sparse last-completed-tick flow totals
 for environmental source/sink, neighbor exchange in/out, and organism uptake/release. Every
 amount derives from an applied tile ledger entry; clients may sum gross inputs, gross outputs,
 and net change but must not infer a flow from stock differences. A live tile also carries a
@@ -179,6 +181,32 @@ the latest 1,024 response bytes so an exact retry returns the original command o
 while conflicting reuse returns HTTP 409. This is a deliberately narrow bridge to the
 future hosted command queue: actor/session identity, durable command replay, queue admission,
 and asynchronous safe-boundary acknowledgements remain unimplemented.
+
+`control.proto` owns the first host-level time-control bridge. `WorldControlCommand` uses an
+optimistic control revision for pause, resume, one-tick step, and speed changes; speed is a
+wall-clock target and never changes simulated tick duration. `WorldControlState` returns the
+operational lifecycle alongside completed tick, world revision, simulated hours, and gameplay run
+status. `ActiveWorldState` couples that control state with a full projection snapshot and evolution
+decision surface captured under one host lock, so clients reject rather than combine boundaries.
+This operational control state is deliberately outside the simulation hash and save payload; saves
+remain paused-boundary artifacts. Actor envelopes, durable replay, and the bounded hosted mailbox
+remain later contracts.
+
+`setup.proto` owns the first generated-world creation boundary. `WorldSetupSurface` reports
+compiled founder and allocation presentation facts plus seed-realized candidate-region depth,
+current temperature, volcanism, and bounded repair status. It deliberately omits candidate tile
+IDs, resource stocks, non-candidate geography, and hidden organisms. `CreateWorldRequest` carries
+only the canonical seed, game mode, permanent founder/allocation IDs, and candidate-pair index;
+the server regenerates the world and revalidates scenario membership and start-role compatibility.
+In Survival it chooses the other permitted metabolism and the paired neighboring start itself.
+
+`persistence.proto` owns the first hosted save catalogue and lifecycle commands. Catalogue entries
+contain bounded descriptor facts, never logical payload contents, and identify whether a saved file
+is the exact active world revision. Save, load, and unload requests carry optimistic world identity;
+load and unload additionally require an explicit acknowledgement before discarding an unsaved active
+boundary. The host lists only structurally valid saves compatible with its compiled rules, while a
+direct load still performs full envelope checks, payload decoding, restore validation, and state-hash
+verification before atomically installing the replacement runner.
 
 From `implementation/v1/client`, regenerate TypeScript bindings with:
 

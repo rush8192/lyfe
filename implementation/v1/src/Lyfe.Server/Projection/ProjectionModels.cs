@@ -293,6 +293,7 @@ public sealed record LiveTileProjection(
     int X,
     int Y,
     int ElevationMeters,
+    uint BaselineVolcanismQ,
     ulong ObservedAtTick,
     ImmutableArray<ExactResourceStockProjection> ResourceStocks,
     ImmutableArray<OrganismProjection> Organisms,

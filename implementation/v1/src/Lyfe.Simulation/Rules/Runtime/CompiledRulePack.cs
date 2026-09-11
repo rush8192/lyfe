@@ -184,6 +184,7 @@ public sealed record CompiledTrait(
 public sealed record CompiledFounderAllocation(
     FounderAllocationId Id,
     string StableKey,
+    string DisplayName,
     bool IsBaseline,
     uint CaptureEfficiencyMultiplierQ,
     uint ChemicalToleranceMultiplierQ);
@@ -215,6 +216,8 @@ public sealed record CompiledOrganismPhysiology(
 
 public sealed record CompiledPhenotype(
     FounderGenomeId FounderGenomeId,
+    string StableKey,
+    string DisplayName,
     FounderAllocationId FounderAllocationId,
     ImmutableArray<TraitId> AcquiredTraits,
     ImmutableArray<CompiledProcessPlan> Processes,
@@ -225,10 +228,19 @@ public sealed record CompiledPhenotype(
 
 public sealed record CompiledScenario(
     ScenarioId Id,
+    string StableKey,
+    string DisplayName,
     uint TickDurationHours,
     ImmutableArray<FounderGenomeHandle> PermittedFounders,
     ImmutableArray<FounderAllocationHandle> PermittedFounderAllocations,
-    FounderAllocationHandle DefaultCompetitorFounderAllocation);
+    FounderAllocationHandle DefaultCompetitorFounderAllocation,
+    CompiledFounderInitializationProfile FounderInitialization);
+
+public sealed record CompiledFounderInitializationProfile(
+    ulong BiologicalAgeMinimumHours,
+    ulong BiologicalAgeMaximumHours,
+    ulong ReproductionReadinessMinimumHours,
+    ulong ReproductionReadinessMaximumHours);
 
 public sealed class CompiledRulePack
 {

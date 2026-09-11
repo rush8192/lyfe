@@ -14,7 +14,18 @@ public static class WorldSaveService
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(runner);
-        var detached = runner.CapturePersistenceSnapshot();
+        return await SaveAsync(
+            runner.CapturePersistenceSnapshot(),
+            destinationPath,
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    public static async Task<SaveEnvelopeDescriptor> SaveAsync(
+        WorldPersistenceSnapshot detached,
+        string destinationPath,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(detached);
         var metadata = SaveEnvelopeMetadataFactory.Create(detached.Metadata);
         var logicalPayload = WorldPayloadCodec.Encode(detached.State);
         var envelope = SaveEnvelopeCodec.Encode(metadata, logicalPayload);

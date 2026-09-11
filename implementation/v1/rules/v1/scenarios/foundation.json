@@ -15,7 +15,13 @@
         "founder-allocation.high-throughput",
         "founder-allocation.stress-tolerant"
       ],
-      "defaultCompetitorFounderAllocationKey": "founder-allocation.balanced"
+      "defaultCompetitorFounderAllocationKey": "founder-allocation.balanced",
+      "founderInitialization": {
+        "biologicalAgeMinimumHours": 0,
+        "biologicalAgeMaximumHours": 168,
+        "reproductionReadinessMinimumHours": 240,
+        "reproductionReadinessMaximumHours": 360
+      }
     }
   ]
 }

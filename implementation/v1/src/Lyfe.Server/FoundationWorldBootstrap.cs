@@ -21,6 +21,21 @@ internal static class FoundationWorldBootstrap
         return worldRules;
     }
 
+    public static CompiledWorldRules LoadGeneratedRules(string applicationBaseDirectory)
+    {
+        var compiledWorld = WorldRulesPipeline.Compile(
+            new HostDirectoryContentSource(applicationBaseDirectory, "OfficialRules"),
+            new HostDirectoryContentSource(applicationBaseDirectory, "OfficialGeneratedWorld"),
+            "scenario.foundation-sandbox",
+            "world.primordial-earth-v1");
+        if (!compiledWorld.IsSuccess || compiledWorld.WorldRules is not CompiledWorldRules worldRules)
+        {
+            throw CompilationFailure(compiledWorld.Diagnostics);
+        }
+
+        return worldRules;
+    }
+
     private static InvalidOperationException CompilationFailure(
         IEnumerable<RuleDiagnostic> diagnostics)
     {

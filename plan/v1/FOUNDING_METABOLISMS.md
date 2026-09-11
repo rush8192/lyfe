@@ -147,8 +147,12 @@ The opening acceptance fixture must show first births distributed across multipl
 instead of one cohort-wide event. It must also verify that the spread does not materially move the
 authored first-reproduction and first-decision pacing bands. Small reaction, ledger, and deterministic
 arithmetic fixtures may explicitly select a zero-spread setup profile, but the default playable
-Sandbox and Survival scenarios may not. Exact ranges remain a balance decision until the coupled
-opening is playtested.
+Sandbox and Survival scenarios may not. The first official profile uses independent inclusive
+uniform ranges of `0..168` hours for biological age and `240..360` hours for the absolute initial
+reproduction-readiness boundary. The age maximum remains below the `720`-hour senescence onset;
+the readiness window overlaps sulfur's structural-readiness band and extends through hydrogen's,
+preserving each metabolism's first-event pacing while preventing a single cohort-wide boundary.
+These ranges remain balance values to revisit after coupled-opening playtests.
 
 The competitor uses the same mutation income and autonomous-evolution rules as every uncontrolled species and receives no hidden economic or probability bonuses. Its heuristic should tend to deepen specialization while its niche remains productive, and weight regulation, tolerance, or escape traits more heavily when recent deaths and failed metabolism indicate sulfide, light, substrate, or habitat pressure.
 

@@ -1,4 +1,6 @@
 import { create } from "@bufbuild/protobuf";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import {
   EvolutionActivationWarningKind,
@@ -17,10 +19,29 @@ import {
   buildProposalComparisonRows,
   buildRecurringCostComparisonRows,
   buildStrategicIntentGroups,
+  EvolutionPanel,
 } from "./EvolutionPanel";
 import type { EvolutionGoal } from "../state/evolutionPlanner";
 
 describe("evolution proposal comparison", () => {
+  it("locks authoritative evolution inputs while the world view is stale", () => {
+    const surface = create(EvolutionDecisionSurfaceSchema, {
+      worldId: 1n,
+      controlledSpeciesId: 2n,
+      occupiedTiles: [{ tileId: 4, population: 10n }],
+      traits: [{ traitId: 3, displayName: "Test trait", selectable: true }],
+    });
+    const html = renderToStaticMarkup(createElement(EvolutionPanel, {
+      surface,
+      disabled: true,
+      onApplied: () => undefined,
+    }));
+
+    expect(html).toContain("aria-disabled=\"true\"");
+    expect(html).toContain("Evolution commands are locked until the world view resynchronizes.");
+    expect(html).toContain("<fieldset class=\"trait-picker\" disabled=\"\"");
+  });
+
   it("shows exact compiled values and marks only changed attributes", () => {
     const current = create(EvolutionPhenotypeSummarySchema, {
       mutationIncomeModifierQ: 1_000_000,

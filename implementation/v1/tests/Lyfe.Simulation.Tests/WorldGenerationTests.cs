@@ -33,7 +33,7 @@ public sealed class WorldGenerationTests
             "c2f3eab3c3d738f7640e8488ad2d3f755df668dc83734e7e692abda8c6422c29",
             rules.Identity.CompiledWorldProfileHash);
         Assert.Equal(
-            "ea418ce57cd7b991ee5eb8aa7ada5ed69575f6e5feb5c4243d1cd88433e1b24b",
+            "6b54fdea53aa874b421d3f234037d15be7c12d4afbd631f091e2cba8f67e60cf",
             rules.Identity.WorldRulesHash);
     }
 

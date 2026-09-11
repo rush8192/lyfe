@@ -162,6 +162,8 @@ future mechanics; assigned values are never reused.
 | --- | --- | --- | --- | --- | --- |
 | `0x0101` | Founder position X | bounded integer | `setupOrdinal` | `organismId` | `tileId` |
 | `0x0102` | Founder position Y | bounded integer | `setupOrdinal` | `organismId` | `tileId` |
+| `0x0103` | Founder biological age | bounded integer | `organismId` | `speciesId` | `tileId` |
+| `0x0104` | Founder reproduction readiness | bounded integer | `organismId` | `speciesId` | `tileId` |
 | `0x0201` | World-generation field sample | bounded integer | `tileId` | field-specific octave/layer | generation attempt |
 | `0x0301` | Weather event | Bernoulli | `tick` | `tileId` | weather-event ordinal/type |
 | `0x0401` | Intrinsic exposure death | Bernoulli | `tick` | `organismId` | `exposureId` |
@@ -184,17 +186,15 @@ future mechanics; assigned values are never reused.
 | `0x0d01` | Autonomous exploration/choice | weighted choice | autonomous evaluation ordinal | `speciesId` | canonical proposal/candidate-set hash |
 | `0x0d02` | Autonomous commit | Bernoulli | autonomous evaluation ordinal | `speciesId` | intent/proposal hash |
 
-The v1 canonical registry-manifest SHA-256 is
-`2ed4852af4394c74fb85b41dc6bd1b537ed045618ca2aeb095f2cbf4aaf7a59c`.
+The RNG-schema-v2 canonical registry-manifest SHA-256 is
+`f14df02ab340673f7bc3fb5e0968371ff519c9ad5289743f38cd4510448ec2e0`.
 The implementation refuses a typed operation that is not the operation declared
 for its domain.
 
-`OPENING-210` will require a pre-alpha registry extension for founder-cohort
-desynchronization. Founder biological age, initial reproduction schedule, and each other
-independently sampled readiness parameter receive distinct permanent domains; they may not reuse
-`ReproductionCooldownJitter` or distinguish concepts only through `sampleIndex`. Those IDs are not
-part of the frozen manifest above until the implementation slice assigns them through the normal
-compatibility workflow and updates the RNG schema/version and manifest hash together.
+`OPENING-210` assigned the permanent `0x0103` founder-biological-age and `0x0104`
+founder-reproduction-readiness domains through the compatibility workflow. They do not reuse
+`ReproductionCooldownJitter` or distinguish concepts only through `sampleIndex`; their addition
+advanced the RNG schema and manifest together while retaining the original domain meanings and IDs.
 
 X and Y founder placement, Brownian direction and magnitude, exploration versus weighted choice, and other conceptually independent results receive separate domain IDs even when their coordinates match. One mechanic must not obtain a second conceptual decision by incrementing an implicit cursor.
 

@@ -57,6 +57,8 @@ internal static class GenomeCompiler
 
         var result = new CompiledPhenotype(
             founderGenomeId,
+            founder.StableKey,
+            founder.DisplayName,
             founderAllocationId,
             canonical,
             founder.Processes,

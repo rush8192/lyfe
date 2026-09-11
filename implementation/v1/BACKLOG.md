@@ -19,7 +19,9 @@ Status values are `Done`, `In progress`, `Ready`, `Planned`, `Blocked`, and `Def
 # Current focus
 
 Stage A and the complete executable opening through `OPENING-200` are complete.
-`UI-200` is in progress: its first slice now carries save-stable authoritative organism
+`UI-200` is complete. Its final browser benchmark records exact and graphics-only tile-density
+rendering at 10,000 and 50,000 authorized organisms; `PERF-200` will select the production switch
+threshold inside the representative end-to-end workload. The implemented client carries save-stable authoritative organism
 journey events through actor projection, protobuf snapshots/deltas, atomic client apply,
 configurable map pulses, and organism inspection. Its retention slice keeps exact landmarks,
 rolls routine uptake from a 168-hour window into sparse daily summaries, and publishes
@@ -115,6 +117,92 @@ critical event linked to its journey evidence, plus a strategic alert after six 
 Automatic pausing, per-compound depletion/recovery/reversal events, retention, and broader narrative
 polish remain later slices.
 
+`UI-205` completes the pre-alpha camera contract. Authoritative signed grid coordinates are
+normalized into the zero-based presentation extent, so fit/focus center the complete generated
+world without changing the signed coordinates shown to the player. Horizontal travel is periodic while vertical
+travel remains bounded; one 32-column scene is recycled across the seam instead of duplicating
+authorized entities. Explicit organism follow survives projection refresh and zoom, while manual
+pan or tile focus releases it. Versioned per-world camera/tile-selection preferences stay browser-
+local; organism inspection and follow state are transient, and loss of live authorization retains
+only the selected tile's truthful last-known projection.
+Accepted early playtest feedback also replaces the narrow fixed-width shell with responsive
+near-edge gutters, gives the camera the flexible wide-screen column and a `560–820 CSS px` height,
+bounds the evidence rail at `320–430 CSS px`, and moves that rail beneath the map at `1050 CSS px`
+rather than compressing the world surface. The compact rail keeps simulation hour, a single
+Pause/Resume state-and-action control, Step, Speed, and the map knowledge key above the fold;
+decorative world copy and duplicate lifecycle status are removed, while projection diagnostics are
+available only through an explicit presentation-only debug UI build flag.
+The no-preference entry camera focuses the controlled species' starting tile. The default rail adds
+exact controlled-species living count, average health, and occupied-tile count; directly clicking a
+green controlled organism replaces it with individual state and journey evidence until Back is
+used. Other organisms render red and direct selection exposes only visibility-scoped species totals,
+average health, and occupied tiles, explicitly withholding hidden members and locations and expiring
+when no member remains on a shared live tile.
+Live tile projections also carry compiled baseline volcanism. The exact renderer turns it into one
+to sixteen deterministic static wireframe vent clusters beneath entity layers, with a compact key that
+labels greater mark density as stronger baseline activity. Unknown tiles receive no volcanic art;
+reduced/remembered volcanic knowledge remains in `KNOW-200`.
+Fast-refresh flicker is removed by retaining one Pixi application/canvas and atomically installing a
+fully prepared replacement scene before retiring the prior authoritative boundary. Scene-local pulse
+ticker callbacks are retired with their scene instead of accumulating across refreshes. Activity
+pulse age is keyed to authoritative world/event identity, so selection, camera, and filter redraws do
+not replay the current boundary's symbols after their original animation has elapsed.
+Pointer, keyboard, and Chromium accessibility-tree smoke plus pure pinch/pan classification tests
+pass. Physical trackpad/touch and broader assistive-technology calibration remain playtest work,
+while `PERF-200` owns the measured density-aggregation threshold.
+
+The next implementation gate is `PERF-200`, followed by the Stage-B developer-playable milestone
+and structured `ALPHA-200` sessions. `COPY-200` and `UI-210` deliberately consume those findings;
+they no longer block the first internal sessions. The canonical local launch, exercise route, known
+limits, and 2026-09-11 readiness evidence live in [`ALPHA_PLAYTEST.md`](ALPHA_PLAYTEST.md).
+
+Early exploratory playtesting also confirmed that the intended neighboring/remembered-tile
+knowledge loop is not yet connected to the hosted game. `KNOW-200` records that gap and is deferred
+while additional playtest feedback is gathered. It must resume before `PERF-200`, so representative
+profiling includes the persistent knowledge state, expanded projection, and reduced-tile rendering
+rather than measuring the current empty-discovery scaffold.
+
+Exploration state now has one consistent visual and textual language. The map legend and tile marks
+distinguish current live projection, retained last-known observation, and unavailable unknown state;
+live tiles render authorized remnants as distinct entities. The selected-tile inspector exposes
+exact current stocks only for live tiles, computes reduced observation age from authoritative tick
+boundaries, lists only retained resource identities for reduced tiles, and withholds all unavailable
+detail for unknown tiles. Explicit selection of a reduced or unknown tile no longer causes the
+resource diagnostic to silently substitute another live tile.
+
+The first client recovery contract now refuses to present partial initial state, preserves and
+labels the last verified completed boundary after a disconnect, and locks clock, persistence, and
+evolution commands until a fresh projection/evolution/control boundary and catalogue validate.
+Running worlds retry automatically and every request has a provisional eight-second deadline;
+manual retry remains available for paused worlds and initial failure. HTTP rejections retain the
+server explanation, while transport/protocol failures label command delivery unconfirmed instead of
+guessing whether it applied. Production reconnect backoff, jitter, stream retention, and
+acknowledgement policy remain `NET-400` work.
+
+The first authoritative clock bridge is now executable. A host-owned single-writer service exposes
+optimistic pause, resume, one-tick step, and slow/normal/fast commands; every response names the
+completed tick, world revision, simulated hour, run status, and independent control revision. The
+client reads projection, evolution, and control in one locked boundary payload and replaces that
+payload periodically while running. Evolution preview/apply is admitted only while paused. The
+initial wall cadences are `2,000`, `1,000`, and `100 ms` per tick and never change simulated tick
+duration. Fast was tightened from the original provisional `250 ms` after exploratory playtesting;
+it remains bounded and accumulates no catch-up debt. This remains a single-process bridge: durable hosted world selection, command replay,
+save/load controls, deadline policy, and the full bounded mailbox are subsequent slices.
+
+The playable opening now begins in a real no-active-world host state. An authoritative generated
+setup surface exposes the official `32 × 17` profile, a canonical seed, Sandbox or Survival,
+the two permitted founding metabolisms, three compiled founder allocations, and four seed-realized
+candidate regions. Region previews carry bounded depth, current temperature, volcanism, and repair
+status without tile IDs, exact resource stocks, or map-wide composition. Creation revalidates every
+choice, installs `100` player founders at hour zero, and in Survival installs the other metabolism
+in its paired neighboring tile under autonomous authority. The first hosted persistence surface now
+lists compatible atomic saves from the configured data directory, marks whether the active revision
+is saved exactly, captures a detached completed boundary, and restores or unloads only against the
+expected active world/revision. Unsaved replacement requires explicit confirmation, world IDs are
+reserved through an atomically persisted monotonic counter, and load reuses the existing envelope,
+compatibility, payload, and world-hash verification. Richer premise/dependency copy, save naming and
+deletion, autosave/checkpoint policy, and setup-option expansion remain later.
+
 Each authoritative lineage landmark now also has a bounded browser-local hypothesis field keyed by
 world and event identity. The interface labels the note as the player's interpretation rather than
 a simulation fact; malformed local state fails closed, blank text removes the note, and no note
@@ -131,15 +219,22 @@ branch's event-time live tiles. The client displays the bounded coverage ratio a
 mix directly from the authoritative landmark; it neither infers them from currently visible
 organisms nor presents the intake level as a future forecast.
 
-`OPENING-210` is deliberately planned rather than active. It must land after the current UI work and
-before representative performance acceptance or `STAGE-B`: playable founder cohorts need bounded,
-keyed age/readiness spread so their first reproduction does not appear as one artificial mass event.
-Existing narrow deterministic fixtures may retain an explicit zero-spread setup profile.
+`OPENING-210` is complete. The official playable scenario now samples each founder's biological age
+uniformly from `0..168` hours and absolute initial reproduction-readiness boundary from
+`240..360` hours through separate RNG-schema-v2 domains keyed by stable organism/species/tile
+identity. Both roots use the same scenario profile. `CreateGame` selects this spread by default;
+legacy foundation fixtures retain their former age-zero plus `24..27`-hour schedule, and narrow
+tests can explicitly select a true age-zero, 24-hour zero-spread mode. The spread changes no material
+inventory, round-trips through save/restore, reproduces identical hashes and continuation for equal
+inputs, keeps the calibrated first-event bands, and distributes each generated-world root's first
+births over multiple completed ticks. A bounded post-change matrix reran all six founder/allocation
+choices across four generated seeds: `24/24` reproduced, retained at least `98/100` founders at the
+first reproduction, and reached 40 MP within the 720-hour horizon.
 
-`COPY-200` is a separate editorial polish track after the UI surface is complete. It does not block
-continued UI, opening, or performance implementation, but `STAGE-B` cannot become the play-tester
-alpha milestone until narrative copy carries LYFE's wonder and mystery and mechanical copy has been
-rewritten for direct comprehension with only restrained personality layered on top.
+`COPY-200` is a feedback-informed editorial track after the first structured `ALPHA-200` sessions.
+It does not block performance work or the developer-playable `STAGE-B` milestone. It does block the
+later `ALPHA-READY` play-tester build, where narrative copy must carry LYFE's wonder and mystery and
+mechanical copy must be direct before restrained personality is layered on top.
 
 # Foundation and developer experience
 
@@ -197,11 +292,16 @@ rewritten for direct comprehension with only restrained personality layered on t
 | EVO-200 | Done | Implement mutation income, trait trees, compiled phenotype updates, speciation, lineage, and autonomous opportunity scoring | BEHAVIOR-200 | A compiler-owned and fingerprinted effective-population table drives fixed-point phase-10 income equally for controlled and autonomous species; strict prerequisite-bearing traits recompile immutable genomes/phenotypes; validated atomic speciation uses deterministic founders and exact 50/20/8/3% per-tile fractions, duplicates post-price balances/remainders, preserves organism matter/state, records lineage/events, survives save/load continuation, and exposes controlled evolution through absolute projections/deltas; prerequisite-closed pressure scoring passes frozen fixtures |
 | GAME-200 | Done | Implement survival and sandbox setup/control/loss state machines | EVO-200, DELTA-100 | Typed setup creates one sandbox root or two independent adjacent survival roots; sandbox supports optimistic-revision control transfer and persistent mutation locks; survival follows every player descendant and loses on controlled-species extinction while sandbox loses only on total extinction; terminal state blocks further ticks/evolution and mode/root/control/lock/outcome state is covered by journals, `WorldStateHashV9`, save schema 9, authorized projections, protobuf snapshots/deltas, and atomic client apply. Multiplayer ownership remains out of the world runner. |
 | OPENING-200 | Done | Implement hydrogen and sulfide founder paths plus bounded starting trade-off packages | GAME-200, GAS-200 | Two founder genomes and three allocations compile six distinct choices; survival fixes the opposite metabolism to Balanced. Exact capture, maintenance, needs-only CHNOPS assembly, reserve-floor protection, and failure death/remnants are executable. Fourteen tile/organism/remnant micronutrients use fixed-width persistent committed/free inventories; founders debit one committed quota, keyed needs-only uptake fills at most one quantum per organism-hour opportunity, reproduction requires and transfers one complete extra quota without creating matter, and death/terminal decay recycle every unit. Schema-9 save/hash/publication/protobuf/client paths preserve the state. The generated-world matrix passed all six choices across 64 seeds: `384/384` reproduced, retained at least `95/100` founders at first reproduction, and reached 40 MP within 720 hours. |
-| OPENING-210 | Planned | Desynchronize playable founder cohorts with bounded deterministic initialization spread | OPENING-200, LIFE-200 | Scenario-authored age, initial reproduction schedule, and any required readiness-phase ranges use distinct permanent stable-ID-keyed random domains assigned through the RNG compatibility workflow; player and autonomous roots receive the same distributions; all varied material state remains exactly debited and save/hash/replay/worker-count invariant; default Sandbox and Survival first births span multiple completed ticks without materially leaving the authored first-reproduction or first-decision pacing bands; narrow fixtures may explicitly use a zero-spread profile |
-| UI-200 | In progress | Add knowledge-limited map, organism/species inspection, lifecycle activity pulses and journey logs, mutation decisions, behavior summaries, and resource-flow views | OPENING-200 | Player can observe, diagnose, choose, and review consequences without hidden-state leakage; completed birth/reproduction, feeding, uptake, stress, migration/state-transition, and death facts drive configurable accessible on-map icons with bounded wall-clock fading; exact landmarks plus compacted routine summaries provide a save-stable authorized journey; mutation choices are grouped by rule-authored strategic intent, while previews compare current and proposed compiled phenotypes and recurring maintenance, label benefit timing, warn honestly about pressure gates or preparatory DNA, and show current selected-tile cohort/climate/substrate evidence without claiming future survival or recommending an optimum; finite capture inputs distinguish stock from recent local renewal, compare a held-current founder demand ceiling with that renewal, flag likely overshoot, and isolate latest controlled-versus-other-observed-species uptake without hidden-state leakage; one browser-local goal per world/species preserves canonical prerequisite/tile selections and reports a clearly caveated last-rate affordability ETA without reserving points or auto-applying; accepted player speciation pins a browser-local 168-hour ancestor/descendant review and creates an authoritative save-stable schedule whose exact cooldown boundary and optional rule-authored longer window append clearly labeled chronicle landmarks with scoped branch evidence, no cooldown extension, and no success score; each landmark permits a bounded world/event-local private hypothesis that is visibly non-authoritative and excluded from saves, hashes, protocol, and mechanics, plus typed navigation to its immutable decision/branch facts and only currently authorized journey/resource destinations; live tiles expose named exact compound stocks, gross last-tick ledger flow categories, reconciling typed reaction/species contributors, and a save-stable 168-hour exact sparse-flow history used to reconstruct stock trends without leaking non-live tile values; selected live organisms expose exact last-tick compound demand/grant plus bounded engine-authored capture, scavenging, biomass-growth, and reproduction blockers with applicable resource, threshold, capacity, action-energy, behavior, and cooldown evidence |
-| COPY-200 | Planned | Replace generic or synthetic-sounding interface prose with a coherent LYFE voice for play-tester alpha | UI-200 | A complete player-facing string inventory covers setup, world/discovery, organism inspection, resources, evolution, alerts, consequence review, chronicle, empty/loading/error states, extinction, and run summary; narrative copy evokes the wonder and mystery of life without inventing causality or consciousness; mechanics copy states rules, numbers, scope, uncertainty, and recovery plainly before any restrained wit or whimsy; repetitive caveats, inflated abstractions, generic headings, and templated rhythms receive editorial revision; literal accessible names preserve every consequential fact; a terminology/voice sheet and playtest review confirm both mechanical comprehension and a distinctive tone without changing authoritative facts or hashes |
-| PERF-200 | Planned | Profile the full default-grid opening around 10,000 organisms | UI-200, OPENING-210 | Stage-B workload records tick, memory, GC, save, projection, wire, apply, and frame metrics |
-| STAGE-B | Planned | Demonstrate a playable survival opening and free sandbox | PERF-200, COPY-200 | Coupled opening/lifecycle/resource scenarios and the end-to-end player loop pass at representative scale with play-tester-ready copy |
+| OPENING-210 | Done | Desynchronize playable founder cohorts with bounded deterministic initialization spread | OPENING-200, LIFE-200 | Scenario-authored age, initial reproduction schedule, and any required readiness-phase ranges use distinct permanent stable-ID-keyed random domains assigned through the RNG compatibility workflow; player and autonomous roots receive the same distributions; all varied material state remains exactly debited and save/hash/replay/worker-count invariant; default Sandbox and Survival first births span multiple completed ticks without materially leaving the authored first-reproduction or first-decision pacing bands; narrow fixtures may explicitly use a zero-spread profile |
+| UI-200 | Done | Add knowledge-limited map, organism/species inspection, lifecycle activity pulses and journey logs, mutation decisions, behavior summaries, and resource-flow views | OPENING-200 | Player can observe, diagnose, choose, and review consequences without hidden-state leakage; the presentation-only camera supports bounded pointer/keyboard pan, anchored wheel/pinch zoom, fit and tile focus, and one shared tile/within-tile hit transform while preserving live/reduced/unknown semantics; persistent map marks and a selected-tile inspector distinguish current exact state, aged retained identities, and wholly unavailable state without substituting unrelated live evidence; initial loading exposes no partial world, disconnect preserves a labeled last-complete boundary, recovery locks authoritative commands, and rejection remains distinct from unconfirmed delivery until full resynchronization; completed birth/reproduction, feeding, uptake, stress, migration/state-transition, and death facts drive configurable accessible on-map icons with bounded wall-clock fading; exact landmarks plus compacted routine summaries provide a save-stable authorized journey; mutation choices are grouped by rule-authored strategic intent, while previews compare current and proposed compiled phenotypes and recurring maintenance, label benefit timing, warn honestly about pressure gates or preparatory DNA, and show current selected-tile cohort/climate/substrate evidence without claiming future survival or recommending an optimum; finite capture inputs distinguish stock from recent local renewal, compare a held-current founder demand ceiling with that renewal, flag likely overshoot, and isolate latest controlled-versus-other-observed-species uptake without hidden-state leakage; one browser-local goal per world/species preserves canonical prerequisite/tile selections and reports a clearly caveated last-rate affordability ETA without reserving points or auto-applying; accepted player speciation pins a browser-local 168-hour ancestor/descendant review and creates an authoritative save-stable schedule whose exact cooldown boundary and optional rule-authored longer window append clearly labeled chronicle landmarks with scoped branch evidence, no cooldown extension, and no success score; each landmark permits a bounded world/event-local private hypothesis that is visibly non-authoritative and excluded from saves, hashes, protocol, and mechanics, plus typed navigation to its immutable decision/branch facts and only currently authorized journey/resource destinations; live tiles expose named exact compound stocks, gross last-tick ledger flow categories, reconciling typed reaction/species contributors, and a save-stable 168-hour exact sparse-flow history used to reconstruct stock trends without leaking non-live tile values; selected live organisms expose exact last-tick compound demand/grant plus bounded engine-authored capture, scavenging, biomass-growth, and reproduction blockers with applicable resource, threshold, capacity, action-energy, behavior, and cooldown evidence; browser-DOM interaction suites cover the primary decisions and evidence routes, and a reproducible headless-Chrome/PixiJS benchmark records exact and tile-density rendering at 10,000 and 50,000 visible organisms without promoting a UI-only timing result into an end-to-end performance claim |
+| UI-205 | Done | Finish the pre-alpha camera continuity and local-preference contract | UI-200 | Signed authoritative grid coordinates normalize into a centered presentation extent for fit, focus, drawing, and inverse hit-testing without changing factual labels; X-wrapped worlds pan seamlessly across the visual seam while Y remains bounded; a new world focuses the controlled starting tile while Fit remains explicit; direct map hits are the sole entry to transient organism inspection; green controlled organisms expose individual state and journey evidence with Back, while red other organisms expose only species-level observations that expire with shared-tile visibility; an explicit controlled-organism follow toggle survives projection refreshes, manual pan or tile focus releases it, and zoom alone preserves it; camera/tile-selection preferences persist browser-locally per saved world without entering protocol, saves, hashes, replay, or mechanics; responsive near-edge gutters, a flexible camera column, bounded evidence rail, and stacked narrower-desktop layout preserve a spacious usable viewport; the default compact rail adds exact controlled-species population, average health, and occupied tiles while keeping consolidated clock controls and map key above the fold and gating raw projection diagnostics behind an explicit debug UI flag; pointer, trackpad, pinch, and keyboard behavior receive an assistive-technology and playtest smoke pass |
+| KNOW-200 | Deferred | Implement persistent neighboring and remembered-tile knowledge | WORLD-200, PROJ-100, SAVE-120, DELTA-100, UI-205 | At tick zero and each completed boundary, controlled-species occupied tiles are live, edge-sharing neighbors become reduced observations, and vacated live tiles retain a timestamped observation; authoritative actor knowledge persists through save/load, hashes, deterministic continuation, and sandbox control transfer; reduced tiles expose only fixed/coarse environment bands, timestamped broad life-presence bands, and named key-resource presence or abundance bands, never exact current stocks, organism positions, species identities, remnants, flows, or silently refreshed hidden conditions; deterministic thresholds and canonical ordering produce identical knowledge across worker counts and replay; snapshot/delta replacement evicts live-only detail atomically; the map, selected-tile inspector, and evolution evidence label observation time, scope, staleness, and uncertainty without presenting remembered conditions as current or predictive |
+| PERF-200 | Planned | Profile the full default-grid opening around 10,000 organisms | UI-200, OPENING-210, KNOW-200 | Stage-B workload records tick, memory, GC, save, projection, wire, apply, and frame metrics, including persistent knowledge updates and reduced-tile payload/rendering costs |
+| STAGE-B | Planned | Demonstrate a developer-playable survival opening and free sandbox | PERF-200, UI-205 | Coupled opening/lifecycle/resource scenarios and the end-to-end player loop pass at representative scale with the pre-alpha camera contract; known copy debt is labeled and does not block the first structured internal sessions |
+| ALPHA-200 | Planned | Run the first structured internal alpha sessions and capture attributable findings | STAGE-B | The checked-in playtest recipe launches from a clean supported environment; facilitators exercise setup, clock, observation, evolution, save/reload, and recovery; notes distinguish observed comprehension, pacing, performance, input, and copy issues; no behavioral telemetry is collected without a documented privacy/consent policy |
+| COPY-200 | Planned | Replace generic or synthetic-sounding interface prose with a coherent LYFE voice for play-tester alpha | ALPHA-200 | A complete player-facing string inventory covers setup, world/discovery, organism inspection, resources, evolution, alerts, consequence review, chronicle, empty/loading/error states, extinction, and run summary; narrative copy evokes the wonder and mystery of life without inventing causality or consciousness; mechanics copy states rules, numbers, scope, uncertainty, and recovery plainly before any restrained wit or whimsy; repetitive caveats, inflated abstractions, generic headings, and templated rhythms receive editorial revision; literal accessible names preserve every consequential fact; a terminology/voice sheet and first-alpha findings confirm both mechanical comprehension and a distinctive tone without changing authoritative facts or hashes |
+| UI-210 | Planned | Apply post-alpha interface polish from observed playtesting feedback | ALPHA-200 | Work begins only after the first structured playable-alpha sessions produce attributable findings; each accepted change cites the observed usability problem, preserves authoritative knowledge and input/accessibility contracts, receives proportionate interaction or visual regression coverage, and is rechecked with playtesters rather than becoming speculative redesign before alpha |
+| ALPHA-READY | Planned | Prepare the feedback-informed play-tester alpha build | COPY-200, UI-210 | Accepted first-alpha findings are resolved or explicitly deferred; player-facing copy and UI pass their targeted checks; the local playtest recipe, known-issues list, and supported input/browser scope are current |
 
 # Mid/late-game biological rule slices
 

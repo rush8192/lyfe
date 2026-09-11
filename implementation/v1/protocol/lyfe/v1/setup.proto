@@ -1,0 +1,75 @@
+syntax = "proto3";
+
+package lyfe.v1;
+
+option csharp_namespace = "Lyfe.Protocol.V1";
+
+import "lyfe/v1/projection.proto";
+
+enum FoundingMetabolism {
+  FOUNDING_METABOLISM_UNSPECIFIED = 0;
+  FOUNDING_METABOLISM_HYDROGEN_ACETOGENESIS = 1;
+  FOUNDING_METABOLISM_SULFIDE_PHOTOTROPHY = 2;
+}
+
+message FounderSetupOption {
+  uint32 founder_genome_id = 1;
+  string stable_key = 2;
+  string display_name = 3;
+  FoundingMetabolism metabolism = 4;
+  bool requires_light = 5;
+  uint32 favorable_capture_efficiency_q = 6;
+  uint32 maximum_capture_extents_per_hour = 7;
+  int64 maintenance_cost_q_per_hour = 8;
+  uint64 base_reproduction_cooldown_hours = 9;
+  uint32 reproduction_cooldown_jitter_maximum_hours = 10;
+}
+
+message FounderAllocationOption {
+  uint32 founder_allocation_id = 1;
+  string stable_key = 2;
+  string display_name = 3;
+  bool is_baseline = 4;
+  uint32 capture_efficiency_multiplier_q = 5;
+  uint32 chemical_tolerance_multiplier_q = 6;
+}
+
+message StartingRegionPreview {
+  uint32 starting_pair_index = 1;
+  int32 hydrogen_depth_meters = 2;
+  int32 sulfur_depth_meters = 3;
+  int32 hydrogen_temperature_milli_c = 4;
+  int32 sulfur_temperature_milli_c = 5;
+  uint32 hydrogen_volcanism_q = 6;
+  uint32 sulfur_volcanism_q = 7;
+  bool was_repaired = 8;
+}
+
+message WorldSetupSurface {
+  bool has_active_world = 1;
+  string root_seed_hex = 2;
+  string world_pack_id = 3;
+  string world_pack_version = 4;
+  string world_profile_key = 5;
+  string world_profile_display_name = 6;
+  uint32 width = 7;
+  uint32 height = 8;
+  uint32 tick_duration_hours = 9;
+  uint32 founder_population = 10;
+  repeated FounderSetupOption founders = 11;
+  repeated FounderAllocationOption allocations = 12;
+  repeated StartingRegionPreview starting_regions = 13;
+}
+
+message CreateWorldRequest {
+  string root_seed_hex = 1;
+  GameMode mode = 2;
+  uint32 founder_genome_id = 3;
+  uint32 founder_allocation_id = 4;
+  uint32 starting_pair_index = 5;
+  bool confirm_replace_active = 6;
+}
+
+message CreateWorldResponse {
+  uint64 world_id = 1;
+}

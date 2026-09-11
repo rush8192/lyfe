@@ -388,6 +388,19 @@ public sealed record ScenarioDefinition
     public required string[] FounderAllocationKeys { get; init; }
 
     public required string DefaultCompetitorFounderAllocationKey { get; init; }
+
+    public required FounderInitializationDefinition FounderInitialization { get; init; }
+}
+
+public sealed record FounderInitializationDefinition
+{
+    public required ulong BiologicalAgeMinimumHours { get; init; }
+
+    public required ulong BiologicalAgeMaximumHours { get; init; }
+
+    public required ulong ReproductionReadinessMinimumHours { get; init; }
+
+    public required ulong ReproductionReadinessMaximumHours { get; init; }
 }
 
 public sealed record RegistryLockFile

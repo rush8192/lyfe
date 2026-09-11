@@ -288,6 +288,8 @@ public sealed class ProjectionProtocolMapperTests
             actionGate.Reason);
         Assert.Equal(direct.CompletedTick + 1, actionGate.ClearsAtTick);
         Assert.Single(decoded.Tiles[0].Live.BehaviorDistributions);
+        Assert.Equal(source.Tiles[0].BaselineVolcanismQ,
+            decoded.Tiles[0].Live.BaselineVolcanismQ);
         Assert.Equal(source.ResourceFlowPeriodHours,
             decoded.Tiles[0].Live.ResourceFlowPeriodHours);
         Assert.NotEmpty(decoded.Tiles[0].Live.ResourceFlows);

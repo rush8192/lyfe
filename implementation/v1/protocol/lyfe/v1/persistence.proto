@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+package lyfe.v1;
+
+option csharp_namespace = "Lyfe.Protocol.V1";
+
+message SavedWorldSummary {
+  uint64 world_id = 1;
+  uint64 completed_tick = 2;
+  uint64 world_revision = 3;
+  uint64 simulated_hours = 4;
+  uint32 tick_duration_hours = 5;
+  int32 organism_count = 6;
+  string root_seed_hex = 7;
+  string world_profile_key = 8;
+  string world_state_hash = 9;
+  int64 saved_at_unix_milliseconds = 10;
+  bool is_active = 11;
+  bool is_active_saved_boundary = 12;
+}
+
+message WorldCatalogue {
+  repeated SavedWorldSummary saved_worlds = 1;
+  bool has_active_world = 2;
+  uint64 active_world_id = 3;
+  uint64 active_world_revision = 4;
+  bool active_has_unsaved_changes = 5;
+}
+
+message SaveActiveWorldRequest {
+  uint64 expected_world_id = 1;
+  uint64 expected_world_revision = 2;
+}
+
+message LoadWorldRequest {
+  uint64 world_id = 1;
+  uint64 expected_active_world_id = 2;
+  uint64 expected_active_world_revision = 3;
+  bool confirm_discard_unsaved = 4;
+}
+
+message UnloadWorldRequest {
+  uint64 expected_world_id = 1;
+  uint64 expected_world_revision = 2;
+  bool confirm_discard_unsaved = 3;
+}
