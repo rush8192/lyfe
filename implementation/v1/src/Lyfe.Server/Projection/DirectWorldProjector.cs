@@ -1020,11 +1020,15 @@ public static class DirectWorldProjector
         {
             PublicationResourceFlowProcessKind.EnvironmentalGasSource =>
                 kind == PublicationResourceFlowKind.EnvironmentalSource,
+            PublicationResourceFlowProcessKind.EnvironmentalResourceSource =>
+                kind == PublicationResourceFlowKind.EnvironmentalSource,
             PublicationResourceFlowProcessKind.EnvironmentalGasSink =>
                 kind == PublicationResourceFlowKind.EnvironmentalSink,
             PublicationResourceFlowProcessKind.EnvironmentalGasExchange =>
                 kind is PublicationResourceFlowKind.NeighborExchangeIn or
                     PublicationResourceFlowKind.NeighborExchangeOut,
+            PublicationResourceFlowProcessKind.RemnantDecay =>
+                kind == PublicationResourceFlowKind.OrganismRelease,
             _ => kind is PublicationResourceFlowKind.OrganismUptake or
                 PublicationResourceFlowKind.OrganismRelease,
         };

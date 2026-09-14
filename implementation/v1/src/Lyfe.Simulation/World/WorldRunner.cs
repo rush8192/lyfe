@@ -419,7 +419,8 @@ public sealed class WorldRunner
                         phenotype.MutationIncomeModifierQ,
                         state.Lineage.ParentSpeciesId,
                         state.Lineage.CreatedTick,
-                        state.Lineage.ExtinctTick);
+                        state.Lineage.ExtinctTick,
+                        BuildPublicationHabitatProfile(phenotype));
                 })
                 .ToImmutableArray();
             var acquisitionByOrganism = lastCompletedAcquisitionSamples
@@ -501,6 +502,69 @@ public sealed class WorldRunner
                 notableEvents,
                 attentionAlerts);
         }
+    }
+
+    private PublicationHabitatProfile BuildPublicationHabitatProfile(
+        CompiledPhenotype phenotype)
+    {
+        var metabolismInputs = phenotype.Processes
+            .Select(process => Rules.RulePack.Reactions[process.Reaction.DenseSlot])
+            .Where(reaction => reaction.ProcessKind == ProcessKind.ExternalEnergyCapture)
+            .SelectMany(reaction => reaction.Inputs)
+            .Where(input => Rules.RulePack.Resources[input.Resource.DenseSlot].BiologicalForm !=
+                BiologicalForm.Boundary)
+            .Select(input => input.Resource.Id)
+            .ToHashSet();
+        var growthInputs = phenotype.Processes
+            .Select(process => Rules.RulePack.Reactions[process.Reaction.DenseSlot])
+            .Where(reaction => reaction.ProcessKind == ProcessKind.BiomassAssembly)
+            .SelectMany(reaction => reaction.Inputs)
+            .Where(input => input.Resource.Id != ResourceId.From(3) &&
+                Rules.RulePack.Resources[input.Resource.DenseSlot].BiologicalForm !=
+                    BiologicalForm.Boundary)
+            .Select(input => input.Resource.Id)
+            .ToHashSet();
+        var healthRequirements = phenotype.Physiology.CommittedMicronutrientQuotas
+            .Select(quota => quota.Resource.Id)
+            .ToHashSet();
+        var chemical = phenotype.Physiology.ChemicalResponse;
+        var hazards = new Dictionary<ResourceId, (long SoftQ, long HardQ)>
+        {
+            [ResourceId.From(10)] = (
+                chemical.HydrogenSulfideSoftThresholdQ,
+                chemical.HydrogenSulfideHardThresholdQ),
+            [ResourceId.From(11)] = (
+                chemical.SulfurDioxideSoftThresholdQ,
+                chemical.SulfurDioxideHardThresholdQ),
+        };
+        var relevant = metabolismInputs
+            .Concat(growthInputs)
+            .Concat(healthRequirements)
+            .Concat(hazards.Keys)
+            .Distinct()
+            .OrderBy(id => id.Value)
+            .Select(id =>
+            {
+                var hazard = hazards.GetValueOrDefault(id);
+                return new PublicationRelevantResource(
+                    id,
+                    metabolismInputs.Contains(id),
+                    growthInputs.Contains(id),
+                    healthRequirements.Contains(id),
+                    hazards.ContainsKey(id),
+                    hazard.SoftQ,
+                    hazard.HardQ);
+            })
+            .ToImmutableArray();
+        var temperature = phenotype.Physiology.TemperatureResponse;
+        return new PublicationHabitatProfile(
+            temperature.PreferredMinimumMilliC,
+            temperature.PreferredMaximumMilliC,
+            temperature.HardMinimumMilliC,
+            temperature.HardMaximumMilliC,
+            phenotype.Physiology.Spatial.CanOccupyTerrestrial,
+            phenotype.Physiology.OpeningMetabolism.RequiresLight,
+            relevant);
     }
 
     private static ImmutableArray<PublicationTileResourceFlow> BuildPublicationResourceFlows(
@@ -609,6 +673,10 @@ public sealed class WorldRunner
                 PublicationResourceFlowProcessKind.BiomassAssembly,
             LedgerCause.MicronutrientUptake =>
                 PublicationResourceFlowProcessKind.MicronutrientUptake,
+            LedgerCause.EnvironmentalResourceSource =>
+                PublicationResourceFlowProcessKind.EnvironmentalResourceSource,
+            LedgerCause.RemnantDecay =>
+                PublicationResourceFlowProcessKind.RemnantDecay,
             _ => throw new ArgumentOutOfRangeException(nameof(cause)),
         };
 
@@ -624,6 +692,8 @@ public sealed class WorldRunner
     {
         LedgerCause.EnvironmentalGasSource when deltaQ > 0 =>
             PublicationResourceFlowKind.EnvironmentalSource,
+        LedgerCause.EnvironmentalResourceSource when deltaQ > 0 =>
+            PublicationResourceFlowKind.EnvironmentalSource,
         LedgerCause.EnvironmentalGasSink when deltaQ < 0 =>
             PublicationResourceFlowKind.EnvironmentalSink,
         LedgerCause.EnvironmentalGasExchange when deltaQ > 0 =>
@@ -634,7 +704,8 @@ public sealed class WorldRunner
         LedgerCause.ParticulateDigestion or
         LedgerCause.MandatoryMaintenance or
         LedgerCause.BiomassAssembly or
-        LedgerCause.MicronutrientUptake when deltaQ > 0 =>
+        LedgerCause.MicronutrientUptake or
+        LedgerCause.RemnantDecay when deltaQ > 0 =>
             PublicationResourceFlowKind.OrganismRelease,
         LedgerCause.ExternalEnergyCapture or
         LedgerCause.ParticulateDigestion or
@@ -3443,7 +3514,8 @@ public sealed class WorldRunner
 
             var cause = (LedgerCause)transaction.Cause;
             var environmental = cause is LedgerCause.EnvironmentalGasSource or
-                LedgerCause.EnvironmentalGasSink or LedgerCause.EnvironmentalGasExchange;
+                LedgerCause.EnvironmentalGasSink or LedgerCause.EnvironmentalGasExchange or
+                LedgerCause.EnvironmentalResourceSource or LedgerCause.RemnantDecay;
             var actorId = environmental
                 ? default
                 : OrganismId.FromAllocatedValue(transaction.ActorId);

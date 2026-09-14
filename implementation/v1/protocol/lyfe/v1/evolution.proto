@@ -113,6 +113,31 @@ message EvolutionOccupiedTile {
   uint32 current_accessible_light_q = 11;
   uint32 baseline_volcanism_q = 12;
   repeated EvolutionResourceStock resource_stocks = 13;
+  uint32 current_precipitation_micrometers_per_hour = 14;
+  uint32 current_cloud_q = 15;
+  uint32 current_surface_light_q = 16;
+  sint32 seasonal_temperature_minimum_milli_c = 17;
+  sint32 seasonal_temperature_maximum_milli_c = 18;
+}
+
+message EvolutionRelevantResource {
+  uint32 resource_id = 1;
+  bool metabolism_input = 2;
+  bool growth_input = 3;
+  bool health_requirement = 4;
+  bool environmental_hazard = 5;
+  sint64 soft_hazard_threshold_q = 6;
+  sint64 hard_hazard_threshold_q = 7;
+}
+
+message EvolutionHabitatProfile {
+  sint32 preferred_temperature_minimum_milli_c = 1;
+  sint32 preferred_temperature_maximum_milli_c = 2;
+  sint32 hard_temperature_minimum_milli_c = 3;
+  sint32 hard_temperature_maximum_milli_c = 4;
+  bool can_occupy_terrestrial = 5;
+  bool requires_light = 6;
+  repeated EvolutionRelevantResource relevant_resources = 7;
 }
 
 message EvolutionResourceStock {
@@ -149,6 +174,7 @@ message EvolutionDecisionSurface {
   repeated EvolutionOccupiedTile occupied_tiles = 16;
   repeated EvolutionResourceDefinition resource_definitions = 17;
   repeated EvolutionReactionDefinition reaction_definitions = 18;
+  EvolutionHabitatProfile habitat_profile = 19;
 }
 
 message SpeciationProposalRequest {

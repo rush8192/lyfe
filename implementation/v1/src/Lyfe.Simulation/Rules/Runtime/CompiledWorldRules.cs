@@ -61,6 +61,7 @@ public sealed record CompiledWorldGenerator(
     uint MaximumAttempts,
     uint TargetAquaticFractionMinimumQ,
     uint TargetAquaticFractionMaximumQ,
+    long InorganicPhosphorusWeatheringQuantityPerHour,
     CompiledElevationGenerator Elevation,
     CompiledClimateGenerator Climate,
     CompiledVolcanismGenerator Volcanism,

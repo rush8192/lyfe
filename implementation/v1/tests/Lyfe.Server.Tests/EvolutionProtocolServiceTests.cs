@@ -39,7 +39,26 @@ public sealed class EvolutionProtocolServiceTests
             conservation.ConsequenceEvidenceKind);
         Assert.NotEmpty(surface.ResourceDefinitions);
         Assert.NotEmpty(surface.ReactionDefinitions);
-        Assert.NotEmpty(Assert.Single(surface.OccupiedTiles).ResourceStocks);
+        var occupied = Assert.Single(surface.OccupiedTiles);
+        Assert.NotEmpty(occupied.ResourceStocks);
+        var habitat = Assert.IsType<Proto.EvolutionHabitatProfile>(surface.HabitatProfile);
+        Assert.True(habitat.HardTemperatureMinimumMilliC <
+            habitat.PreferredTemperatureMinimumMilliC);
+        Assert.True(habitat.PreferredTemperatureMaximumMilliC <
+            habitat.HardTemperatureMaximumMilliC);
+        Assert.Contains(habitat.RelevantResources, resource =>
+            resource.MetabolismInput && resource.ResourceId == 1U);
+        Assert.Contains(habitat.RelevantResources, resource =>
+            resource.HealthRequirement);
+        Assert.Contains(habitat.RelevantResources, resource =>
+            resource.EnvironmentalHazard && resource.HardHazardThresholdQ > 0);
+        if (occupied.HasCurrentClimate)
+        {
+            Assert.InRange(occupied.CurrentCloudQ, 0U, 1_000_000U);
+            Assert.InRange(occupied.CurrentSurfaceLightQ, 0U, 1_000_000U);
+            Assert.True(occupied.SeasonalTemperatureMinimumMilliC <=
+                occupied.SeasonalTemperatureMaximumMilliC);
+        }
     }
 
     [Fact]

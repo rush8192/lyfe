@@ -151,6 +151,31 @@ public sealed class EvolutionProtocolService
             SpeciationNotBeforeTick = species.SpeciationNotBeforeTick,
             MaximumChangeComplexity = maximumComplexity,
         };
+        if (species.HabitatProfile is { } habitat)
+        {
+            result.HabitatProfile = new Proto.EvolutionHabitatProfile
+            {
+                PreferredTemperatureMinimumMilliC =
+                    habitat.PreferredTemperatureMinimumMilliC,
+                PreferredTemperatureMaximumMilliC =
+                    habitat.PreferredTemperatureMaximumMilliC,
+                HardTemperatureMinimumMilliC = habitat.HardTemperatureMinimumMilliC,
+                HardTemperatureMaximumMilliC = habitat.HardTemperatureMaximumMilliC,
+                CanOccupyTerrestrial = habitat.CanOccupyTerrestrial,
+                RequiresLight = habitat.RequiresLight,
+            };
+            result.HabitatProfile.RelevantResources.Add(habitat.RelevantResources.Select(
+                resource => new Proto.EvolutionRelevantResource
+                {
+                    ResourceId = resource.ResourceId.Value,
+                    MetabolismInput = resource.MetabolismInput,
+                    GrowthInput = resource.GrowthInput,
+                    HealthRequirement = resource.HealthRequirement,
+                    EnvironmentalHazard = resource.EnvironmentalHazard,
+                    SoftHazardThresholdQ = resource.SoftHazardThresholdQ,
+                    HardHazardThresholdQ = resource.HardHazardThresholdQ,
+                }));
+        }
         result.Traits.Add(runner.Rules.RulePack.Traits
             .OrderBy(trait => trait.Id.Value)
             .Select(trait =>
@@ -210,6 +235,16 @@ public sealed class EvolutionProtocolService
                     CurrentTemperatureMilliC = currentClimate?.TemperatureMilliC ?? 0,
                     CurrentSurfaceMoistureQ = currentClimate?.SurfaceMoistureQ ?? 0,
                     CurrentAccessibleLightQ = currentClimate?.AccessibleLightQ ?? 0,
+                    CurrentPrecipitationMicrometersPerHour =
+                        currentClimate?.PrecipitationMicrometersPerHour ?? 0,
+                    CurrentCloudQ = currentClimate?.CloudQ ?? 0,
+                    CurrentSurfaceLightQ = currentClimate?.SurfaceLightQ ?? 0,
+                    SeasonalTemperatureMinimumMilliC = generatedTile is null
+                        ? currentClimate?.TemperatureMilliC ?? 0
+                        : generatedTile.MonthlyTemperatureMilliC.Min(),
+                    SeasonalTemperatureMaximumMilliC = generatedTile is null
+                        ? currentClimate?.TemperatureMilliC ?? 0
+                        : generatedTile.MonthlyTemperatureMilliC.Max(),
                     BaselineVolcanismQ = generatedTile?.BaselineVolcanismQ ??
                         runner.Rules.WorldProfile.Tiles
                             .Single(value => value.TileIndex == group.Key.Value)

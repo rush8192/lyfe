@@ -36,6 +36,11 @@ and display name for every compiled reaction. Projector and client both regroup 
 and require exact equality with their aggregate flow totals; hidden species collapse into one
 anonymous biological group before transmission.
 
+Contributor process kinds distinguish volcanic gas sources, non-gas geological sources, and
+natural remnant breakdown. The latter two let the tile inspector attribute inorganic-phosphorus
+weathering and recycled structural phosphorus without presenting either as organism uptake or a
+compiled metabolic reaction.
+
 Each live organism may also carry its exact last-completed-tick acquisition request and grant
 per named resource. Separate flags identify tile-supply scarcity and scavenging claim
 contention. A coupled reaction can therefore show every co-input's proportional reduction while
@@ -167,6 +172,16 @@ marks renewal coverage or likely overshoot. Controlled-versus-other-observed-spe
 reported only for the latest interval on the selected live tile because contributor identity is not
 retained across the rolling aggregate history. The message explicitly supports a no-history state;
 it does not predict future climate, hidden competition, or survival.
+
+The controlled-species decision surface also carries its compiled habitat profile: preferred and
+hard temperature bounds, terrestrial and light requirements, and a canonical resource list marking
+metabolic inputs, tile-fed growth inputs, constitutive micronutrients, and typed chemical hazards
+with soft/hard exposure thresholds. Occupied-tile climate now includes precipitation, cloud,
+surface light, and the tile's seasonal temperature span alongside current temperature, moisture,
+accessible light, and volcanism. These fields share
+the projection boundary and let the client explain live-tile suitability without hard-coding a
+founder genome or consulting hidden tiles. Tile mortality windows are derived from already
+authorized controlled-species journey deaths and their realized cause IDs.
 
 Selectable trait definitions also carry a canonical ordered set of rule-authored strategic intents,
 and valid compiled proposals carry the union for their requested prerequisite-closed trait set. The

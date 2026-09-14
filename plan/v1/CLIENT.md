@@ -91,6 +91,20 @@ Survival setup presents the two choices defined in [FOUNDING_METABOLISMS.md](FOU
 
 Client layers must distinguish `current`, `last known`, `coarse`, and `unknown` values visually and textually. Rendering interpolation stops when a tile ceases to be live.
 
+The live selected-tile view leads with habitat suitability rather than projection-authorization
+terminology. It compares current water/land habitat, current and seasonal temperature, moisture, accessible and surface
+light, cloud, precipitation, and volcanism with the controlled species' compiled phenotype. Preferred
+and hard temperature bands, terrestrial permission, light dependence, and the current average
+environmental factor remain authoritative DNA-specific facts. Compound emphasis is limited to active
+external metabolism inputs, growth inputs drawn from the tile, constitutive micronutrients, and
+typed chemical hazards. A missing required stock is explicit. “Abundant” is a bounded current-rate
+estimate requiring at least seven days of stock at the latest controlled-species uptake rate; a
+positive stock without recent uptake is only “present.” Actual controlled-species death events are
+grouped by mechanism for selectable trailing `72`, `168`, `336`, and `720` tick windows. A window without
+deaths must not imply that growth, health, or reproduction is unconstrained. Reduced and unknown
+tiles receive none of these current comparisons until `KNOW-200` supplies appropriately coarse,
+timestamped evidence.
+
 The executable presentation-only camera focuses the controlled species' starting tile on first
 entry unless that saved world has a valid browser-local camera preference. Its explicit Fit control
 shows the authorized rectangular projection; horizontal travel wraps continuously, vertical travel

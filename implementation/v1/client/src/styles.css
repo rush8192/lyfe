@@ -964,6 +964,21 @@ h3 {
   background: rgb(5 13 15 / 56%);
 }
 
+.tile-knowledge-message.habitat-favorable {
+  border-color: rgb(88 196 163 / 35%);
+  background: rgb(40 125 99 / 10%);
+}
+
+.tile-knowledge-message.habitat-caution {
+  border-color: rgb(219 179 90 / 38%);
+  background: rgb(137 99 32 / 11%);
+}
+
+.tile-knowledge-message.habitat-danger {
+  border-color: rgb(239 122 114 / 42%);
+  background: rgb(150 58 53 / 12%);
+}
+
 .tile-fact-grid {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
@@ -983,6 +998,36 @@ h3 {
 .tile-fact-grid dd {
   font-size: 1rem;
   text-align: left;
+}
+
+.habitat-facts div {
+  border-left-width: 3px;
+}
+
+.habitat-facts div.favorable,
+.relevant-resource.favorable {
+  border-left-color: #58c4a3;
+}
+
+.habitat-facts div.caution,
+.relevant-resource.caution {
+  border-left-color: #d9ae55;
+}
+
+.habitat-facts div.danger,
+.relevant-resource.danger {
+  border-left-color: #ef7a72;
+}
+
+.habitat-facts div.neutral,
+.relevant-resource.neutral {
+  border-left-color: #617a74;
+}
+
+.habitat-facts small {
+  color: #819a94;
+  font-size: 0.67rem;
+  line-height: 1.4;
 }
 
 .tile-resource-snapshot {
@@ -1024,6 +1069,120 @@ h3 {
 
 .tile-resource-snapshot.retained li {
   border-style: dashed;
+}
+
+.tile-section-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 12px;
+}
+
+.tile-section-heading h3,
+.tile-section-heading p {
+  margin: 0;
+}
+
+.tile-section-heading label {
+  display: grid;
+  gap: 5px;
+  color: #8fa8a1;
+  font-size: 0.68rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.tile-section-heading select {
+  min-height: 40px;
+  padding: 7px 34px 7px 10px;
+  border: 1px solid #48645e;
+  border-radius: 8px;
+  color: #dce9e5;
+  background: #0b2022;
+}
+
+.tile-resource-snapshot li.relevant-resource {
+  align-items: flex-start;
+  border-left-width: 3px;
+}
+
+.relevant-resource > span:first-child,
+.resource-suitability,
+.mortality-causes span {
+  display: grid;
+  gap: 3px;
+}
+
+.relevant-resource small,
+.mortality-causes small {
+  color: #829b95;
+  line-height: 1.35;
+}
+
+.resource-suitability {
+  min-width: 88px;
+  text-align: right;
+}
+
+.resource-suitability b {
+  color: #e4f0ec;
+}
+
+.relevant-resource.danger .resource-suitability b { color: #ff9d96; }
+.relevant-resource.caution .resource-suitability b { color: #e7c576; }
+.relevant-resource.favorable .resource-suitability b { color: #8ff0c8; }
+
+.tile-method-note {
+  margin-top: 10px !important;
+  font-size: 0.7rem;
+}
+
+.tile-mortality {
+  margin-top: 28px;
+  padding-top: 22px;
+  border-top: 1px solid rgb(137 193 174 / 14%);
+}
+
+.mortality-empty,
+.mortality-summary {
+  margin: 0;
+  padding: 14px 16px;
+  border: 1px solid rgb(137 193 174 / 13%);
+  border-radius: 10px;
+  color: #a8bdb7;
+  background: rgb(5 18 20 / 35%);
+  line-height: 1.55;
+}
+
+.mortality-empty p {
+  margin: 4px 0 0;
+  color: #829b95;
+}
+
+.mortality-causes {
+  display: grid;
+  gap: 7px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mortality-causes li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 12px;
+  border-left: 3px solid #ef7a72;
+  border-radius: 8px;
+  color: #dce9e5;
+  background: rgb(5 18 20 / 35%);
+}
+
+.mortality-causes b {
+  font-size: 1rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .world-copy {
@@ -1278,6 +1437,71 @@ dd {
 .organism-info .journey-panel {
   margin-top: 20px;
   padding-top: 18px;
+}
+
+.remnant-source {
+  grid-column: 1 / -1;
+}
+
+.remnant-death-evidence,
+.remnant-recyclables {
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid rgb(137 193 174 / 14%);
+}
+
+.remnant-death-evidence h3,
+.remnant-recyclables h3 {
+  margin: 3px 0 12px;
+  font-size: 1.08rem;
+}
+
+.remnant-death-evidence h4 {
+  margin: 18px 0 8px;
+  color: #a9beb8;
+  font-size: 0.76rem;
+}
+
+.remnant-actual-cause {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid rgb(230 147 119 / 32%);
+  border-radius: 10px;
+  background: rgb(54 27 27 / 35%);
+}
+
+.remnant-actual-cause span,
+.remnant-actual-cause small,
+.remnant-evidence-unavailable {
+  color: #9eb1ac;
+  font-size: 0.73rem;
+  line-height: 1.45;
+}
+
+.remnant-cause-list li {
+  align-items: start;
+}
+
+.remnant-cause-list b {
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.remnant-recyclables ul {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.remnant-recyclables li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: #9eb1ac;
+  font-size: 0.76rem;
 }
 
 .loss-postmortem {

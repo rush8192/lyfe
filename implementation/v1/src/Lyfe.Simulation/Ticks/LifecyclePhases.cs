@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using Lyfe.Simulation.Behavior;
+using Lyfe.Simulation.Ledger;
 using Lyfe.Simulation.Physiology;
 using Lyfe.Simulation.Randomness;
 using Lyfe.Simulation.Rules.Identity;
@@ -46,6 +47,7 @@ internal sealed record RemnantDecayView(
 }
 
 internal readonly record struct RemnantDecayOutcome(
+    ulong Tick,
     RemnantId RemnantId,
     TileId TileId,
     long StructuralReleaseQ,
@@ -53,7 +55,100 @@ internal readonly record struct RemnantDecayOutcome(
     long RemainingStructureQ,
     long RemainingReserveQ,
     uint StructureRemainderQ,
-    uint ReserveRemainderQ);
+    uint ReserveRemainderQ,
+    MicronutrientInventory Micronutrients);
+
+internal static class RemnantDecayTransactionFactory
+{
+    private static readonly ResourceId ReserveOrganic = ResourceId.From(3);
+    private static readonly ResourceId StructuralBiomass = ResourceId.From(5);
+    private static readonly ResourceId SpentReserveCarrier = ResourceId.From(8);
+    private static readonly ResourceId InorganicPhosphorus = ResourceId.From(16);
+    private static readonly ResourceId PhosphorusDepletedResidue = ResourceId.From(32);
+
+    public static ResourceTransaction CreateStructure(
+        ulong tick,
+        TileId tileId,
+        ulong remnantId,
+        long quantityQ) => new(
+            Key(tick, tileId, remnantId, StructuralBiomass, 0),
+            LedgerCause.RemnantDecay,
+            ReactionId.From(StructuralBiomass.Value),
+            default,
+            tileId,
+            quantityQ,
+            [
+                Entry(MatterAccountOwnerKind.Remnant, remnantId,
+                    MatterCompartment.RemnantMatter, StructuralBiomass, -quantityQ),
+                Entry(MatterAccountOwnerKind.Tile, tileId.Value,
+                    MatterCompartment.OrganicPool, ReserveOrganic, checked(quantityQ * 4)),
+                Entry(MatterAccountOwnerKind.Tile, tileId.Value,
+                    MatterCompartment.OrganicPool, PhosphorusDepletedResidue, quantityQ),
+                Entry(MatterAccountOwnerKind.Tile, tileId.Value,
+                    MatterCompartment.InorganicPool, InorganicPhosphorus, checked(quantityQ * 2)),
+            ],
+            []);
+
+    public static ResourceTransaction CreateReserve(
+        ulong tick,
+        TileId tileId,
+        ulong remnantId,
+        long quantityQ) => new(
+            Key(tick, tileId, remnantId, ReserveOrganic, 1),
+            LedgerCause.RemnantDecay,
+            ReactionId.From(ReserveOrganic.Value),
+            default,
+            tileId,
+            quantityQ,
+            [
+                Entry(MatterAccountOwnerKind.Remnant, remnantId,
+                    MatterCompartment.RemnantMatter, ReserveOrganic, -quantityQ),
+                Entry(MatterAccountOwnerKind.Tile, tileId.Value,
+                    MatterCompartment.OrganicPool, SpentReserveCarrier, quantityQ),
+            ],
+            []);
+
+    public static ResourceTransaction CreateMicronutrient(
+        ulong tick,
+        TileId tileId,
+        ulong remnantId,
+        ResourceId resourceId,
+        long quantityQ,
+        uint ordinal) => new(
+            Key(tick, tileId, remnantId, resourceId, ordinal),
+            LedgerCause.RemnantDecay,
+            ReactionId.From(resourceId.Value),
+            default,
+            tileId,
+            quantityQ,
+            [
+                Entry(MatterAccountOwnerKind.Remnant, remnantId,
+                    MatterCompartment.RemnantMatter, resourceId, -quantityQ),
+                Entry(MatterAccountOwnerKind.Tile, tileId.Value,
+                    MatterCompartment.InorganicPool, resourceId, quantityQ),
+            ],
+            []);
+
+    private static LedgerTransactionKey Key(
+        ulong tick,
+        TileId tileId,
+        ulong remnantId,
+        ResourceId resourceId,
+        uint ordinal) => new(
+            tick,
+            TickPhase.EnvironmentalLedger,
+            tileId.Value,
+            remnantId,
+            resourceId.Value,
+            ordinal);
+
+    private static MatterLedgerEntry Entry(
+        MatterAccountOwnerKind owner,
+        ulong ownerId,
+        MatterCompartment compartment,
+        ResourceId resource,
+        long deltaQ) => new(new MatterAccountKey(owner, ownerId, compartment, resource), deltaQ);
+}
 
 internal sealed class RemnantDecayPhase :
     ScalarTickPhase<
@@ -63,7 +158,8 @@ internal sealed class RemnantDecayPhase :
 {
     private const uint OutcomeCategory = 1;
     private static readonly ResourceId RecycledOrganicResourceId = ResourceId.From(3);
-    private static readonly ResourceId StructuralRemainderResourceId = ResourceId.From(7);
+    private static readonly ResourceId StructuralRemainderResourceId = ResourceId.From(32);
+    private static readonly ResourceId InorganicPhosphorusResourceId = ResourceId.From(16);
     private static readonly ResourceId SpentReserveCarrierResourceId = ResourceId.From(8);
 
     public override TickPhase Phase => TickPhase.EnvironmentalLedger;
@@ -107,6 +203,7 @@ internal sealed class RemnantDecayPhase :
                 context.TickDurationHours,
                 remnant.ReserveDecayRemainderQ);
             var outcome = new RemnantDecayOutcome(
+                context.Tick,
                 remnant.Id,
                 remnant.TileId,
                 structure.ReleasedQ,
@@ -114,7 +211,8 @@ internal sealed class RemnantDecayPhase :
                 checked(remnant.StructuralMatterQ - structure.ReleasedQ),
                 checked(remnant.ChargedReserveQ - reserve.ReleasedQ),
                 structure.RemainderQ,
-                reserve.RemainderQ);
+                reserve.RemainderQ,
+                remnant.Micronutrients);
             outcomes.Add(new PhaseOutcome<RemnantDecayOutcome>(
                 view.Stamp,
                 new OutcomeKey(Phase, OutcomeCategory, remnant.TileId.Value, remnant.Id.Value, 0, 0),
@@ -164,6 +262,11 @@ internal sealed class RemnantDecayPhase :
                     world.GetResourceHandle(StructuralRemainderResourceId),
                     outcome.StructuralReleaseQ,
                     changes);
+                world.ApplyTileResourceDelta(
+                    outcome.TileId,
+                    world.GetResourceHandle(InorganicPhosphorusResourceId),
+                    checked(outcome.StructuralReleaseQ * 2),
+                    changes);
             }
 
             if (outcome.RemainingStructureQ == 0 && outcome.RemainingReserveQ == 0)
@@ -182,6 +285,49 @@ internal sealed class RemnantDecayPhase :
                     changes);
             }
         }
+    }
+
+    protected override ImmutableArray<ResourceTransaction> GetResourceTransactions(
+        ImmutableArray<RemnantDecayOutcome> plan)
+    {
+        var transactions = ImmutableArray.CreateBuilder<ResourceTransaction>();
+        foreach (var outcome in plan)
+        {
+            if (outcome.StructuralReleaseQ > 0)
+            {
+                transactions.Add(RemnantDecayTransactionFactory.CreateStructure(
+                    outcome.Tick,
+                    outcome.TileId,
+                    outcome.RemnantId.Value,
+                    outcome.StructuralReleaseQ));
+            }
+            if (outcome.ReserveReleaseQ > 0)
+            {
+                transactions.Add(RemnantDecayTransactionFactory.CreateReserve(
+                    outcome.Tick,
+                    outcome.TileId,
+                    outcome.RemnantId.Value,
+                    outcome.ReserveReleaseQ));
+            }
+            if (outcome.RemainingStructureQ == 0 && outcome.RemainingReserveQ == 0)
+            {
+                for (var slot = 0; slot < MicronutrientInventory.Count; slot++)
+                {
+                    var quantityQ = outcome.Micronutrients[slot];
+                    if (quantityQ > 0)
+                    {
+                        transactions.Add(RemnantDecayTransactionFactory.CreateMicronutrient(
+                            outcome.Tick,
+                            outcome.TileId,
+                            outcome.RemnantId.Value,
+                            MicronutrientInventory.ResourceIdAt(slot),
+                            quantityQ,
+                            checked((uint)(slot + 2))));
+                    }
+                }
+            }
+        }
+        return transactions.OrderBy(value => value.Key).ToImmutableArray();
     }
 
     private static void ReleaseMicronutrients(

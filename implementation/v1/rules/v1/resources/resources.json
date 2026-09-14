@@ -265,6 +265,20 @@
       "numericId": 31, "stableKey": "resource.cobalt", "displayName": "Cobalt",
       "biologicalForm": "inorganic", "environmentalPhase": "dissolved",
       "composition": [{ "element": "cobalt", "quantity": 1 }]
+    },
+    {
+      "numericId": 32,
+      "stableKey": "resource.phosphorus-depleted-structural-organic",
+      "displayName": "Phosphorus-depleted structural residue",
+      "biologicalForm": "organic",
+      "environmentalPhase": "particulate",
+      "composition": [
+        { "element": "carbon", "quantity": 96 },
+        { "element": "hydrogen", "quantity": 162 },
+        { "element": "oxygen", "quantity": 36 },
+        { "element": "nitrogen", "quantity": 20 },
+        { "element": "sulfur", "quantity": 1 }
+      ]
     }
   ]
 }

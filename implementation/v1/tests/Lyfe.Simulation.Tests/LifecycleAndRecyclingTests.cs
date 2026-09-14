@@ -195,7 +195,7 @@ public sealed class LifecycleAndRecyclingTests
     }
 
     [Fact]
-    public void OldRemnantsDecayThroughPersistedRemaindersIntoExactOrganicProducts()
+    public void OldRemnantsDecayIntoExactPhosphorusReleasingProducts()
     {
         var runner = CreateRunner();
         var world = runner.MutableWorld;
@@ -216,7 +216,17 @@ public sealed class LifecycleAndRecyclingTests
             setup);
         world.SealChanges(setup);
 
-        runner.AdvanceOneTick();
+        var phosphorus = world.GetResourceHandle(ResourceId.From(16));
+        var phosphorusBefore = world.GetTileResource(source.TileId, phosphorus);
+        var phase = new RemnantDecayPhase();
+        var journal = phase.Execute(world, new TickExecutionContext(
+            1,
+            1,
+            1,
+            runner.Rules.Identity.WorldRulesHash,
+            NoTickFaultInjector.Instance,
+            new SemanticRandomOracle(Seed),
+            new TickScratch(1)));
 
         var remnant = world.GetRemnant(remnantId);
         Assert.Equal(1_999, remnant.StructuralMatterQ);
@@ -226,9 +236,88 @@ public sealed class LifecycleAndRecyclingTests
         Assert.Equal(4, world.GetTileResource(source.TileId,
             world.GetResourceHandle(ResourceId.From(3))));
         Assert.Equal(1, world.GetTileResource(source.TileId,
-            world.GetResourceHandle(ResourceId.From(7))));
-        Assert.Equal(60, world.GetTileResource(source.TileId,
+            world.GetResourceHandle(ResourceId.From(32))));
+        Assert.Equal(phosphorusBefore + 2,
+            world.GetTileResource(source.TileId, phosphorus));
+        Assert.Equal(4, world.GetTileResource(source.TileId,
             world.GetResourceHandle(ResourceId.From(8))));
+        Assert.Contains(journal.ResourceTransactions, value =>
+            value.Cause == LedgerCause.RemnantDecay &&
+            value.Key.ActorId == remnantId.Value &&
+            value.ReactionId.Value == 5 &&
+            value.Extent == 1);
+        Assert.True(ResourceLedgerOracle.Reconcile(
+            runner.Rules.RulePack,
+            journal.ResourceTransactions).IsBalanced);
+    }
+
+    [Fact]
+    public void ExhaustedRemnantIsRemovedAndReturnsTerminalMicronutrients()
+    {
+        var runner = CreateRunner();
+        var world = runner.MutableWorld;
+        var source = world.GetOrganism(Assert.Single(world.GetOrganismIdsInCanonicalOrder()));
+        var calcium = world.GetResourceHandle(ResourceId.From(18));
+        var phosphorus = world.GetResourceHandle(ResourceId.From(16));
+        var depletedResidue = world.GetResourceHandle(ResourceId.From(32));
+        var spentReserve = world.GetResourceHandle(ResourceId.From(8));
+        var calciumBefore = world.GetTileResource(source.TileId, calcium);
+        var phosphorusBefore = world.GetTileResource(source.TileId, phosphorus);
+        var depletedBefore = world.GetTileResource(source.TileId, depletedResidue);
+        var spentBefore = world.GetTileResource(source.TileId, spentReserve);
+        var setup = world.BeginChanges();
+        var remnantId = world.CreateRemnant(
+            new RemnantInitialState(
+                source.Id,
+                source.SpeciesId,
+                0,
+                source.TileId,
+                source.PositionXQ,
+                source.PositionYQ,
+                1,
+                1,
+                0,
+                0,
+                MicronutrientInventory.Empty.With(0, 7)),
+            setup);
+        world.SealChanges(setup);
+
+        var phase = new RemnantDecayPhase();
+        var random = new SemanticRandomOracle(Seed);
+        TickPhaseJournal finalJournal = default!;
+        ulong removedAtTick = 0;
+        for (ulong tick = 1; tick <= 1_100; tick++)
+        {
+            finalJournal = phase.Execute(world, new TickExecutionContext(
+                tick,
+                tick,
+                1,
+                runner.Rules.Identity.WorldRulesHash,
+                NoTickFaultInjector.Instance,
+                random,
+                new TickScratch(tick)));
+            Assert.True(ResourceLedgerOracle.Reconcile(
+                runner.Rules.RulePack,
+                finalJournal.ResourceTransactions).IsBalanced);
+            if (!world.GetRemnantIdsInCanonicalOrder().Contains(remnantId))
+            {
+                removedAtTick = tick;
+                break;
+            }
+        }
+
+        Assert.InRange(removedAtTick, 1UL, 1_100UL);
+        Assert.Equal(calciumBefore + 7, world.GetTileResource(source.TileId, calcium));
+        Assert.Equal(phosphorusBefore + 2, world.GetTileResource(source.TileId, phosphorus));
+        Assert.Equal(depletedBefore + 1,
+            world.GetTileResource(source.TileId, depletedResidue));
+        Assert.Equal(spentBefore + 1, world.GetTileResource(source.TileId, spentReserve));
+        Assert.Contains(finalJournal.ResourceTransactions, value =>
+            value.Cause == LedgerCause.RemnantDecay &&
+            value.ReactionId.Value == calcium.Id.Value &&
+            value.Extent == 7);
+        Assert.Contains(finalJournal.Changes.Removes,
+            value => value.Value == remnantId.Value);
     }
 
     [Fact]

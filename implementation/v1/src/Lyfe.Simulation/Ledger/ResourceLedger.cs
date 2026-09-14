@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using Lyfe.Simulation.Physiology;
 using Lyfe.Simulation.Rules.Identity;
 using Lyfe.Simulation.Rules.Runtime;
 using Lyfe.Simulation.State.Identity;
@@ -11,6 +12,7 @@ public enum MatterAccountOwnerKind : byte
     Tile = 1,
     Organism = 2,
     Boundary = 3,
+    Remnant = 4,
 }
 
 public enum MatterCompartment : byte
@@ -46,6 +48,8 @@ public enum LedgerCause : byte
     MandatoryMaintenance = 6,
     BiomassAssembly = 7,
     MicronutrientUptake = 8,
+    EnvironmentalResourceSource = 9,
+    RemnantDecay = 10,
 }
 
 internal static class MicronutrientTransactionFactory
@@ -723,6 +727,18 @@ internal static class ResourceLedgerOracle
             return;
         }
 
+        if (transaction.Cause == LedgerCause.EnvironmentalResourceSource)
+        {
+            ValidateEnvironmentalResourceSource(rules, transaction);
+            return;
+        }
+
+        if (transaction.Cause == LedgerCause.RemnantDecay)
+        {
+            ValidateRemnantDecayBundle(rules, transaction);
+            return;
+        }
+
         if (transaction.Extent <= 0 ||
             transaction.Key.Tick == 0 ||
             transaction.Key.ActorId != transaction.ActorId.Value ||
@@ -834,6 +850,102 @@ internal static class ResourceLedgerOracle
         if (!valid)
         {
             throw new InvalidOperationException("The environmental gas transfer endpoints are invalid.");
+        }
+    }
+
+    private static void ValidateEnvironmentalResourceSource(
+        CompiledRulePack rules,
+        ResourceTransaction transaction)
+    {
+        if (transaction.Extent <= 0 ||
+            transaction.Key.Tick == 0 ||
+            transaction.Key.Phase != TickPhase.EnvironmentalLedger ||
+            transaction.ActorId != default ||
+            transaction.Key.ScopeId != transaction.TileId.Value ||
+            transaction.Key.ActorId != 0 ||
+            transaction.Key.ReactionId != transaction.ReactionId.Value ||
+            transaction.Key.LocalOrdinal != 3 ||
+            transaction.MatterEntries.Length != 2 ||
+            transaction.EnergyEntries.Length != 0)
+        {
+            throw new InvalidOperationException(
+                "The environmental resource-source transaction identity is invalid.");
+        }
+
+        var resource = RequireResource(rules, ResourceId.From(transaction.ReactionId.Value));
+        if (resource.EnvironmentalPhase is EnvironmentalPhase.Gas or EnvironmentalPhase.Boundary ||
+            transaction.MatterEntries.Any(entry => entry.Account.ResourceId != resource.Id) ||
+            transaction.MatterEntries.Sum(entry => entry.DeltaQ) != 0)
+        {
+            throw new InvalidOperationException(
+                "The environmental resource-source transfer is not exact or mass balanced.");
+        }
+
+        var debit = transaction.MatterEntries.Single(entry => entry.DeltaQ < 0);
+        var credit = transaction.MatterEntries.Single(entry => entry.DeltaQ > 0);
+        if (debit.DeltaQ != -transaction.Extent ||
+            credit.DeltaQ != transaction.Extent ||
+            debit.Account.OwnerKind != MatterAccountOwnerKind.Boundary ||
+            credit.Account.OwnerKind != MatterAccountOwnerKind.Tile ||
+            credit.Account.OwnerId != transaction.TileId.Value)
+        {
+            throw new InvalidOperationException(
+                "The environmental resource-source endpoints are invalid.");
+        }
+    }
+
+    private static void ValidateRemnantDecayBundle(
+        CompiledRulePack rules,
+        ResourceTransaction transaction)
+    {
+        if (transaction.Extent <= 0 ||
+            transaction.Key.Tick == 0 ||
+            transaction.Key.Phase != TickPhase.EnvironmentalLedger ||
+            transaction.ActorId != default ||
+            transaction.Key.ScopeId != transaction.TileId.Value ||
+            transaction.Key.ActorId == 0 ||
+            transaction.Key.ReactionId != transaction.ReactionId.Value ||
+            transaction.EnergyEntries.Length != 0)
+        {
+            throw new InvalidOperationException("The remnant-decay transaction identity is invalid.");
+        }
+
+        if (transaction.Key.LocalOrdinal >= 2 &&
+            (transaction.ReactionId.Value < MicronutrientInventory.FirstResourceId ||
+                transaction.ReactionId.Value >=
+                    MicronutrientInventory.FirstResourceId + MicronutrientInventory.Count ||
+                transaction.Key.LocalOrdinal !=
+                    transaction.ReactionId.Value - MicronutrientInventory.FirstResourceId + 2))
+        {
+            throw new InvalidOperationException(
+                "A terminal remnant transfer must name its canonical micronutrient slot.");
+        }
+
+        var expected = transaction.Key.LocalOrdinal switch
+        {
+            0 => RemnantDecayTransactionFactory.CreateStructure(
+                transaction.Key.Tick,
+                transaction.TileId,
+                transaction.Key.ActorId,
+                transaction.Extent),
+            1 => RemnantDecayTransactionFactory.CreateReserve(
+                transaction.Key.Tick,
+                transaction.TileId,
+                transaction.Key.ActorId,
+                transaction.Extent),
+            >= 2 => RemnantDecayTransactionFactory.CreateMicronutrient(
+                transaction.Key.Tick,
+                transaction.TileId,
+                transaction.Key.ActorId,
+                ResourceId.From(transaction.ReactionId.Value),
+                transaction.Extent,
+                transaction.Key.LocalOrdinal),
+        };
+        if (transaction.Key != expected.Key ||
+            !transaction.MatterEntries.SequenceEqual(expected.MatterEntries))
+        {
+            throw new InvalidOperationException(
+                "The remnant-decay transaction does not match its exact recycling bundle.");
         }
     }
 

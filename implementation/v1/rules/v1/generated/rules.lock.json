@@ -35,6 +35,7 @@
         ,{ "numericId": 29, "stableKey": "resource.molybdenum", "status": "active" }
         ,{ "numericId": 30, "stableKey": "resource.nickel", "status": "active" }
         ,{ "numericId": 31, "stableKey": "resource.cobalt", "status": "active" }
+        ,{ "numericId": 32, "stableKey": "resource.phosphorus-depleted-structural-organic", "status": "active" }
       ]
     },
     {

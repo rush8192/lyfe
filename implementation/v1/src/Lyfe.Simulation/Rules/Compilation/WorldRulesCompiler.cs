@@ -376,11 +376,20 @@ public static class WorldRulesCompiler
         var climate = source.Climate;
         var volcanism = source.Volcanism;
         var starts = source.StartingRegions;
+        if (source.InorganicPhosphorusWeatheringQuantityPerHour < 0)
+        {
+            AddError(
+                "LYFE-COMPILE-WORLD-021",
+                "Inorganic-phosphorus weathering cannot be negative.",
+                diagnostics);
+            return null;
+        }
         return new CompiledWorldGenerator(
             source.AlgorithmVersion,
             source.MaximumAttempts,
             source.TargetAquaticFractionMinimumQ,
             source.TargetAquaticFractionMaximumQ,
+            source.InorganicPhosphorusWeatheringQuantityPerHour,
             new CompiledElevationGenerator(
                 ImmutableArray.CreateRange(elevation.WavelengthsTiles),
                 ImmutableArray.CreateRange(elevation.AmplitudesQ),

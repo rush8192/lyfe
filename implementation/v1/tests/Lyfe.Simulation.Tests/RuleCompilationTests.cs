@@ -14,16 +14,16 @@ public sealed class RuleCompilationTests
         var compiled = CompileOfficialRules();
 
         Assert.Equal(
-            "286766d54e8a8039495c49bb04a17f7c4f27080efaf6a91f5677ed53408a785d",
+            "58fc849e13524f95d9f373e949d33193e82d6c8753d9f60795db8fa6ce479a95",
             compiled.Identity.MechanicsHash);
         Assert.Equal(
-            "a9868f4c04cc7a9f4a4a9592858057d08a8251127cd78d67fbd353cc54dc62d0",
+            "b5725ef99924b1de9cc613ae66ff16bb47f73e7be4574ae8beea2d3201c145cb",
             compiled.Identity.PresentationHash);
         Assert.Equal(
-            "9817cefa04b9a8ceae73e383838f8d4406dba65db9db75fc14db19bc87b786c1",
+            "3e37dcd7cdf8e079fdfe119733a6244a9b4dbee3c0a9f3636a841f3e4f2faacd",
             compiled.Identity.RegistryManifestHash);
         Assert.Equal(
-            "a0a585949f8e6e2180ebdb7b32e72d7e44ab65d34c064ffe85a02f61814f9cbd",
+            "bddfb5ed706a06fcc011d067053600a541a6250ce8d1b58977488400dedaa309",
             compiled.Identity.CompiledArtifactHash);
     }
 
@@ -32,7 +32,7 @@ public sealed class RuleCompilationTests
     {
         var compiled = CompileOfficialRules();
 
-        Assert.Equal(Enumerable.Range(1, 31).Select(value => (uint)value),
+        Assert.Equal(Enumerable.Range(1, 32).Select(value => (uint)value),
             compiled.Resources.Select(resource => resource.Id.Value));
         var capture = compiled.Reactions[0];
         Assert.Equal(ProcessKind.ExternalEnergyCapture, capture.ProcessKind);
@@ -453,13 +453,13 @@ public sealed class RuleCompilationTests
         Assert.True(result.IsSuccess, FormatDiagnostics(result.Diagnostics));
         Assert.NotNull(result.WorldRules);
         Assert.Equal(
-            "9c9941f6311a159d3d7206b1c47d4dd38c6ac3222e967f647f13b488a23463d5",
+            "bfea01d44cbb9178b0dfc95d234ea35faa9cefbaa0bdf3e0058843e149fde504",
             result.WorldRules.Identity.WorldPackageHash);
         Assert.Equal(
-            "1b82aef52f4ca811c2ad0e237a58c546cc1c569c9fb0fa5567d37a77a2e7f77f",
+            "f4ddc3a4c28d9e765d9ffe8723bff58699a63f288dd0ca14049df12ca804b3dc",
             result.WorldRules.Identity.CompiledWorldProfileHash);
         Assert.Equal(
-            "fcbde4df5f85d12b2948567177b63b47cea3c478fc2e8eb245114ad99ffd1f5d",
+            "4762b46dcdd0f1b4b6a3f43d86e07c2d4b5d8be28ca778b2ceabea4ef9d1a813",
             result.WorldRules.Identity.WorldRulesHash);
         Assert.Equal(1U, result.WorldRules.TickDurationHours);
 
@@ -482,7 +482,7 @@ public sealed class RuleCompilationTests
                 20_000_000L, 5_000_000L, 0L, 500_000_000L, 10_000_000L, 0L,
                 5_000_000L, 0L, 50_000L, 2_000_000L, 3_000_000L, 10_000_000L,
                 5_000_000L, 1_000L, 0L, 0L, 100_000L, 500L, 0L, 0L, 500_000L,
-                100_000L,
+                100_000L, 0L,
             ],
             tile.ResourceQuantitiesByDenseSlot);
     }

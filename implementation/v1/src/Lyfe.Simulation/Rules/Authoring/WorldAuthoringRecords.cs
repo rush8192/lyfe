@@ -99,6 +99,8 @@ public sealed record WorldGeneratorDefinition
 
     public required uint TargetAquaticFractionMaximumQ { get; init; }
 
+    public required long InorganicPhosphorusWeatheringQuantityPerHour { get; init; }
+
     public required ElevationGeneratorDefinition Elevation { get; init; }
 
     public required ClimateGeneratorDefinition Climate { get; init; }

@@ -1,6 +1,8 @@
 using Lyfe.Simulation.Mechanics;
 using Lyfe.Simulation.Core;
+using Lyfe.Simulation.Gameplay;
 using Lyfe.Simulation.Ledger;
+using Lyfe.Simulation.Publication;
 using Lyfe.Simulation.Randomness;
 using Lyfe.Simulation.Rules.Authoring;
 using Lyfe.Simulation.Rules.Compilation;
@@ -11,12 +13,91 @@ using Lyfe.Simulation.State;
 using Lyfe.Simulation.State.Identity;
 using Lyfe.Simulation.Ticks;
 using Lyfe.Simulation.World;
+using Lyfe.Simulation.World.Generation;
 using Xunit;
 
 namespace Lyfe.Simulation.Tests;
 
 public sealed class GasEnvironmentTests
 {
+    [Fact]
+    public void GeneratedWorldWeatheringSuppliesPhosphorusAsAnExactEnvironmentalFlow()
+    {
+        var rules = CompileGeneratedWorld();
+        var seed = RootRandomSeed.Parse("00112233445566778899aabbccddeeff");
+        var generated = DeterministicWorldGenerator.Generate(rules.WorldProfile, seed);
+        var founderTile = TileId.FromRowMajorIndex(generated.StartingPairs[0].HydrogenTileIndex);
+        var observedTile = TileId.FromRowMajorIndex(
+            founderTile.Value == 0 ? 1U : 0U);
+        var runner = WorldRunner.CreateGame(
+            WorldId.From(98),
+            rules,
+            seed,
+            new GameSetupCommand(
+                GameMode.FreeSandbox,
+                FounderGenomeId.From(1),
+                founderTile,
+                1));
+        var phosphorus = runner.MutableWorld.GetResourceHandle(ResourceId.From(16));
+        var before = runner.MutableWorld.GetTileResource(observedTile, phosphorus);
+
+        var result = runner.AdvanceOneTick();
+
+        Assert.Equal(before + 250,
+            runner.MutableWorld.GetTileResource(observedTile, phosphorus));
+        var environmental = Assert.Single(result.Changes.Phases,
+            value => value.Phase == TickPhase.EnvironmentalLedger);
+        var sources = environmental.ResourceTransactions.Where(value =>
+            value.Cause == LedgerCause.EnvironmentalResourceSource).ToArray();
+        Assert.Equal(544, sources.Length);
+        Assert.All(sources, value => Assert.Equal(250, value.Extent));
+        Assert.True(ResourceLedgerOracle.Reconcile(
+            runner.Rules.RulePack,
+            environmental.ResourceTransactions).IsBalanced);
+        var publication = runner.CapturePublicationSnapshot();
+        Assert.Contains(publication.ResourceFlowHistory[^1].ResourceFlows, value =>
+            value.TileId == observedTile &&
+            value.ResourceId == phosphorus.Id &&
+            value.Kind == PublicationResourceFlowKind.EnvironmentalSource &&
+            value.AmountQ == 250);
+    }
+
+    [Fact]
+    public void WeatheringSupportsReproductionAfterThePlayableTilePhosphatePoolIsDepleted()
+    {
+        var rules = CompileGeneratedWorld();
+        var seed = RootRandomSeed.Parse("00112233445566778899aabbccddeeff");
+        var generated = DeterministicWorldGenerator.Generate(rules.WorldProfile, seed);
+        var founderTile = TileId.FromRowMajorIndex(generated.StartingPairs[0].HydrogenTileIndex);
+        var runner = WorldRunner.CreateGame(
+            WorldId.From(97),
+            rules,
+            seed,
+            new GameSetupCommand(
+                GameMode.FreeSandbox,
+                FounderGenomeId.From(1),
+                founderTile,
+                1,
+                FounderInitialization: FounderInitializationMode.ZeroSpreadFixture));
+        var world = runner.MutableWorld;
+        var phosphorus = world.GetResourceHandle(ResourceId.From(16));
+        var setup = world.BeginChanges();
+        world.ApplyTileResourceDelta(
+            founderTile,
+            phosphorus,
+            -world.GetTileResource(founderTile, phosphorus),
+            setup);
+        world.SealChanges(setup);
+
+        for (var tick = 0; tick < 400; tick++)
+        {
+            runner.AdvanceOneTick();
+        }
+
+        Assert.True(world.GetTileResource(founderTile, phosphorus) > 0);
+        Assert.True(world.GetSpecies(runner.GameState.ControlledSpeciesId).Population > 1);
+    }
+
     [Fact]
     public void OfficialVentAppliesSourcesBeforeSinksAndPersistsFractionalContinuation()
     {
@@ -177,6 +258,18 @@ public sealed class GasEnvironmentTests
             "world.primordial-foundation");
         Assert.True(world.IsSuccess, string.Join('\n', world.Diagnostics.Select(d => d.Message)));
         return Assert.IsType<CompiledWorldRules>(world.WorldRules);
+    }
+
+    private static CompiledWorldRules CompileGeneratedWorld()
+    {
+        var result = WorldRulesPipeline.Compile(
+            new DirectorySource("OfficialRules"),
+            new DirectorySource("OfficialGeneratedWorld"),
+            "scenario.foundation-sandbox",
+            "world.primordial-earth-v1");
+        Assert.True(result.IsSuccess, string.Join('\n',
+            result.Diagnostics.Select(diagnostic => diagnostic.Message)));
+        return Assert.IsType<CompiledWorldRules>(result.WorldRules);
     }
 
     private sealed class DirectorySource(string directoryName) : IContentSource

@@ -6,12 +6,16 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   ActorWorldProjectionSchema,
+  OrganismJourneyEventFamily,
+  OrganismJourneyEventSchema,
   OrganismBehavior,
   OrganismLifecyclePhase,
   OrganismProjectionSchema,
+  RemnantProjectionSchema,
   SpeciesPopulationScope,
 } from "../generated/lyfe/v1/projection_pb";
 import { OrganismInfoPanel } from "./OrganismInfoPanel";
+import { RemnantInfoPanel } from "./RemnantInfoPanel";
 import { SpeciesSummaryPanel, summarizeSpecies } from "./SpeciesSummaryPanel";
 
 afterEach(cleanup);
@@ -120,5 +124,47 @@ describe("species and organism side panels", () => {
       tiles: world.tiles,
     });
     expect(summarizeSpecies(hidden, 2n)).toBeNull();
+  });
+
+  it("shows a remnant's actual cause and every other retained nonzero risk", async () => {
+    const onBack = vi.fn();
+    const remnant = create(RemnantProjectionSchema, {
+      remnantId: 31n,
+      sourceOrganismId: 19n,
+      sourceSpeciesId: 1n,
+      createdTick: 90n,
+      structuralMatterQ: 720n,
+      chargedReserveQ: 250n,
+      micronutrients: [{ resourceId: 30, quantityQ: 5n }],
+    });
+    const deathEvent = create(OrganismJourneyEventSchema, {
+      family: OrganismJourneyEventFamily.DEATH,
+      detailId: 4,
+      relatedRemnantId: 31n,
+      deathCauseProbabilities: [
+        { cause: 3, probabilityQ: 25_000, triggered: false },
+        { cause: 4, probabilityQ: 250_000, triggered: true },
+      ],
+    });
+
+    render(<RemnantInfoPanel
+      remnant={remnant}
+      tileId={7}
+      completedTick={100n}
+      tickDurationHours={2}
+      deathEvent={deathEvent}
+      resourceDefinitions={[{ resourceId: 30, displayName: "Nickel" }] as never}
+      onBack={onBack}
+    />);
+
+    const panel = screen.getByRole("region", { name: "Remnant #31" });
+    expect(within(panel).getByText("20 h")).toBeTruthy();
+    expect(within(panel).getByText("Temperature exposure")).toBeTruthy();
+    expect(within(panel).getByText(/Recorded probability in that tick/).textContent).toContain("25.0%");
+    expect(within(panel).getByText("Senescence")).toBeTruthy();
+    expect(within(panel).getByText("2.5%")).toBeTruthy();
+    expect(within(panel).getByText("Nickel")).toBeTruthy();
+    await userEvent.setup().click(within(panel).getByRole("button", { name: /Back/ }));
+    expect(onBack).toHaveBeenCalledOnce();
   });
 });

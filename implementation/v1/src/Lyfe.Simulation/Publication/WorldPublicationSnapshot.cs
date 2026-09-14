@@ -124,6 +124,8 @@ public enum PublicationResourceFlowProcessKind : byte
     MandatoryMaintenance = 6,
     BiomassAssembly = 7,
     MicronutrientUptake = 8,
+    EnvironmentalResourceSource = 9,
+    RemnantDecay = 10,
 }
 
 public readonly record struct PublicationTileResourceFlowContributor(
@@ -149,6 +151,24 @@ public sealed record PublicationTile(
     uint BaselineVolcanismQ,
     ImmutableArray<PublicationResourceStock> ResourceStocks);
 
+public readonly record struct PublicationRelevantResource(
+    ResourceId ResourceId,
+    bool MetabolismInput,
+    bool GrowthInput,
+    bool HealthRequirement,
+    bool EnvironmentalHazard,
+    long SoftHazardThresholdQ,
+    long HardHazardThresholdQ);
+
+public sealed record PublicationHabitatProfile(
+    int PreferredTemperatureMinimumMilliC,
+    int PreferredTemperatureMaximumMilliC,
+    int HardTemperatureMinimumMilliC,
+    int HardTemperatureMaximumMilliC,
+    bool CanOccupyTerrestrial,
+    bool RequiresLight,
+    ImmutableArray<PublicationRelevantResource> RelevantResources);
+
 public sealed record PublicationSpecies(
     SpeciesId SpeciesId,
     GenomeId GenomeId,
@@ -166,7 +186,8 @@ public sealed record PublicationSpecies(
     uint MutationIncomeModifierQ,
     SpeciesId? ParentSpeciesId,
     ulong CreatedTick,
-    ulong? ExtinctTick);
+    ulong? ExtinctTick,
+    PublicationHabitatProfile? HabitatProfile = null);
 
 public sealed record PublicationAbiogenesisRoot(
     SpeciesId SpeciesId,

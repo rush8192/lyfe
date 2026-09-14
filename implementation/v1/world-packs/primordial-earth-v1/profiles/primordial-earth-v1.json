@@ -46,6 +46,7 @@
         "maximumAttempts": 8,
         "targetAquaticFractionMinimumQ": 650000,
         "targetAquaticFractionMaximumQ": 750000,
+        "inorganicPhosphorusWeatheringQuantityPerHour": 250,
         "elevation": {
           "wavelengthsTiles": [16, 8, 4, 2],
           "amplitudesQ": [1000000, 500000, 250000, 125000],

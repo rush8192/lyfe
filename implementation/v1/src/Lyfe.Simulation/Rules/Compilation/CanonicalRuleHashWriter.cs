@@ -382,6 +382,7 @@ internal static class CanonicalRuleHashWriter
         WriteUInt32Field(writer, 2, generator.MaximumAttempts);
         WriteUInt32Field(writer, 3, generator.TargetAquaticFractionMinimumQ);
         WriteUInt32Field(writer, 4, generator.TargetAquaticFractionMaximumQ);
+        WriteInt64Field(writer, 11, generator.InorganicPhosphorusWeatheringQuantityPerHour);
         WriteElevation(writer, generator.Elevation);
         WriteClimate(writer, generator.Climate);
         WriteVolcanism(writer, generator.Volcanism);
@@ -401,6 +402,7 @@ internal static class CanonicalRuleHashWriter
         WriteUInt32Field(writer, 2, generator.MaximumAttempts);
         WriteUInt32Field(writer, 3, generator.TargetAquaticFractionMinimumQ);
         WriteUInt32Field(writer, 4, generator.TargetAquaticFractionMaximumQ);
+        WriteInt64Field(writer, 11, generator.InorganicPhosphorusWeatheringQuantityPerHour);
         WriteCompiledElevation(writer, generator.Elevation);
         WriteCompiledClimate(writer, generator.Climate);
         WriteCompiledVolcanism(writer, generator.Volcanism);

@@ -45,11 +45,13 @@ interface WorldCanvasProps {
   readonly enabledEventFamilies: ReadonlySet<OrganismJourneyEventFamily>;
   readonly selectedTileId?: number | null;
   readonly selectedOrganismId?: bigint | null;
+  readonly selectedRemnantId?: bigint | null;
   readonly selectedSpeciesId?: bigint | null;
   readonly focusRequestRevision?: number;
   readonly followingOrganism?: boolean;
   readonly onSelectTile?: (tileId: number) => void;
   readonly onSelectOrganism?: (organismId: bigint, tileId: number) => void;
+  readonly onSelectRemnant?: (remnantId: bigint, tileId: number) => void;
   readonly onFollowingOrganismChange?: (following: boolean) => void;
 }
 
@@ -77,11 +79,13 @@ export function WorldCanvas({
   enabledEventFamilies,
   selectedTileId = null,
   selectedOrganismId = null,
+  selectedRemnantId = null,
   selectedSpeciesId = null,
   focusRequestRevision = 0,
   followingOrganism = false,
   onSelectTile,
   onSelectOrganism,
+  onSelectRemnant,
   onFollowingOrganismChange,
 }: WorldCanvasProps) {
   const hostRef = useRef<HTMLDivElement>(null);
@@ -97,11 +101,13 @@ export function WorldCanvas({
   const followingRef = useRef(followingOrganism);
   const onSelectTileRef = useRef(onSelectTile);
   const onSelectOrganismRef = useRef(onSelectOrganism);
+  const onSelectRemnantRef = useRef(onSelectRemnant);
   const onFollowingOrganismChangeRef = useRef(onFollowingOrganismChange);
   const worldRef = useRef(world);
   followingRef.current = followingOrganism;
   onSelectTileRef.current = onSelectTile;
   onSelectOrganismRef.current = onSelectOrganism;
+  onSelectRemnantRef.current = onSelectRemnant;
   onFollowingOrganismChangeRef.current = onFollowingOrganismChange;
   worldRef.current = world;
   const [rendererRevision, setRendererRevision] = useState(0);
@@ -348,6 +354,7 @@ export function WorldCanvas({
             render.viewport,
             onSelectTileRef.current,
             onSelectOrganismRef.current,
+            onSelectRemnantRef.current,
           );
           const now = performance.now();
           const previousActivation = lastActivationRef.current;
@@ -511,6 +518,7 @@ export function WorldCanvas({
         selectedOrganismId,
         selectedSpeciesId,
         wrappedColumns,
+        selectedRemnantId,
       );
       nextPulseCleanup = addActivityPulses(
         application,
@@ -547,6 +555,7 @@ export function WorldCanvas({
     focusRequestRevision,
     rendererRevision,
     selectedOrganismId,
+    selectedRemnantId,
     selectedOrganism,
     selectedSpeciesId,
     selectedTile,
@@ -619,6 +628,7 @@ export function WorldCanvas({
       <TileSelectionSummary
         tile={selectedTile}
         selectedOrganismId={selectedOrganismId}
+        selectedRemnantId={selectedRemnantId}
         selectedSpeciesId={selectedSpeciesId}
       />
     </section>
@@ -643,6 +653,7 @@ export function drawWorldExact(
   selectedOrganismId: bigint | null,
   selectedSpeciesId: bigint | null = null,
   wrappedColumns: readonly WrappedColumn[] = [],
+  selectedRemnantId: bigint | null = null,
 ): Container[] {
   const markers: Container[] = [];
   const origin = worldPresentationOrigin(world);
@@ -714,10 +725,15 @@ export function drawWorldExact(
         x: wrappedColumns.length === 0 ? position.x : position.x - displayTile.x * TILE_SIZE,
         y: position.y,
       });
+      const selected = remnant.remnantId === selectedRemnantId;
       marker.addChild(new Graphics()
         .poly([-3.6, 0, 0, -2.7, 3.6, 0, 0, 2.7])
         .fill({ color: 0xb99272, alpha: 0.8 })
-        .stroke({ color: 0xe1bea0, width: 0.8, alpha: 0.85 }));
+        .stroke({
+          color: selected ? 0xfff0c3 : 0xe1bea0,
+          width: selected ? 1.5 : 0.8,
+          alpha: selected ? 1 : 0.85,
+        }));
       target.addChild(marker);
       markers.push(marker);
     }
@@ -1025,6 +1041,7 @@ export function selectAtScreenPoint(
   viewport: ViewportSize,
   onSelectTile?: (tileId: number) => void,
   onSelectOrganism?: (organismId: bigint, tileId: number) => void,
+  onSelectRemnant?: (remnantId: bigint, tileId: number) => void,
 ): TileProjection | null {
   if (camera === null) return null;
   const worldPoint = screenToWorld(screenPoint, camera, viewport);
@@ -1050,9 +1067,47 @@ export function selectAtScreenPoint(
       onSelectOrganism?.(organism.organismId, tile.tileId);
       return tile;
     }
+    const remnant = nearestRemnant(
+      screenPoint,
+      tile as LiveTileProjection,
+      camera,
+      viewport,
+      world.width * TILE_SIZE,
+      origin,
+    );
+    if (remnant !== null) {
+      onSelectRemnant?.(remnant.remnantId, tile.tileId);
+      return tile;
+    }
   }
   onSelectTile?.(tile.tileId);
   return tile;
+}
+
+function nearestRemnant(
+  screenPoint: Point,
+  tile: LiveTileProjection,
+  camera: CameraState,
+  viewport: ViewportSize,
+  worldWidth: number,
+  origin: Point,
+): RemnantProjection | null {
+  let nearest: RemnantProjection | null = null;
+  let nearestDistance = 11;
+  for (const remnant of tile.detail.value.remnants) {
+    const projected = worldToScreenWrappedX(
+      remnantWorldPosition(tile, remnant, origin),
+      camera,
+      viewport,
+      worldWidth,
+    );
+    const separation = distance(screenPoint, projected);
+    if (separation < nearestDistance) {
+      nearest = remnant;
+      nearestDistance = separation;
+    }
+  }
+  return nearest;
 }
 
 function nearestOrganism(
@@ -1108,10 +1163,12 @@ function remnantWorldPosition(
 function TileSelectionSummary({
   tile,
   selectedOrganismId,
+  selectedRemnantId,
   selectedSpeciesId,
 }: {
   readonly tile: TileProjection | null;
   readonly selectedOrganismId: bigint | null;
+  readonly selectedRemnantId: bigint | null;
   readonly selectedSpeciesId: bigint | null;
 }) {
   if (tile === null) {
@@ -1142,6 +1199,8 @@ function TileSelectionSummary({
   }
   const selectedOrganism = tile.detail.value.organisms.find((organism) =>
     organism.organismId === selectedOrganismId);
+  const selectedRemnant = tile.detail.value.remnants.find((remnant) =>
+    remnant.remnantId === selectedRemnantId);
   return (
     <div className="tile-selection-summary" role="status" aria-live="polite">
       <strong>Tile {tile.tileId} · Live</strong>
@@ -1156,6 +1215,11 @@ function TileSelectionSummary({
       )}
       {selectedOrganism === undefined && selectedSpeciesId !== null ? (
         <span>Other species #{selectedSpeciesId.toString()} selected · observed members only</span>
+      ) : null}
+      {selectedOrganism === undefined && selectedRemnant !== undefined ? (
+        <span>
+          Remnant #{selectedRemnant.remnantId.toString()} · formed at tick {selectedRemnant.createdTick.toLocaleString("en-US")}
+        </span>
       ) : null}
     </div>
   );

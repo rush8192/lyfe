@@ -15,7 +15,7 @@ public sealed class ContentLoadingTests
         Assert.True(result.IsSuccess, FormatDiagnostics(result.Diagnostics));
         Assert.NotNull(result.Pack);
         Assert.Equal("lyfe.official.v1-foundation", result.Pack.Manifest.PackId);
-        Assert.Equal(31, result.Pack.Resources.Count);
+        Assert.Equal(32, result.Pack.Resources.Count);
         Assert.Equal(5, result.Pack.Reactions.Count);
         Assert.Equal(2, result.Pack.FounderGenomes.Count);
         Assert.Single(result.Pack.Scenarios);

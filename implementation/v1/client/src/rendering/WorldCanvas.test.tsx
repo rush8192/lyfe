@@ -217,6 +217,66 @@ describe("world canvas presentation", () => {
     expect(organismMarkerColor(2n, 1n)).toBe(0xef7a72);
   });
 
+  it("selects remnants only after giving a nearby live organism priority", () => {
+    const world = create(ActorWorldProjectionSchema, {
+      width: 1,
+      height: 1,
+      tiles: [{
+        tileId: 7,
+        x: 0,
+        y: 0,
+        detail: {
+          case: "live",
+          value: {
+            organisms: [{ organismId: 22n, positionXQ: 0x7fff_ffff, positionYQ: 0x7fff_ffff }],
+            remnants: [{ remnantId: 31n, positionXQ: 0x7fff_ffff, positionYQ: 0x7fff_ffff }],
+          },
+        },
+      }],
+    });
+    let selectedOrganism: bigint | null = null;
+    let selectedRemnant: bigint | null = null;
+
+    selectAtScreenPoint(
+      { x: 50, y: 50 },
+      world,
+      { centerX: 50, centerY: 50, zoom: 1 },
+      { width: 100, height: 100 },
+      undefined,
+      (organismId) => { selectedOrganism = organismId; },
+      (remnantId) => { selectedRemnant = remnantId; },
+    );
+
+    expect(selectedOrganism).toBe(22n);
+    expect(selectedRemnant).toBeNull();
+
+    const remnantOnlyWorld = create(ActorWorldProjectionSchema, {
+      width: 1,
+      height: 1,
+      tiles: [{
+        tileId: 7,
+        x: 0,
+        y: 0,
+        detail: {
+          case: "live",
+          value: {
+            remnants: [{ remnantId: 31n, positionXQ: 0x7fff_ffff, positionYQ: 0x7fff_ffff }],
+          },
+        },
+      }],
+    });
+    selectAtScreenPoint(
+      { x: 50, y: 50 },
+      remnantOnlyWorld,
+      { centerX: 50, centerY: 50, zoom: 1 },
+      { width: 100, height: 100 },
+      undefined,
+      undefined,
+      (remnantId) => { selectedRemnant = remnantId; },
+    );
+    expect(selectedRemnant).toBe(31n);
+  });
+
   it("provides a keyboard command for selecting the tile beneath the map center", () => {
     let selected = false;
     let prevented = false;

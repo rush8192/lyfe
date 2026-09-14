@@ -103,7 +103,7 @@ intentional observation material for the first structured sessions, not a gate f
 
 | Check | Result |
 | --- | --- |
-| Client unit/DOM suite | 25 files, 101 tests passed |
+| Client unit/DOM suite | 25 files, 103 tests passed |
 | Client production build | Passed; the existing 500 kB chunk-size advisory remains |
 | Complete .NET solution suite | 226 passed: 178 simulation, 36 server, 12 architecture |
 | Portable host | Compose configuration, image rebuild, health/client connection, setup, tick, save, and production-preview restart passed |
@@ -167,3 +167,13 @@ The seventh exploratory finding removed activity-symbol replay during presentati
 Each authoritative pulse event now receives one wall-clock start time keyed by its event identity.
 Selection, camera, and filter redraws reuse that age, and expired symbols remain absent; only a new
 authoritative event identity begins a new pulse animation.
+
+The eighth exploratory finding replaces the live-tile authorization diagnostic with player-facing
+habitat evidence. Current and seasonal temperature, water/land habitat, moisture, usable and surface light,
+cloud, precipitation, and volcanism are shown beside their relevance to the controlled species'
+compiled DNA, including preferred and hard temperature limits and light/land requirements. Compound
+rows are limited to current metabolic inputs, growth inputs, micronutrient needs, and chemical
+hazards. Missing needs and tolerance violations are explicit; “abundant” requires at least seven
+days of current stock at the last observed controlled-species uptake rate. A `72`, `168`, `336`, or `720`
+tick selector summarizes actual controlled-species death mechanisms recorded on that tile, while a
+zero-death window warns that poor fit or resource shortage can suppress growth before mortality.

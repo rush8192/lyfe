@@ -27,13 +27,13 @@ public sealed class WorldGenerationTests
         Assert.False(first.WrapY);
         Assert.Equal(WorldSignature(first), WorldSignature(second));
         Assert.Equal(
-            "caa3563a6eb910e3251e5b4231f620ec9b514c0e24d92ec950b99a5a7a9cb3f8",
+            "b11ecae2733e1260c101c4e76dc04c9319f6601004524f14aa9ee9185230e4bd",
             rules.Identity.WorldPackageHash);
         Assert.Equal(
-            "c2f3eab3c3d738f7640e8488ad2d3f755df668dc83734e7e692abda8c6422c29",
+            "91d401c9422c5f75d305ca9ec3731f10ad33408d462e1bbce6e7669b768fb6e7",
             rules.Identity.CompiledWorldProfileHash);
         Assert.Equal(
-            "6b54fdea53aa874b421d3f234037d15be7c12d4afbd631f091e2cba8f67e60cf",
+            "7d25d3a6ead85f55a293d6f5667f3c2809a9cf335ec16f5782cbdefa55e28293",
             rules.Identity.WorldRulesHash);
     }
 

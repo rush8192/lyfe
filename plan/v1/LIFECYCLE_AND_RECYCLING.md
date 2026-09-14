@@ -1,6 +1,6 @@
 # Lifecycle and Recycling
 
-Status: lifecycle design complete; `LIFE-200` executable vertical slice implemented; advanced phases, complete mineralization cohorts, and later strategy content remain pending
+Status: lifecycle design complete; `LIFE-200` and the `RECYCLE-210` playable-opening phosphorus bridge implemented; advanced phases, complete mineralization cohorts, and later strategy content remain pending
 
 Sources: [organism mechanics](ORGANISMS.md), [simulation loop](SIMULATION_LOOP.md), [resource model](RESOURCE_MODEL.md), [organism state and health](ORGANISM_STATE_AND_HEALTH.md), [health calibration](ORGANISM_HEALTH_CALIBRATION.md), [general behavior and resource pressure](BEHAVIOR_AND_RESOURCE_PRESSURE.md), [internal storage](INTERNAL_STORAGE_AND_ALLOCATION.md), [energy storage](ENERGY_STORAGE.md), [spatial contract](SPATIAL_ORGANISMS_AND_BEHAVIOR.md), and [spatial calibration](SPATIAL_CALIBRATION.md).
 
@@ -23,10 +23,13 @@ founder does not begin with simple scavenging or particulate digestion. The reac
 and runtime path exist for later evolved phenotypes and are exercised by an explicit
 lifecycle fixture.
 
-This slice returns reserve carriers and structural decay products to named organic
-tile pools. The later multi-cohort decay catalogue, micronutrient release, and slow
-organic-to-inorganic mineralization described below remain rule/content work rather
-than hidden behavior in the engine.
+This slice returns reserve carriers and structural decay products to named tile pools.
+`RECYCLE-210` makes the opening phosphorus cycle executable: ordinary structural decay
+explicitly releases its two phosphorus units into inorganic phosphorus and retains every
+other atom in `PhosphorusDepletedStructuralResidue`. Generated worlds also apply the
+authored `250`-unit-per-tile-hour inorganic-phosphorus weathering source. Both transfers
+are exact environmental-ledger transactions. The broader slow CHNOS mineralization of
+depleted/spent organic pools remains rule/content work rather than hidden behavior.
 
 # Scope and ownership
 
@@ -314,7 +317,7 @@ Bindings, holdbacks, behavior, and cooldowns do not survive death. Resource iden
 
 Only remnants that existed at the start of a tick participate in phase-2 decay. A remnant created later in that tick is first eligible for decay on the next tick. Scavenging in phase 6 consumes the post-decay remainder.
 
-Each decay rule must name its source resource, destination tile resource, rate, environmental modifiers, energy disposition, and fixed-point remainder policy. Reserve and other spent organic compounds decay into generic organic tile pools; inorganic compounds and micronutrients return to their matching pools. Ordinary `StructuralBiomass` is the exception: its exact decay reaction releases a labile dissolved fraction plus a generic organic remainder as defined in [ORGANIC_UPTAKE_AND_FERMENTATION.md](ORGANIC_UPTAKE_AND_FERMENTATION.md). The separate slow passive-mineralization rule below eventually converts generic organic macronutrients into their inorganic forms explicitly and element-for-element.
+Each decay rule must name its source resource, destination tile resource, rate, environmental modifiers, energy disposition, and fixed-point remainder policy. Reserve and other spent organic compounds decay into generic organic tile pools; inorganic compounds and micronutrients return to their matching pools. Ordinary `StructuralBiomass` is the exception: its exact executable decay reaction releases a labile dissolved fraction, two inorganic-phosphorus units, and a named phosphorus-depleted organic remainder. The separate slow passive-mineralization rule below eventually converts that remainder's other organic macronutrients into their inorganic forms explicitly and element-for-element.
 
 ## First decay cohorts
 
@@ -497,9 +500,9 @@ V1 needs three distinct return paths:
 
 Micronutrients remain in their single bioavailable form and therefore return directly to their matching tile pools when released by passive decay or digestive waste. Macronutrients retain the organic/inorganic distinction. No rule may silently convert one form to another merely because a remnant disappears.
 
-Passive mineralization is an explicit slow phase-2 transformation from each tile's `Organic<Element>` pool to its matching `Inorganic<Element>` pool. At the same `40 °C` aquatic reference it uses a `2,160 h` / 90-day half-life and hourly coefficient `321` per million, with the same temperature/moisture multiplier and persisted remainder as remnant decay. The conversion is one elemental quantum to one elemental quantum; it changes biological form but not CHNOPS totals, creates no usable energy, and does not emit a named gas implicitly. `SpentStructuralResidue` uses the same coefficient to debit one proportional fraction of the named residue and credit its exact constituent inorganic pools atomically.
+Passive mineralization is an explicit slow phase-2 transformation from each tile's remaining `Organic<Element>` pool to its matching `Inorganic<Element>` pool. At the same `40 °C` aquatic reference it uses a `2,160 h` / 90-day half-life and hourly coefficient `321` per million, with the same temperature/moisture multiplier and persisted remainder as remnant decay. The conversion is one elemental quantum to one elemental quantum; it changes biological form but not CHNOPS totals, creates no usable energy, and does not emit a named gas implicitly. `PhosphorusDepletedStructuralResidue` and `SpentStructuralResidue` use the same coefficient to debit one proportional fraction of the named residue and credit their exact remaining constituent inorganic pools atomically. The phosphorus already released by `RECYCLE-210` is not credited a second time.
 
-Because remnant breakdown and mineralization are sequential, ordinary structure has a 30-day remnant half-life, releases both a 14-day labile dissolved fraction and a generic remainder, and only gradually returns all unconsumed matter to fixation-demanding inorganic pools. `ReducedFermentationProducts` persist on a 90-day reference half-life before joining the generic pool. This leaves a long direct-scavenging window followed by lower-value dissolved and generic-organic niches. Biological decomposers compete with rather than duplicate each passive flow.
+Because remnant breakdown and full mineralization are otherwise sequential, ordinary structure has a 30-day remnant half-life, releases both a 14-day labile dissolved fraction and a phosphorus-depleted remainder, and only gradually returns the remainder's unconsumed matter to fixation-demanding inorganic pools. The narrow opening bridge makes structural phosphorus bioavailable during the first decay step; it does not shorten the later CHNOS mineralization schedule. `ReducedFermentationProducts` persist on a 90-day reference half-life before joining the generic pool. This leaves a long direct-scavenging window followed by lower-value dissolved and generic-organic niches. Biological decomposers compete with rather than duplicate each passive flow.
 
 # Determinism, observability, and tests
 

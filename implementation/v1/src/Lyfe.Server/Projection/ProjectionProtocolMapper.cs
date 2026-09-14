@@ -756,6 +756,10 @@ public static class ProjectionProtocolMapper
                 Proto.ResourceFlowProcess.BiomassAssembly,
             Simulation.Publication.PublicationResourceFlowProcessKind.MicronutrientUptake =>
                 Proto.ResourceFlowProcess.MicronutrientUptake,
+            Simulation.Publication.PublicationResourceFlowProcessKind.EnvironmentalResourceSource =>
+                Proto.ResourceFlowProcess.EnvironmentalResourceSource,
+            Simulation.Publication.PublicationResourceFlowProcessKind.RemnantDecay =>
+                Proto.ResourceFlowProcess.RemnantDecay,
             _ => throw new ArgumentOutOfRangeException(nameof(process)),
         };
 

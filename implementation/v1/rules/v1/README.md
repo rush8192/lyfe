@@ -1,9 +1,10 @@
 # Official v1 biological rules
 
 This is the first strict authoring slice of LYFE's ordinary official rule pack. It is
-intentionally a foundation fixture, not the complete v1 biological catalogue. Thirty-one
+intentionally a foundation fixture, not the complete v1 biological catalogue. Thirty-two
 mass-balanced resource identities include the eight opening gases, elemental sulfur,
-inorganic phosphorus, the organic-oxygen assembly remainder, and the fourteen canonical
+inorganic phosphorus, the organic-oxygen assembly remainder, a phosphorus-depleted
+structural residue, and the fourteen canonical
 micronutrients. Five reactions support
 hydrogen acetogenesis, sulfide anoxygenic phototrophy, exact founder maintenance and
 biomass assembly, and particulate-biomass digestion. The scenario permits two founder genomes
@@ -19,7 +20,7 @@ deterministic-fission gates and cooldown jitter, and remnant decay/scavenging
 parameters. It also compiles the five-state behavior interface and conservation
 thresholds, while leaving `resourceConservation` disabled for the founder so the
 evolved trait is not granted at abiogenesis. These values compile into the immutable phenotype and participate in
-mechanics and compiled-artifact hashes. Pack `0.10.0` uses rule-compiler and mechanics-hash
+mechanics and compiled-artifact hashes. Pack `0.11.0` uses rule-compiler and mechanics-hash
 schema `8`; allocation identity, multipliers, scenario permissions, micronutrient quotas,
 uptake, the Balanced competitor default, and the scenario's inclusive `0..168`-hour founder-age
 and `240..360`-hour initial-reproduction-readiness ranges are part of those identities.
@@ -29,7 +30,9 @@ NH₃/phosphorus/H₂S bundle is admitted under the compiled `512`-load capacity
 atomically in the same phase. Persistent committed/free micronutrient inventories use a
 canonical fourteen-slot runtime value. Founding debits committed matter from the tile;
 needs-only keyed uptake fills the free reproduction target; fission transfers one complete
-quota; and death/remnant recycling returns the exact elements without creating matter.
+quota; and death/remnant recycling returns exact reserve products, structural phosphorus,
+and terminal micronutrients without creating matter. Full slow mineralization of the
+remaining depleted/spent organic pools is still later `BIO-300` content.
 
 The initial trait graph provides the two non-selectable metabolic identities, the
 `StateGatedActivity -> ResourceConservation` branch, and the first distinct escape-path

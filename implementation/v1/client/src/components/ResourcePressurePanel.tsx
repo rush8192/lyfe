@@ -566,6 +566,8 @@ export function buildResourceContributorRows(
 
 function isEnvironmentalProcess(process: ResourceFlowProcess): boolean {
   return process === ResourceFlowProcess.ENVIRONMENTAL_GAS_SOURCE ||
+    process === ResourceFlowProcess.ENVIRONMENTAL_RESOURCE_SOURCE ||
+    process === ResourceFlowProcess.REMNANT_DECAY ||
     process === ResourceFlowProcess.ENVIRONMENTAL_GAS_SINK ||
     process === ResourceFlowProcess.ENVIRONMENTAL_GAS_EXCHANGE;
 }
@@ -580,6 +582,8 @@ function flowProcessLabel(process: ResourceFlowProcess): string {
     case ResourceFlowProcess.MANDATORY_MAINTENANCE: return "Mandatory maintenance";
     case ResourceFlowProcess.BIOMASS_ASSEMBLY: return "Biomass assembly";
     case ResourceFlowProcess.MICRONUTRIENT_UPTAKE: return "Micronutrient uptake";
+    case ResourceFlowProcess.ENVIRONMENTAL_RESOURCE_SOURCE: return "Geological weathering";
+    case ResourceFlowProcess.REMNANT_DECAY: return "Remnant breakdown";
     default: return "Unclassified process";
   }
 }

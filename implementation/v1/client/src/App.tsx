@@ -33,6 +33,7 @@ import { WorldTimeControls } from "./components/WorldTimeControls";
 import { WorldKnowledgeLegend } from "./components/WorldKnowledgeLegend";
 import { SpeciesSummaryPanel } from "./components/SpeciesSummaryPanel";
 import { OrganismInfoPanel } from "./components/OrganismInfoPanel";
+import { RemnantInfoPanel } from "./components/RemnantInfoPanel";
 import { WorldSetupPanel } from "./components/WorldSetupPanel";
 import { WorldPersistencePanel } from "./components/WorldPersistencePanel";
 import { TileInspectorPanel } from "./components/TileInspectorPanel";
@@ -84,6 +85,7 @@ export function App() {
     ReadonlySet<OrganismJourneyEventFamily>
   >(() => new Set(DEFAULT_ACTIVITY_FAMILIES));
   const [selectedOrganismId, setSelectedOrganismId] = useState<bigint | null>(null);
+  const [selectedRemnantId, setSelectedRemnantId] = useState<bigint | null>(null);
   const [selectedOtherSpeciesId, setSelectedOtherSpeciesId] = useState<bigint | null>(null);
   const [selectedEvidenceTileId, setSelectedEvidenceTileId] = useState<number | null>(null);
   const [followingOrganism, setFollowingOrganism] = useState(false);
@@ -346,6 +348,7 @@ export function App() {
       ));
       setSyncState({ status: "current" });
       setSelectedOrganismId(null);
+      setSelectedRemnantId(null);
       setSelectedEvidenceTileId(null);
       setFollowingOrganism(false);
     } catch (error: unknown) {
@@ -377,6 +380,7 @@ export function App() {
       setConnection({ status: "setup", setup });
       setSyncState({ status: "current" });
       setSelectedOrganismId(null);
+      setSelectedRemnantId(null);
       setSelectedEvidenceTileId(null);
       setFollowingOrganism(false);
     } catch (error: unknown) {
@@ -420,6 +424,14 @@ export function App() {
   const selectedOrganism = world === null || selectedOrganismId === null
     ? null
     : findVisibleOrganism(world, selectedOrganismId);
+  const selectedRemnant = world === null || selectedRemnantId === null
+    ? null
+    : findVisibleRemnant(world, selectedRemnantId);
+  const selectedRemnantDeathEvent = world === null || selectedRemnant === null
+    ? undefined
+    : world.journeyEvents.find((event) =>
+        event.family === OrganismJourneyEventFamily.DEATH &&
+        event.relatedRemnantId === selectedRemnant.remnant.remnantId);
 
   useEffect(() => {
     if (world === null) {
@@ -433,6 +445,7 @@ export function App() {
     const selection = resolveWorldViewSelection(world, preferences);
     setSelectedEvidenceTileId(selection.selectedTileId);
     setSelectedOrganismId(null);
+    setSelectedRemnantId(null);
     setSelectedOtherSpeciesId(null);
     setFollowingOrganism(false);
     setPreferenceWorldId(world.worldId);
@@ -447,12 +460,18 @@ export function App() {
     } else if (selectedOrganism !== null && selectedOrganism.tileId !== selectedEvidenceTileId) {
       setSelectedEvidenceTileId(selectedOrganism.tileId);
     }
+    if (selectedRemnantId !== null && selectedRemnant === null) {
+      setSelectedRemnantId(null);
+    } else if (selectedRemnant !== null && selectedRemnant.tileId !== selectedEvidenceTileId) {
+      setSelectedEvidenceTileId(selectedRemnant.tileId);
+    }
     if (selectedOtherSpeciesId !== null &&
         (selectedOtherSpeciesId === world.controlledSpeciesId ||
           !world.species.some((species) => species.speciesId === selectedOtherSpeciesId))) {
       setSelectedOtherSpeciesId(null);
     }
-  }, [selectedEvidenceTileId, selectedOrganism, selectedOrganismId, selectedOtherSpeciesId, world]);
+  }, [selectedEvidenceTileId, selectedOrganism, selectedOrganismId, selectedOtherSpeciesId,
+    selectedRemnant, selectedRemnantId, world]);
 
   useEffect(() => {
     if (world === null || preferenceWorldId !== world.worldId) return;
@@ -481,6 +500,7 @@ export function App() {
 
   function returnToSimulationOverview() {
     setSelectedOrganismId(null);
+    setSelectedRemnantId(null);
     setSelectedOtherSpeciesId(null);
     setFollowingOrganism(false);
   }
@@ -545,6 +565,7 @@ export function App() {
           enabledEventFamilies={enabledEventFamilies}
           selectedTileId={selectedEvidenceTileId}
           selectedOrganismId={activeOrganismId}
+          selectedRemnantId={selectedRemnantId}
           selectedSpeciesId={selectedOtherSpeciesId}
           focusRequestRevision={mapFocusRevision}
           followingOrganism={followingOrganism}
@@ -552,12 +573,14 @@ export function App() {
           onSelectTile={(tileId) => {
             setSelectedEvidenceTileId(tileId);
             setSelectedOrganismId(null);
+            setSelectedRemnantId(null);
             setSelectedOtherSpeciesId(null);
             setFollowingOrganism(false);
           }}
           onSelectOrganism={(organismId, tileId) => {
             if (world === null) return;
             setSelectedEvidenceTileId(tileId);
+            setSelectedRemnantId(null);
             const selected = findVisibleOrganism(world, organismId);
             if (selected?.organism.speciesId === world.controlledSpeciesId) {
               setSelectedOrganismId(organismId);
@@ -567,6 +590,13 @@ export function App() {
               setSelectedOtherSpeciesId(selected.organism.speciesId);
               setFollowingOrganism(false);
             }
+          }}
+          onSelectRemnant={(remnantId, tileId) => {
+            setSelectedEvidenceTileId(tileId);
+            setSelectedOrganismId(null);
+            setSelectedOtherSpeciesId(null);
+            setSelectedRemnantId(remnantId);
+            setFollowingOrganism(false);
           }}
         />
         <div className="world-copy">
@@ -586,6 +616,16 @@ export function App() {
               tileId={selectedOrganism.tileId}
               journey={journey}
               routineActivity={routineActivity}
+              onBack={returnToSimulationOverview}
+            />
+          ) : connection.status === "online" && selectedRemnant !== null ? (
+            <RemnantInfoPanel
+              remnant={selectedRemnant.remnant}
+              tileId={selectedRemnant.tileId}
+              completedTick={connection.cache.world.completedTick}
+              tickDurationHours={connection.cache.world.tickDurationHours}
+              deathEvent={selectedRemnantDeathEvent}
+              resourceDefinitions={connection.cache.world.resourceDefinitions}
               onBack={returnToSimulationOverview}
             />
           ) : connection.status === "online" && selectedOtherSpeciesId !== null ? (
@@ -625,7 +665,11 @@ export function App() {
         </div>
       </section>
       {world === null ? null : (
-        <TileInspectorPanel world={world} selectedTileId={selectedEvidenceTileId} />
+        <TileInspectorPanel
+          world={world}
+          evolution={connection.status === "online" ? connection.evolution : null}
+          selectedTileId={selectedEvidenceTileId}
+        />
       )}
       {catalogue === null ? null : (
         <WorldPersistencePanel
@@ -680,6 +724,7 @@ export function App() {
           onNavigateResourceTile={(tileId) => {
             setSelectedEvidenceTileId(tileId);
             setSelectedOrganismId(null);
+            setSelectedRemnantId(null);
             setSelectedOtherSpeciesId(null);
             setFollowingOrganism(false);
             setMapFocusRevision((revision) => revision + 1);
@@ -771,6 +816,19 @@ function findVisibleOrganism(
     const organism = tile.detail.value.organisms.find((candidate) =>
       candidate.organismId === organismId);
     if (organism !== undefined) return { organism, tileId: tile.tileId };
+  }
+  return null;
+}
+
+function findVisibleRemnant(
+  world: ActorWorldProjection,
+  remnantId: bigint,
+) {
+  for (const tile of world.tiles) {
+    if (tile.detail.case !== "live") continue;
+    const remnant = tile.detail.value.remnants.find((candidate) =>
+      candidate.remnantId === remnantId);
+    if (remnant !== undefined) return { remnant, tileId: tile.tileId };
   }
   return null;
 }

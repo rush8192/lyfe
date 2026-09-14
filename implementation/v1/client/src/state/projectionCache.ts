@@ -700,15 +700,20 @@ function invalidResourceFlowContributors(
       value.process === ResourceFlowProcess.MANDATORY_MAINTENANCE ||
       value.process === ResourceFlowProcess.BIOMASS_ASSEMBLY;
     const environmental = value.process === ResourceFlowProcess.ENVIRONMENTAL_GAS_SOURCE ||
+      value.process === ResourceFlowProcess.ENVIRONMENTAL_RESOURCE_SOURCE ||
+      value.process === ResourceFlowProcess.REMNANT_DECAY ||
       value.process === ResourceFlowProcess.ENVIRONMENTAL_GAS_SINK ||
       value.process === ResourceFlowProcess.ENVIRONMENTAL_GAS_EXCHANGE;
-    const validFlowKind = value.process === ResourceFlowProcess.ENVIRONMENTAL_GAS_SOURCE
+    const validFlowKind = value.process === ResourceFlowProcess.ENVIRONMENTAL_GAS_SOURCE ||
+      value.process === ResourceFlowProcess.ENVIRONMENTAL_RESOURCE_SOURCE
       ? value.kind === ResourceFlowKind.ENVIRONMENTAL_SOURCE
       : value.process === ResourceFlowProcess.ENVIRONMENTAL_GAS_SINK
         ? value.kind === ResourceFlowKind.ENVIRONMENTAL_SINK
         : value.process === ResourceFlowProcess.ENVIRONMENTAL_GAS_EXCHANGE
           ? value.kind === ResourceFlowKind.NEIGHBOR_EXCHANGE_IN ||
             value.kind === ResourceFlowKind.NEIGHBOR_EXCHANGE_OUT
+          : value.process === ResourceFlowProcess.REMNANT_DECAY
+            ? value.kind === ResourceFlowKind.ORGANISM_RELEASE
           : value.kind === ResourceFlowKind.ORGANISM_UPTAKE ||
             value.kind === ResourceFlowKind.ORGANISM_RELEASE;
     if (
@@ -716,7 +721,7 @@ function invalidResourceFlowContributors(
       value.kind < ResourceFlowKind.ENVIRONMENTAL_SOURCE ||
       value.kind > ResourceFlowKind.ORGANISM_RELEASE ||
       value.process < ResourceFlowProcess.EXTERNAL_ENERGY_CAPTURE ||
-      value.process > ResourceFlowProcess.MICRONUTRIENT_UPTAKE ||
+      value.process > ResourceFlowProcess.REMNANT_DECAY ||
       value.amountQ <= 0n ||
       usesReaction !== (value.reactionId !== 0) ||
       (value.reactionId !== 0 && !reactions.has(value.reactionId)) ||

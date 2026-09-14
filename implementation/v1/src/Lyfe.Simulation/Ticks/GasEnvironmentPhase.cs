@@ -308,9 +308,133 @@ internal static class GasTransactionFactory
     }
 }
 
+internal static class EnvironmentalResourceTransactionFactory
+{
+    public static ResourceTransaction Source(
+        ulong tick,
+        TileId tileId,
+        ResourceId resourceId,
+        long quantityQ) => new(
+            new LedgerTransactionKey(
+                tick,
+                TickPhase.EnvironmentalLedger,
+                tileId.Value,
+                0,
+                resourceId.Value,
+                3),
+            LedgerCause.EnvironmentalResourceSource,
+            ReactionId.From(resourceId.Value),
+            default,
+            tileId,
+            quantityQ,
+            [
+                new MatterLedgerEntry(
+                    new MatterAccountKey(
+                        MatterAccountOwnerKind.Boundary,
+                        1,
+                        MatterCompartment.InorganicPool,
+                        resourceId),
+                    -quantityQ),
+                new MatterLedgerEntry(
+                    new MatterAccountKey(
+                        MatterAccountOwnerKind.Tile,
+                        tileId.Value,
+                        MatterCompartment.InorganicPool,
+                        resourceId),
+                    quantityQ),
+            ],
+            []);
+}
+
+internal sealed record WeatheringResourceView(
+    PhaseViewStamp Stamp,
+    ImmutableArray<TileId> TileIds,
+    long QuantityPerTileQ) : IPhaseReadView
+{
+    public int WorkCount => TileIds.Length;
+}
+
+internal sealed class WeatheringResourcePhase :
+    ScalarTickPhase<
+        WeatheringResourceView,
+        ResourceTransaction,
+        ImmutableArray<ResourceTransaction>>
+{
+    private static readonly ResourceId InorganicPhosphorus = ResourceId.From(16);
+
+    public override TickPhase Phase => TickPhase.EnvironmentalLedger;
+
+    protected override PhaseExecutionClass ExecutionClass =>
+        PhaseExecutionClass.IndependentMap;
+
+    protected override WeatheringResourceView SealView(
+        MutableWorldState world,
+        TickExecutionContext context)
+    {
+        var perHour = world.Rules.WorldProfile.Generator?
+            .InorganicPhosphorusWeatheringQuantityPerHour ?? 0;
+        var quantity = checked(perHour * context.TickDurationHours);
+        return new WeatheringResourceView(
+            CreateStamp(world, context),
+            quantity == 0 ? [] : world.GetTileIdsInCanonicalOrder(),
+            quantity);
+    }
+
+    protected override ImmutableArray<PhaseOutcome<ResourceTransaction>> Evaluate(
+        WeatheringResourceView view,
+        TickExecutionContext context) => view.TileIds
+        .Select(tileId =>
+        {
+            var transaction = EnvironmentalResourceTransactionFactory.Source(
+                context.Tick,
+                tileId,
+                InorganicPhosphorus,
+                view.QuantityPerTileQ);
+            return new PhaseOutcome<ResourceTransaction>(
+                view.Stamp,
+                new OutcomeKey(
+                    Phase,
+                    3,
+                    tileId.Value,
+                    0,
+                    InorganicPhosphorus.Value,
+                    3),
+                transaction);
+        })
+        .ToImmutableArray();
+
+    protected override ImmutableArray<ResourceTransaction> Preflight(
+        WeatheringResourceView view,
+        ImmutableArray<PhaseOutcome<ResourceTransaction>> outcomes,
+        TickExecutionContext context) => outcomes
+        .Select(outcome => outcome.Payload)
+        .ToImmutableArray();
+
+    protected override void Commit(
+        MutableWorldState world,
+        ImmutableArray<ResourceTransaction> plan,
+        PhaseChangeBuilder changes,
+        TickExecutionContext context)
+    {
+        var phosphorus = world.GetResourceHandle(InorganicPhosphorus);
+        foreach (var transaction in plan)
+        {
+            world.ApplyTileResourceDelta(
+                transaction.TileId,
+                phosphorus,
+                transaction.Extent,
+                changes);
+        }
+    }
+
+    protected override ImmutableArray<ResourceTransaction> GetResourceTransactions(
+        ImmutableArray<ResourceTransaction> plan) => plan;
+}
+
 internal sealed class EnvironmentalLedgerPhase : IScalarTickPhase
 {
     private readonly GasTransportPhase gas = new();
+    private readonly WeatheringResourcePhase weathering = new();
     private readonly RemnantDecayPhase remnants = new();
 
     public TickPhase Phase => TickPhase.EnvironmentalLedger;
@@ -318,17 +442,29 @@ internal sealed class EnvironmentalLedgerPhase : IScalarTickPhase
     public TickPhaseJournal Execute(MutableWorldState world, TickExecutionContext context)
     {
         var gasJournal = gas.Execute(world, context);
+        var weatheringJournal = weathering.Execute(world, context);
         var remnantJournal = remnants.Execute(world, context);
         return new TickPhaseJournal(
             Phase,
             PhaseExecutionClass.MapThenGroupedResolve,
-            gasJournal.EvaluatedWorkCount + remnantJournal.EvaluatedWorkCount,
+            gasJournal.EvaluatedWorkCount + weatheringJournal.EvaluatedWorkCount +
+                remnantJournal.EvaluatedWorkCount,
             new PhaseChangeSet(
-                gasJournal.Changes.Creates.AddRange(remnantJournal.Changes.Creates).Distinct().ToImmutableArray(),
-                gasJournal.Changes.Removes.AddRange(remnantJournal.Changes.Removes).Distinct().ToImmutableArray(),
-                gasJournal.Changes.Relocations.AddRange(remnantJournal.Changes.Relocations).Distinct().ToImmutableArray(),
-                gasJournal.Changes.DirtyEntities.AddRange(remnantJournal.Changes.DirtyEntities).Distinct().ToImmutableArray()),
-            gasJournal.ResourceTransactions.AddRange(remnantJournal.ResourceTransactions)
+                gasJournal.Changes.Creates
+                    .AddRange(weatheringJournal.Changes.Creates)
+                    .AddRange(remnantJournal.Changes.Creates).Distinct().ToImmutableArray(),
+                gasJournal.Changes.Removes
+                    .AddRange(weatheringJournal.Changes.Removes)
+                    .AddRange(remnantJournal.Changes.Removes).Distinct().ToImmutableArray(),
+                gasJournal.Changes.Relocations
+                    .AddRange(weatheringJournal.Changes.Relocations)
+                    .AddRange(remnantJournal.Changes.Relocations).Distinct().ToImmutableArray(),
+                gasJournal.Changes.DirtyEntities
+                    .AddRange(weatheringJournal.Changes.DirtyEntities)
+                    .AddRange(remnantJournal.Changes.DirtyEntities).Distinct().ToImmutableArray()),
+            gasJournal.ResourceTransactions
+                .AddRange(weatheringJournal.ResourceTransactions)
+                .AddRange(remnantJournal.ResourceTransactions)
                 .OrderBy(transaction => transaction.Key).ToImmutableArray());
     }
 }
